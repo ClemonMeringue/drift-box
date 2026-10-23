@@ -174,6 +174,9 @@ button{font-family:var(--ui);border-radius:3px;font-weight:500}
 #auth details .orow2 input{width:auto;flex:1;margin:0}
 #admin input,#admin select{font:inherit;color:#eaf0ff;background:#ffffff14;border:1px solid #ffffff30;border-radius:3px;padding:8px 10px}
 #admin option{background:#14161a}
+.adrow{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #ffffff14}.adrow b,.adrow span:first-child{flex:1}.adrow.sub2{padding-left:18px;color:var(--mut)}
+.chip2{border:1px solid #ffffff33;border-radius:2px;padding:1px 8px;font:600 11px var(--hd);letter-spacing:.14em;text-transform:uppercase}.chip2.dr{border-color:#d6b85a;color:#d6b85a}
+#menu.adm .clist,#menu.adm #pv,#menu.adm #pn,#menu.adm .prev>.pd,#menu.adm #chips,#menu.adm #lb{display:none}#menu.adm .mcols{grid-template-columns:1fr}#menu.adm .prev{padding:10px 0}
 .hide{display:none!important}
 button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 13px;cursor:pointer}
 button.on{background:var(--acc);color:#fff;border-color:transparent}
@@ -203,24 +206,23 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 </div>
 <div class="info"><div id="hud"></div><div id="hint"></div></div>
 <div id="big"></div>
-<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="admin" class="hide"><div class="pd">Season tools (owner only). Build a track in Track Builder first, then publish it to a season here.</div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season</button></div><div class="orow2"><select id="adSel"></select><input id="adTrack" placeholder="Track name"></div><div class="orow2"><input id="adDesc" placeholder="Short description (optional)" style="width:100%"></div><div class="orow2"><button id="adPub">Publish current track</button></div><div class="pd" id="adSt"></div></div>
+<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft that only you can see. Press Publish season when it is ready.</div><h3>Add the track from Track Builder</h3><div class="orow2"><select id="adSel"></select><input id="adTrack" placeholder="Track name"></div><div class="orow2"><input id="adDesc" placeholder="Short description (optional)" style="width:100%"></div><div class="orow2"><button id="adPub">Add track to season</button></div><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Players</h3><div class="orow2"><button id="adUsers">Load players</button></div><div id="adUl"></div><div class="pd" id="adSt"></div></div>
 <div id="online" class="hide"><div class="orow2"><input id="mpname" maxlength="12" placeholder="Your name"></div><div class="orow2"><button id="mpHost">Host a room</button><input id="mpcode" maxlength="4" placeholder="CODE"><button id="mpJoin">Join</button></div><div class="pd" id="mpst">Host a room and share the 4-letter code, or enter a friend's code. Hosts pick the course on the left.</div><div class="plist" id="mpl"></div><div class="mfoot"><button class="go hide" id="mpGo">Start race</button><button id="mpLeave" class="hide">Leave room</button></div></div>
 <div class="mfoot" id="solofoot"><button class="go" id="mPlay">Start race</button><button id="mResume" class="hide">Resume</button><button id="mTune">Handling…</button></div></div></div><h3>Options</h3><div class="opts" id="opts"></div>
 <div class="keys"><span><kbd>W A S D</kbd>or<kbd>Arrows</kbd>drive</span><span><kbd>Shift</kbd>nitro</span><span><kbd>S</kbd>while turning flicks the rear out</span><span><kbd>C</kbd>restart</span><span><kbd>B</kbd>build</span><span><kbd>Esc</kbd>menu</span></div></div></div>
 <div id="res" class="hide"><div class="rc"><div class="rk" id="rk"></div><div class="rt" id="rtt"></div><div class="rtime" id="rtime"></div><div class="rsub" id="rsub"></div><div class="pbb hide" id="rpb">NEW PERSONAL BEST</div><table id="rtab"></table><div class="rbtn"><button class="go" id="rRetry">Retry</button><button id="rMenu">Menu</button></div></div></div>
-<div id="auth" class="hide"><div class="ap"><h1>Drift Box</h1><div class="sub">Sign in to save your times</div><div class="atabs"><button id="auIn" class="on">Sign in</button><button id="auUp">Create account</button></div><label>Name<input id="auName" maxlength="16" autocomplete="username"></label><label>Password<input id="auPw" type="password" autocomplete="current-password"></label><div class="aerr" id="auErr"></div><button class="go" id="auGo">Sign in</button><div class="amode" id="auMode"></div><details><summary>Server address</summary><div class="orow2"><input id="auApi" value="https://driftbox-api.driftbox-api.workers.dev" placeholder="https://driftbox-api.yourname.workers.dev"><button id="auApiSave">Save</button></div></details></div></div>
+<div id="auth" class="hide"><div class="ap"><h1>Drift Box</h1><div class="sub">Sign in to save your times</div><div class="atabs"><button id="auIn" class="on">Sign in</button><button id="auUp">Create account</button></div><label>Name<input id="auName" maxlength="16" autocomplete="username"></label><label>Password<input id="auPw" type="password" autocomplete="current-password"></label><div class="aerr" id="auErr"></div><button class="go" id="auGo">Sign in</button><div class="amode" id="auMode"></div><details class="hide"><summary>Server address</summary><div class="orow2"><input id="auApi" placeholder="https://driftbox-api.yourname.workers.dev"><button id="auApiSave">Save</button></div></details></div></div>
 <div id="toast" class="hide"></div><canvas id="conf" class="hide"></canvas><div id="tune" class="info hide"></div><div id="timer" class="info hide"><div id="tm"></div></div><canvas id="mini" width="240" height="240" class="hide"></canvas><canvas id="gauge" width="260" height="260"></canvas>
 <div id="pad" class="hide"><button data-k="KeyA">◀</button><button data-k="KeyW">▲</button><button data-k="KeyD">▶</button><button data-k="Nitro">N</button><button data-k="KeyS">▼</button></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const $=s=>document.querySelector(s), dark=matchMedia('(prefers-color-scheme: dark)').matches;
 const bg=new THREE.Color(getComputedStyle(document.body).backgroundColor);
 const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));
 document.body.prepend(R.domElement);const cv=R.domElement;
 const S=new THREE.Scene();const NIGHT=new THREE.Color(0x04070f);S.background=NIGHT;S.fog=new THREE.Fog(NIGHT,300,900);
-const cam=new THREE.PerspectiveCamera(45,1,.1,800);
+const cam=new THREE.PerspectiveCamera(45,1,30,2500);
 S.add(new THREE.HemisphereLight(0x6f86c8,0x0b1020,.5));
 const sun=new THREE.DirectionalLight(0x9db6ff,.7);S.add(sun);S.add(sun.target);
 sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-.0006;
@@ -492,13 +494,14 @@ cv.addEventListener('contextmenu',e=>{e.preventDefault();if(mode==='build'&&aim(
 function drive(dt){
   const sn=Math.sin(c.h),cs=Math.cos(c.h);
   let vf=c.vx*sn+c.vz*cs,vl=c.vx*cs-c.vz*sn;
+  const AD=(SESS&&SESS.owner)?(OPT.admin||0):0;
   const WA=[1,.5,0][OPT.drive||0],ER=[.1,.25,.4][OPT.drive||0];let hitN=null;
   const fr=race.state==='count',up=!fr&&(k.ArrowUp||k.KeyW),dn=!fr&&(k.ArrowDown||k.KeyS);
   const st=fr?0:(k.ArrowLeft||k.KeyA?1:0)-(k.ArrowRight||k.KeyD?1:0);
-  const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up;nitro=nit?Math.max(0,nitro-35*dt):Math.min(100,nitro+10*dt);
-  if(up)vf+=(P.power+(nit?30:0))*dt;
+  const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up;nitro=nit&&!AD?Math.max(0,nitro-35*dt):Math.min(100,nitro+(AD?100:10)*dt);
+  if(up)vf+=(P.power*(AD?1+AD*1.2:1)+(nit?30:0)*(AD?2:1))*dt;
   if(dn)vf-=(vf>0?20*(1-.6*Math.min(1,Math.abs(vl)/Math.max(Math.abs(vf),6))):16)*dt;
-  vf-=vf*.85*dt;if(vf<-10)vf=-10;
+  vf-=vf*(AD?.85/(1+AD*.9):.85)*dt;if(vf<-10)vf=-10;
   if(WA>0&&Math.abs(c.s)>.55&&vf>22)vf-=vf*.45*WA*dt;
   if(race.route&&!blocks.some(b=>Math.abs(c.x-b.x)<=b.half&&Math.abs(c.z-b.z)<=b.half))vf-=vf*.9*dt;
   let zb=0,zs=0,zg=0;
@@ -516,7 +519,7 @@ function drive(dt){
   if(zg)vf-=vf*1.1*dt;
   // eased steering, grip is lost fast but returns gradually
   c.s+=(st-c.s)*Math.min(1,dt*(st?8:4));
-  const gT=Math.max(.7,P.grip-Math.min(P.grip*.58,Math.abs(c.s*vf)*P.slide)-(dn&&vf>10&&st?3.2:0)-(up&&st&&vf>16?1.4:0)-(zs?7:0)-(zg?2.5:0));
+  const gT=Math.max(.7,P.grip+AD*3-Math.min(P.grip*.58,Math.abs(c.s*vf)*P.slide)-(dn&&vf>10&&st?3.2:0)-(up&&st&&vf>16?1.4:0)-(zs?7:0)-(zg?2.5:0));
   c.g+=((c.air>0?.05:gT)-c.g)*Math.min(1,dt*(gT>c.g?P.regrip:8));
   const slip=Math.abs(vl);
   vl*=Math.exp(-c.g*dt);
@@ -697,7 +700,7 @@ const COURSES=[
   {name:'Free Drive',str:'free',desc:'Empty field · no timer'},
   {name:'Track Builder',str:'build',desc:'Design your own course'}
 ];
-const OPTS=[['drive','Driving',[[0,'Easy'],[1,'Standard'],[2,'Pro']]],['bots','Bots',[[0,'None'],[1,'1'],[2,'2'],[3,'3']]],['diff','Difficulty',[[0,'Easy'],[1,'Normal'],[2,'Hard']]],['laps','Laps',[[1,'1'],[3,'3'],[5,'5']]],['zoom','Camera',[[.75,'Close'],[1,'Normal'],[1.35,'Far']]],['shadow','Shadows',[[1,'On'],[0,'Off']]],['sound','Sound',[[1,'On'],[0,'Off']]],['assist','Assist',[[1,'On'],[0,'Off']]],['ghost','PB ghost',[[1,'On'],[0,'Off']]],['pix','Pixels',[[1,'Off'],[.6,'Slight'],[.4,'Chunky']]]];
+const OPTS=[['drive','Driving',[[0,'Easy'],[1,'Standard'],[2,'Pro']]],['bots','Bots',[[0,'None'],[1,'1'],[2,'2'],[3,'3']]],['diff','Difficulty',[[0,'Easy'],[1,'Normal'],[2,'Hard']]],['laps','Laps',[[1,'1'],[3,'3'],[5,'5']]],['zoom','Camera',[[.75,'Close'],[1,'Normal'],[1.35,'Far']]],['shadow','Shadows',[[1,'On'],[0,'Off']]],['sound','Sound',[[1,'On'],[0,'Off']]],['assist','Assist',[[1,'On'],[0,'Off']]],['ghost','PB ghost',[[1,'On'],[0,'Off']]],['pix','Pixels',[[1,'Off'],[.6,'Slight'],[.4,'Chunky']]],['admin','Admin car',[[0,'Off'],[1,'Boosted'],[2,'Insane']],true]];
 const saveOpt=()=>{try{localStorage.setItem('dbx:opt',JSON.stringify(OPT))}catch(e){}};
 function applyOpt(){snd=!!OPT.sound;assist=!!OPT.assist;sun.castShadow=!!OPT.shadow;resize();if(snd)initAudio()}
 let selC=Math.max(0,COURSES.findIndex(c=>c.name==='Speedway'));
@@ -735,7 +738,7 @@ function buildMenuOld(){
   $('#chips').innerHTML=ch.map(c=>Array.isArray(c)?'<span style="border-color:'+c[1]+';color:'+c[1]+'">'+c[0]+'</span>':'<span>'+c+'</span>').join('');
   $('#mPlay').textContent=cc.str==='build'?'Open builder':cc.gp?'Start championship':'Start race';
   const o=$('#opts');o.innerHTML='';
-  OPTS.forEach(([key,label,ch])=>{
+  OPTS.filter(o=>!o[3]||(SESS&&SESS.owner)).forEach(([key,label,ch])=>{
     const r=document.createElement('div'),sg=document.createElement('div');r.className='orow';sg.className='seg';r.innerHTML='<span>'+label+'</span>';
     ch.forEach(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.className=OPT[key]===v?'on':'';b.onclick=()=>{OPT[key]=v;saveOpt();applyOpt();buildMenu()};sg.append(b)});
     r.append(sg);o.append(r);
@@ -899,9 +902,9 @@ function confetti(){
 // ---------- online multiplayer: WebRTC via PeerJS, one player hosts ----------
 var MP=null,menuTab='solo',mOpen=true;
 const SLOT=[[0,0],[-7,0],[7,0],[0,-7]],RCOL=[0x2ecc71,0xe03e3e,0xf2c230,0xa55cf2];
-let peer=null,mpT=0;
+let ws=null,mpT=0;
 const mpSay=t=>{$('#mpst').textContent=t};
-function setTab(t){menuTab=t;$('#tSolo').classList.toggle('on',t==='solo');$('#tOnline').classList.toggle('on',t==='online');$('#online').classList.toggle('hide',t!=='online');$('#solofoot').classList.toggle('hide',t!=='solo');$('#admin').classList.toggle('hide',t!=='admin');$('#tAdmin').classList.toggle('on',t==='admin');$('#lb').classList.toggle('hide',t!=='solo');if(t==='admin')adminUI();lobbyUI()}
+function setTab(t){menuTab=t;$('#tSolo').classList.toggle('on',t==='solo');$('#tOnline').classList.toggle('on',t==='online');$('#online').classList.toggle('hide',t!=='online');$('#solofoot').classList.toggle('hide',t!=='solo');$('#admin').classList.toggle('hide',t!=='admin');$('#tAdmin').classList.toggle('on',t==='admin');$('#lb').classList.toggle('hide',t!=='solo');$('#menu').classList.toggle('adm',t==='admin');if(t==='admin')adminUI();lobbyUI()}
 function lobbyUI(){
   const inRoom=!!MP;
   $('#mpl').innerHTML=inRoom?MP.players.map(p=>'<span>'+p.name+(p.idx===0?' (host)':'')+(p.idx===MP.idx?' \u00b7 you':'')+'</span>').join(''):'';
@@ -934,62 +937,37 @@ function botRemote(b,dt){
   }
 }
 function mpClose(){
-  try{if(peer)peer.destroy()}catch(e){}
-  peer=null;const was=MP;MP=null;
+  try{if(ws)ws.close()}catch(e){}
+  ws=null;const was=MP;MP=null;
   if(was&&was.oldLaps!=null)OPT.laps=was.oldLaps;
   if(was&&was.ready){closeBots();race={route:null};resetCar()}
   lobbyUI();
 }
 function mpName(){const n=($('#mpname').value||'').trim().slice(0,12)||'Player';try{localStorage.setItem('dbx:name',n)}catch(e){}return n}
-function mpHost(){
-  if(typeof Peer==='undefined'){mpSay('Online play needs the PeerJS script, which could not load.');return}
-  mpClose();const name=mpName(),code=Math.random().toString(36).slice(2,6).toUpperCase();
-  mpSay('Opening room\u2026');
-  try{peer=new Peer('driftbox-'+code)}catch(e){mpSay('Could not start online play.');return}
-  const pr=peer;
-  pr.on('open',()=>{MP={host:true,code,idx:0,oldLaps:OPT.laps,ready:false,started:false,players:[{idx:0,name}]};mpSay('Room '+code+' \u00b7 share this code with up to 3 friends');lobbyUI()});
-  pr.on('connection',cn=>{
-    if(!MP||MP.started||MP.players.length>=4){cn.on('open',()=>{cn.send({t:'full'});setTimeout(()=>cn.close(),400)});return}
-    const idx=[1,2,3].find(i=>!MP.players.some(p=>p.idx===i)),pl={idx,name:'Player',conn:cn};
-    MP.players.push(pl);cn.on('data',d=>hostData(pl,d));cn.on('close',()=>dropPlayer(pl));
-  });
-  pr.on('error',e=>{if(e.type==='unavailable-id'){mpHost();return}mpSay('Could not reach the matchmaking server ('+e.type+'). Online play needs the game hosted on your own site, such as GitHub Pages.')});
-}
-function mpJoin(){
-  if(typeof Peer==='undefined'){mpSay('Online play needs the PeerJS script, which could not load.');return}
-  const code=($('#mpcode').value||'').trim().toUpperCase();if(code.length!==4){mpSay('Enter the 4-letter room code.');return}
+const mpSend=o=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
+function mpOpen(code,join){
+  if(!API_URL){mpSay('Online play needs the game server, which is not connected.');return}
   mpClose();const name=mpName();mpSay('Connecting\u2026');
-  try{peer=new Peer()}catch(e){mpSay('Could not start online play.');return}
-  const pr=peer;let ok=false;
-  const tm=setTimeout(()=>{if(!ok){mpSay('Could not connect. Check the code, or the network may block peer-to-peer.');mpClose()}},12000);
-  pr.on('open',()=>{
-    const cn=pr.connect('driftbox-'+code,{reliable:true,serialization:'json'});
-    cn.on('open',()=>{ok=true;clearTimeout(tm);MP={host:false,code,idx:0,oldLaps:OPT.laps,ready:false,conn:cn,players:[]};cn.send({t:'hello',name});mpSay('Joined room '+code+' \u00b7 waiting for the host to start');lobbyUI()});
-    cn.on('data',clientData);
-    cn.on('close',()=>{if(MP){mpClose();mpSay('The host left the room.')}});
-  });
-  pr.on('error',e=>{clearTimeout(tm);mpSay(e.type==='peer-unavailable'?'No room with that code.':'Connection problem ('+e.type+'). Online play needs the game hosted on your own site, such as GitHub Pages.')});
+  let sock;try{sock=new WebSocket(API_URL.replace(/^http/,'ws')+'/ws/'+code+(join?'?join=1':''))}catch(e){mpSay('Could not start online play.');return}
+  ws=sock;let ok=false;
+  const tm=setTimeout(()=>{if(!ok&&ws===sock){mpClose();mpSay('Could not connect. Check your internet and try again.')}},10000);
+  sock.onopen=()=>{ok=true;clearTimeout(tm);MP={host:false,code,idx:-1,oldLaps:OPT.laps,ready:false,players:[]};sock.send(JSON.stringify({t:'hello',name}))};
+  sock.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch(x){return}clientData(d)};
+  sock.onclose=()=>{clearTimeout(tm);if(ws===sock){const had=!!MP;mpClose();mpSay(had?'Disconnected from the room.':'Could not connect to the room.')}};
 }
-function hostData(pl,d){
-  if(!MP)return;
-  if(d.t==='hello'){pl.name=String(d.name||'Player').slice(0,12);lobbyCast()}
-  else if(d.t==='s'){applyState({...d,i:pl.idx});MP.players.forEach(p=>{if(p.conn&&p!==pl&&p.conn.open)p.conn.send({...d,i:pl.idx})})}
-}
-function lobbyCast(){
-  const list=MP.players.map(p=>({idx:p.idx,name:p.name}));
-  MP.players.forEach(p=>{if(p.conn&&p.conn.open)p.conn.send({t:'lobby',players:list,you:p.idx,code:MP.code})});lobbyUI();
-}
-function dropPlayer(pl){
-  if(!MP)return;MP.players=MP.players.filter(p=>p!==pl);
-  const b=bots.find(b=>b.remote&&b.i===pl.idx);if(b){S.remove(b.g);bots=bots.filter(x=>x!==b)}
-  lobbyCast();
-}
+function mpHost(){mpOpen(Math.random().toString(36).slice(2,6).toUpperCase(),false)}
+function mpJoin(){const code=($('#mpcode').value||'').trim().toUpperCase();if(code.length!==4){mpSay('Enter the 4-letter room code.');return}mpOpen(code,true)}
 function clientData(d){
   if(!MP)return;
-  if(d.t==='lobby'){MP.players=d.players;MP.idx=d.you;lobbyUI()}
+  if(d.t==='lobby'){
+    MP.players=d.players;MP.idx=d.you;MP.host=d.you===0;
+    bots=bots.filter(b=>{if(b.remote&&!d.players.some(p=>p.idx===b.i)){S.remove(b.g);return false}return true});
+    mpSay(MP.host?'Room '+MP.code+' \u00b7 share this code with up to 3 friends':'Joined room '+MP.code+' \u00b7 waiting for the host to start');lobbyUI();
+  }
   else if(d.t==='start')startOnline(d);
   else if(d.t==='s')applyState(d);
   else if(d.t==='full'){mpClose();mpSay('That room is full or already racing.')}
+  else if(d.t==='none'){mpClose();mpSay('No room with that code.')}
 }
 function startOnline(d){
   closeBots();GP=null;started=true;OPT.laps=d.laps;
@@ -1000,16 +978,12 @@ function startOnline(d){
 function hostStart(){
   if(!MP||!MP.host)return;const cc=COURSES[selC];
   if(!(isRoute(cc.str)||cc.str==='random')){mpSay('Pick a race course on the left first.');return}
-  MP.started=true;
-  const d={t:'start',str:cc.str==='random'?randomCourse():cc.str,laps:OPT.laps,players:MP.players.map(p=>({idx:p.idx,name:p.name}))};
-  MP.players.forEach(p=>{if(p.conn&&p.conn.open)p.conn.send(d)});startOnline(d);
+  mpSend({t:'start',str:cc.str==='random'?randomCourse():cc.str,laps:OPT.laps});
 }
 function mpTick(dt){
-  if(!MP||!MP.ready||!peer)return;
+  if(!MP||!MP.ready||!ws)return;
   mpT+=dt;if(mpT<.05)return;mpT=0;
-  const R=race,s={t:'s',x:+c.x.toFixed(2),z:+c.z.toFixed(2),h:+c.h.toFixed(3),vx:+c.vx.toFixed(2),vz:+c.vz.toFixed(2),p:+pProg().toFixed(2),f:R.state==='done'?1:0,ft:+(R.t||0).toFixed(2)};
-  if(MP.host){s.i=0;MP.players.forEach(p=>{if(p.conn&&p.conn.open)p.conn.send(s)})}
-  else if(MP.conn&&MP.conn.open)MP.conn.send(s);
+  const R=race;mpSend({t:'s',x:+c.x.toFixed(2),z:+c.z.toFixed(2),h:+c.h.toFixed(3),vx:+c.vx.toFixed(2),vz:+c.vz.toFixed(2),p:+pProg().toFixed(2),f:R.state==='done'?1:0,ft:+(R.t||0).toFixed(2)});
 }
 $('#mpHost').onclick=mpHost;$('#mpJoin').onclick=mpJoin;$('#mpGo').onclick=hostStart;$('#mpLeave').onclick=mpClose;
 $('#tSolo').onclick=()=>setTab('solo');$('#tOnline').onclick=()=>setTab('online');
@@ -1044,7 +1018,7 @@ function buildMenu(){
   let gl=-1,num=0;
   MENU_ORDER.forEach(i=>{
     const cc=COURSES[i],gk=grp(cc),pb=pbOf(cc.str);
-    if(gk!==gl){gl=gk;num=0;const hd=document.createElement('div'),se=SEASONS.find(s=>s.id===gk);hd.className='sech';hd.textContent=gk===99?'Modes':(se?se.name:'Season '+gk);g.append(hd)}
+    if(gk!==gl){gl=gk;num=0;const hd=document.createElement('div'),se=SEASONS.find(s=>s.id===gk);hd.className='sech';hd.textContent=gk===99?'Modes':(se?se.name:'Season '+gk)+(se&&se.live===false?' (draft)':'');g.append(hd)}
     const d=document.createElement('div');d.className='ci'+(i===selC?' sel':'');
     d.innerHTML='<i>'+String(++num).padStart(2,'0')+'</i><div><b>'+esc(cc.name)+'</b><span>'+esc(cc.desc)+'</span></div><em>'+(pb||'')+'</em>';
     d.onclick=()=>{selC=i;buildMenu()};d.ondblclick=startGame;g.append(d);
@@ -1071,7 +1045,7 @@ function buildMenu(){
 // ---------- accounts, seasons and leaderboards ----------
 // To make the leaderboard global, deploy the Worker in /driftbox-server and put its address in DEFAULT_API.
 // Left empty, accounts and times stay on this device.
-const DEFAULT_API='https://driftbox-api.workers.dev';
+const DEFAULT_API='https://driftbox-api.driftbox-api.workers.dev';
 let API_URL=(()=>{try{return localStorage.getItem('dbx:api')||''}catch(e){return ''}})()||DEFAULT_API;
 var SESS=null,SEASONS=[{id:1,name:'Season 1'}],MENU_ORDER=[],lbSel=-1,LB=null,auMode='in';
 try{SESS=JSON.parse(localStorage.getItem('dbx:sess')||'null')}catch(e){}
@@ -1179,7 +1153,7 @@ function renderLB(){
   el.innerHTML=h;
 }
 async function submitPB(cc,t){
-  const k=cc&&lbKey(cc);if(!k||!SESS||MP)return;const ms=Math.round(t*1000);
+  const k=cc&&lbKey(cc);if(!k||!SESS||MP)return;if(SESS.owner){toast('Admin run: not counted on the leaderboard');return}const ms=Math.round(t*1000);
   try{
     if(!API_URL){
       const all=JSON.parse(localStorage.getItem('dbx:lb')||'{}'),key=k.season+'/'+k.track,arr=all[key]||(all[key]=[]),i=arr.findIndex(r=>r.name===SESS.name);
@@ -1214,17 +1188,43 @@ function routeFromBlocks(){
   return{err:'The track is too long.'};
 }
 const adSay=t=>{$('#adSt').textContent=t};
-function adminUI(){$('#adSel').innerHTML=SEASONS.filter(s=>s.id>1).map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')||'<option value="">Create a season first</option>'}
+const allTracks=()=>COURSES.map(cc=>({cc,k:lbKey(cc)})).filter(x=>x.k);
+function adminUI(){
+  const ss=SEASONS.filter(x=>x.id>1);
+  $('#adSel').innerHTML=ss.map(x=>'<option value="'+x.id+'">'+esc(x.name)+(x.live===false?' (draft)':'')+'</option>').join('')||'<option value="">Create a season first</option>';
+  $('#adSeasons').innerHTML=SEASONS.map(x=>'<div class="adrow"><b>'+esc(x.name)+'</b><span class="chip2 '+(x.live===false?'dr':'')+'">'+(x.live===false?'Draft':'Live')+'</span>'+(x.id>1?'<button data-act="live" data-id="'+x.id+'" data-live="'+(x.live===false?1:0)+'">'+(x.live===false?'Publish season':'Unpublish')+'</button>':'')+'</div>'+(x.tracks||[]).map(t=>'<div class="adrow sub2"><span>'+esc(t.name)+'</span><button data-act="deltrack" data-id="'+t.id+'">Delete</button></div>').join('')).join('');
+  $('#adLbSel').innerHTML=allTracks().map((x,i)=>'<option value="'+i+'">Season '+x.k.season+' \u00b7 '+esc(x.cc.name)+'</option>').join('');
+}
+async function adAct(a,d){
+  try{
+    if(a==='live'){await api('/api/season/live',{id:+d.id,live:d.live==='1'});adSay('Season updated.')}
+    else if(a==='deltrack'){if(!confirm('Delete this track and all its times?'))return;await api('/api/track/delete',{id:+d.id});adSay('Track deleted.')}
+    else if(a==='delpb'){await api('/api/pb/delete',{season:+d.season,track:d.track,name:d.name});adSay('Time removed.');return adLb()}
+    else if(a==='ban'){await api('/api/ban',{name:d.name,banned:d.banned==='1'});adSay(d.banned==='1'?'Player banned.':'Player unbanned.');return adUsers()}
+    await fetchSeasons();adminUI();buildMenu();
+  }catch(e){adSay(e.message)}
+}
+async function adLb(){
+  const x=allTracks()[+$('#adLbSel').value];if(!x)return;
+  try{const j=await api('/api/lb?season='+x.k.season+'&track='+x.k.track);
+    $('#adLb').innerHTML=j.rows.length?j.rows.map((r,i)=>'<div class="adrow"><span>'+(i+1)+'. '+esc(r.name)+'</span><b>'+fmt(r.ms/1000)+'</b><button data-act="delpb" data-season="'+x.k.season+'" data-track="'+x.k.track+'" data-name="'+esc(r.name)+'">Remove</button></div>').join(''):'<div class="lbn">No times yet.</div>'}catch(e){adSay(e.message)}
+}
+async function adUsers(){
+  try{const j=await api('/api/admin/users');
+    $('#adUl').innerHTML=j.users.map(u=>'<div class="adrow"><b>'+esc(u.name)+'</b>'+(u.banned?'<span class="chip2 dr">Banned</span>':'')+(u.owner?'<span class="chip2">Owner</span>':'<button data-act="ban" data-name="'+esc(u.name)+'" data-banned="'+(u.banned?0:1)+'">'+(u.banned?'Unban':'Ban')+'</button>')+'</div>').join('')}catch(e){adSay(e.message)}
+}
 async function adMk(){
   const name=$('#adSeason').value.trim();if(name.length<2){adSay('Give the season a name.');return}
-  try{await api('/api/season',{name});$('#adSeason').value='';adSay('Season created.');await fetchSeasons();adminUI();buildMenu()}catch(e){adSay(e.message)}
+  try{await api('/api/season',{name});$('#adSeason').value='';adSay('Season created as a draft.');await fetchSeasons();adminUI();buildMenu()}catch(e){adSay(e.message)}
 }
 async function adPub(){
   const r=routeFromBlocks();if(r.err){adSay(r.err);return}
   const season=+$('#adSel').value,name=$('#adTrack').value.trim();
   if(!season){adSay('Create a season first.');return}if(name.length<2){adSay('Give the track a name.');return}
-  try{await api('/api/track',{season,name,str:r.str,desc:$('#adDesc').value.trim()||(r.closed?'Circuit':'Point to point')});adSay('Published '+name+'.');await fetchSeasons();buildMenu()}catch(e){adSay(e.message)}
+  try{await api('/api/track',{season,name,str:r.str,desc:$('#adDesc').value.trim()||(r.closed?'Circuit':'Point to point')});adSay('Added '+name+'. Publish the season when you are ready.');await fetchSeasons();adminUI();buildMenu()}catch(e){adSay(e.message)}
 }
+$('#admin').onclick=e=>{const b=e.target.closest&&e.target.closest('button[data-act]');if(b)adAct(b.dataset.act,b.dataset)};
+$('#adLbGo').onclick=adLb;$('#adUsers').onclick=adUsers;
 $('#auIn').onclick=()=>setAuMode('in');$('#auUp').onclick=()=>setAuMode('up');$('#auGo').onclick=doAuth;
 $('#auPw').onkeydown=e=>{if(e.key==='Enter')doAuth()};$('#auName').onkeydown=e=>{if(e.key==='Enter')$('#auPw').focus()};
 $('#auApiSave').onclick=()=>{try{const v=($('#auApi').value||'').trim().replace(/\/$/,'');if(v)localStorage.setItem('dbx:api',v);else localStorage.removeItem('dbx:api');location.reload()}catch(e){}};
@@ -1238,7 +1238,7 @@ let last=performance.now();
   const dt=Math.min(.033,(t-last)/1000);last=t;
   if(paused)idleCam();else if(mode==='drive'){drive(dt);raceTick(dt);botsTick(dt);mpTick(dt)}else buildCam(dt);
   drawGauge();audioTick();
-  {const fx=mode==='drive'?cf.x:pan.x,fz=mode==='drive'?cf.z:pan.z;sun.position.set(fx-70,45,fz-45);sun.target.position.set(fx,0,fz)}
+  {const fx=Math.round((mode==='drive'?cf.x:pan.x)/4)*4,fz=Math.round((mode==='drive'?cf.z:pan.z)/4)*4;sun.position.set(fx-70,45,fz-45);sun.target.position.set(fx,0,fz)}
   updPuffs(dt);
   car.position.set(c.x,c.y||0,c.z);car.scale.setScalar(1+(c.y||0)*.05);car.rotation.y=c.h;car.rotation.z=c.rl||0;car.rotation.x=c.pt||0;sh.position.set(c.x,.16,c.z);sh.rotation.y=c.h;fw.forEach(p=>p.rotation.y=c.s*.5);
   R.render(S,cam);
