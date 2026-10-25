@@ -8,8 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;1,700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#dfe4ea;--panel:#fffffff0;--ink:#1b2430;--mut:#5b6877;--acc:#d9480f;--line:#0003}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a22;--panel:#1e2630f0;--ink:#e8edf3;--mut:#9aa7b6;--acc:#ff8a3d;--line:#fff3}}
-:root[data-theme="dark"]{--bg:#141a22;--panel:#1e2630f0;--ink:#e8edf3;--mut:#9aa7b6;--acc:#ff8a3d;--line:#fff3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a22;--panel:#1e2630f0;--ink:#e8edf3;--mut:#9aa7b6;--acc:var(--m1,#ff8a3d);--line:#fff3}}
+:root[data-theme="dark"]{--bg:#141a22;--panel:#1e2630f0;--ink:#e8edf3;--mut:#9aa7b6;--acc:var(--m1,#ff8a3d);--line:#fff3}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
 canvas{display:block;touch-action:none}
 .bar{position:fixed;left:0;right:0;top:0;display:flex;flex-wrap:wrap;gap:6px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 0;pointer-events:none}
@@ -34,39 +34,39 @@ canvas{display:block;touch-action:none}
 #big{font-weight:900;letter-spacing:.05em;text-shadow:0 0 26px #19c9f5aa,0 4px 20px #000b}
 #menu{position:fixed;inset:0;z-index:20;display:flex;justify-content:center;align-items:flex-start;overflow:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 16px 24px;background:radial-gradient(ellipse at 50% 20%,#162244e6,#050810f5);color:#eaf0ff}
 #menu .mw{width:min(960px,100%)}
-#menu h1{margin:6px 0 0;font:900 clamp(40px,8vw,74px)/1 system-ui,sans-serif;font-style:italic;letter-spacing:.05em;background:linear-gradient(90deg,#ff8a3d,#ffd43b 50%,#19c9f5);-webkit-background-clip:text;background-clip:text;color:transparent}
+#menu h1{margin:6px 0 0;font:900 clamp(40px,8vw,74px)/1 system-ui,sans-serif;font-style:italic;letter-spacing:.05em;background:linear-gradient(90deg,var(--m1,#ff8a3d),var(--m2,#ffd43b) 50%,var(--m3,#19c9f5));-webkit-background-clip:text;background-clip:text;color:transparent}
 #menu .sub{margin:4px 0 16px;color:#9db0d8}
 #menu h3{margin:20px 0 8px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#9db0d8}
 #menu button{background:#ffffff14;color:#eaf0ff;border-color:#ffffff30}
 #menu button.on{background:var(--acc);color:#fff;border-color:transparent}
 .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .card{background:#ffffff10;border:1px solid #ffffff22;border-radius:12px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-height:74px}
-.card b{font-size:16px}.card span{color:#9db0d8;font-size:12.5px}.card em{color:#ffd43b;font-style:normal;font-size:12.5px;font-weight:700}
-.card.sel{border-color:#ff8a3d;background:#ff8a3d1f;box-shadow:0 0 0 1px #ff8a3d,0 0 24px #ff8a3d44}
+.card b{font-size:16px}.card span{color:#9db0d8;font-size:12.5px}.card em{color:var(--m2,#ffd43b);font-style:normal;font-size:12.5px;font-weight:700}
+.card.sel{border-color:var(--m1,#ff8a3d);background:#ff8a3d1f;box-shadow:0 0 0 1px var(--m1,#ff8a3d),0 0 24px #ff8a3d44}
 .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px 18px}
 .orow{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .seg{display:flex;gap:4px}.seg button{padding:5px 11px;font-size:13px}
 .mfoot{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
-.go{font-size:19px;font-weight:800;padding:11px 34px;background:linear-gradient(90deg,#ff8a3d,#ffd43b)!important;color:#1a1205!important;border:0!important}
+.go{font-size:19px;font-weight:800;padding:11px 34px;background:linear-gradient(90deg,var(--m1,#ff8a3d),var(--m2,#ffd43b))!important;color:#1a1205!important;border:0!important}
 #tune{z-index:30}
 #res{position:fixed;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;background:#050810b8;backdrop-filter:blur(3px)}
 #res .rc{width:min(420px,92%);background:linear-gradient(#18233d,#0c1324);border:1px solid #ffffff26;border-radius:18px;padding:22px 24px;color:#eaf0ff;text-align:center;box-shadow:0 20px 60px #000a}
 #res button{background:#ffffff14;color:#eaf0ff;border-color:#ffffff30}
 .rk{font:900 74px/1 system-ui,sans-serif;font-style:italic}
-.r1{color:#ffd43b;text-shadow:0 0 30px #ffd43b88}.r2{color:#d7dde8}.r3{color:#e0915a}.r4{color:#9db0d8}
+.r1{color:var(--m2,#ffd43b);text-shadow:0 0 30px #ffd43b88}.r2{color:#d7dde8}.r3{color:#e0915a}.r4{color:#9db0d8}
 .rt{letter-spacing:.25em;font-size:12px;color:#9db0d8;margin:4px 0}
 .rtime{font:700 32px system-ui,sans-serif;font-variant-numeric:tabular-nums}
 .rsub{color:#9db0d8;font-size:13px;margin-bottom:6px}
-.pbb{display:inline-block;background:linear-gradient(90deg,#ff8a3d,#ffd43b);color:#1a1205;font-weight:800;border-radius:99px;padding:3px 14px;margin:6px 0;font-size:13px}
+.pbb{display:inline-block;background:linear-gradient(90deg,var(--m1,#ff8a3d),var(--m2,#ffd43b));color:#1a1205;font-weight:800;border-radius:99px;padding:3px 14px;margin:6px 0;font-size:13px}
 #rtab{width:100%;border-collapse:collapse;margin:10px 0;font-variant-numeric:tabular-nums}
 #rtab td{padding:5px 8px;border-bottom:1px solid #ffffff14;text-align:left}#rtab td:last-child{text-align:right}
-#rtab tr.me td{color:#ffd43b;font-weight:700}
+#rtab tr.me td{color:var(--m2,#ffd43b);font-weight:700}
 .rbtn{display:flex;gap:8px;justify-content:center;margin-top:12px}
 #toast{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:9;background:#0c1324ec;color:#fff;border:1px solid #ffffff30;border-radius:99px;padding:8px 20px;font-weight:700;font-variant-numeric:tabular-nums;white-space:pre}
 #conf{position:fixed;inset:0;z-index:16;pointer-events:none}
 #menu::before{content:'';position:fixed;inset:0 -48px;background:linear-gradient(90deg,#ffffff0a 1px,transparent 1px) 0 0/48px 100%;animation:mv 3s linear infinite;pointer-events:none}
 @keyframes mv{to{transform:translateX(-48px)}}
-#menu h1{background:linear-gradient(90deg,#ff8a3d,#ffd43b,#19c9f5,#ff8a3d);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:hs 7s linear infinite;filter:drop-shadow(0 0 22px #ff8a3d55)}
+#menu h1{background:linear-gradient(90deg,var(--m1,#ff8a3d),var(--m2,#ffd43b),var(--m3,#19c9f5),var(--m1,#ff8a3d));background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:hs 7s linear infinite;filter:drop-shadow(0 0 22px #ff8a3d55)}
 @keyframes hs{to{background-position:-300% 0}}
 #menu .mw{position:relative}
 .mcols{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(320px,1.1fr);gap:18px;align-items:start}
@@ -75,7 +75,7 @@ canvas{display:block;touch-action:none}
 .ci{display:flex;gap:10px;align-items:center;background:#ffffff0d;border:1px solid #ffffff1f;border-radius:11px;padding:7px 10px;cursor:pointer}
 .ci canvas{width:72px;height:48px;background:#0b1220;border-radius:7px;flex:none}
 .ci b{display:block;font-size:15px}.ci span{color:#9db0d8;font-size:12px}
-.ci.sel{border-color:#ff8a3d;background:#ff8a3d22;box-shadow:0 0 0 1px #ff8a3d,0 0 22px #ff8a3d44}
+.ci.sel{border-color:var(--m1,#ff8a3d);background:#ff8a3d22;box-shadow:0 0 0 1px var(--m1,#ff8a3d),0 0 22px #ff8a3d44}
 .prev{background:#ffffff0d;border:1px solid #ffffff22;border-radius:16px;padding:14px}
 .prev canvas{width:100%;aspect-ratio:440/300;background:radial-gradient(#16264a,#0a1020);border-radius:11px}
 .pn{font:800 24px system-ui,sans-serif;margin-top:10px}.pd{color:#9db0d8;margin:2px 0 8px}
@@ -184,6 +184,69 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .info{position:fixed;left:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;max-width:calc(100% - 24px)}
 #hud{font-weight:600;font-variant-numeric:tabular-nums}
 #hint{color:var(--mut);font-size:13px}
+
+#pad{bottom:calc(196px + env(safe-area-inset-bottom,0px))}
+#nbar{position:fixed;right:12px;bottom:calc(146px + env(safe-area-inset-bottom,0px));width:214px;display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;pointer-events:none;z-index:5}
+#nbar b{font:700 12px var(--hd);letter-spacing:.2em;color:var(--mut)}
+#nbar .nt{flex:1;height:16px;background:#05080e;border:2px solid var(--ink);border-radius:3px;overflow:hidden;position:relative}
+#nbar .nt i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#19c9f5,#8cecff);box-shadow:0 0 10px #19c9f5}
+#nbar .nt::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 9px,#05080e 9px 11px)}
+#nbar.act .nt i{background:linear-gradient(90deg,#ff7a1a,#ffe14a);box-shadow:0 0 14px #ff9a1f}
+#nbar.act{border-color:#ff9a1f}
+#nbar.low .nt i{background:#ff4a3a;box-shadow:0 0 10px #ff4a3a}
+#nbar span{font:700 13px var(--hd);min-width:26px;text-align:right;font-variant-numeric:tabular-nums}
+#bld{position:fixed;left:0;right:0;top:0;z-index:18;display:flex;align-items:center;gap:12px;padding:calc(6px + env(safe-area-inset-top,0px)) 12px 6px;background:#0b0f16f2;border-bottom:1px solid var(--line);color:#eaf0ff}
+#bld b{font:700 15px var(--hd);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+#bld #bldS{flex:1;font-size:13px;color:#9db0d8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#bld #bldS.bad{color:#ffb070}#bld #bldS.ok{color:#6ee7a0}
+#bld #bldD{color:#ffd43b;font-size:12px;white-space:nowrap}
+#bld button{background:#ffffff14;color:#eaf0ff;border-color:#ffffff30;white-space:nowrap}
+#bld #bldSave{background:var(--acc);border-color:transparent;color:#fff;font-weight:700}
+body.bldg .bar{top:calc(52px + env(safe-area-inset-top,0px))}
+.sblk{border:1px solid #ffffff22;border-radius:10px;padding:10px 12px;margin:10px 0;background:#ffffff08}
+.shead{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.shead b{flex:1;font-size:17px}
+.adrow.sub2 span.st{flex:none;width:22px;font-size:16px;text-align:center}
+.adrow .tn{flex:1}.adrow .stl{font-style:normal;font-size:12px;letter-spacing:.1em;text-transform:uppercase;min-width:84px}
+.st.ok,.stl.ok{color:#6ee7a0}.st.wip,.stl.wip{color:#ffd43b}.st.todo,.stl.todo{color:#8b9098}
+
+#menu .orow small{display:block;color:var(--mut);font:400 12px var(--ui);margin-top:1px}
+#menu .orow button{white-space:nowrap}
+#menu .ctl{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:2px 44px}
+#menu .ctl div{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #ffffff10;color:#c5c8cc;font:500 14px var(--ui)}
+#menu .ctl div span{flex:none;min-width:120px}
+#setup{margin-top:4px}
+
+#bld input{width:140px;font:inherit;font-size:13px;color:#eaf0ff;background:#ffffff14;border:1px solid #ffffff30;border-radius:3px;padding:6px 8px}
+.adAu{width:110px}.adrow .tn small{display:block;color:#9db0d8;font-size:12px;margin-top:1px}
+.shopTop{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:14px 18px;border:1px solid #ffffff22;border-radius:14px;background:linear-gradient(120deg,#ffffff12,#ffffff04);margin-top:6px}
+.coinBox{display:flex;align-items:center;gap:10px}
+.coin{display:inline-block;width:26px;height:26px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 30%,#fff4b0,#ffc021 55%,#b57a00);box-shadow:0 0 16px #ffc02177,inset 0 0 0 2px #ffffff55}
+.coin.sm{width:14px;height:14px;box-shadow:none;margin-right:6px;vertical-align:-2px}
+#coinN{font:800 38px/1 var(--hd);letter-spacing:.02em;color:#fff}
+.coinBox small{color:#9db0d8;font:600 12px var(--hd);letter-spacing:.22em;text-transform:uppercase}
+.pay{flex:1;display:flex;gap:8px;flex-wrap:wrap}
+.mp{display:inline-flex;align-items:center;gap:7px;border:1px solid #ffffff2a;border-radius:99px;padding:3px 12px;font:600 12px var(--hd);letter-spacing:.08em;color:#d7d9dc;text-transform:uppercase}
+.mp i{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+#menu .tst{font-size:12px;opacity:.6}
+.shopTabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 14px}
+#menu .shopTabs button{border-radius:99px;padding:8px 20px;font:700 13px var(--hd);letter-spacing:.14em;text-transform:uppercase}
+.shopTabs button small{opacity:.65;margin-left:8px;font-weight:600}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.sc{position:relative;display:flex;flex-direction:column;border:1px solid #ffffff22;border-radius:16px;overflow:hidden;background:linear-gradient(#ffffff10,#ffffff05);transition:transform .15s,box-shadow .15s,border-color .15s}
+.sc:hover{transform:translateY(-3px);box-shadow:0 12px 30px #000a}
+.sc .art{height:104px;display:flex;align-items:center;justify-content:center;color:var(--tint,#fff);border-bottom:1px solid #ffffff14}
+.sc .art svg{width:56px;height:56px;filter:drop-shadow(0 0 10px var(--tint))}
+.sc .art.wide svg{width:100%;height:100%;filter:drop-shadow(0 0 6px var(--tint))}
+.sbody{padding:12px 15px 4px;flex:1}.sbody b{display:block;font-size:17px}.sbody span{display:block;color:#9db0d8;font-size:12.5px;margin-top:3px;line-height:1.4}
+.sfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 15px 15px}
+.price{font:700 15px var(--hd);letter-spacing:.06em;color:#ffd43b}.price.free{color:#9db0d8}
+.need{display:block;font:500 11px var(--ui);color:#ff8a70;letter-spacing:0;margin-top:2px}
+.sc.own{border-color:#6ee7a055}
+.sc.eq{border-color:var(--m2,#ffd43b);box-shadow:0 0 0 1px var(--m2,#ffd43b),0 0 28px #ffc02138}
+.ribbon{position:absolute;top:12px;right:-34px;transform:rotate(38deg);background:var(--m2,#ffd43b);color:#1a1205;font:800 10px var(--hd);letter-spacing:.16em;padding:3px 38px}
+#menu .sc .buy{background:linear-gradient(90deg,var(--m1,#ff8a3d),var(--m2,#ffd43b));color:#1a1205;border:0;font:800 13px var(--hd);letter-spacing:.12em;text-transform:uppercase;padding:8px 18px;border-radius:8px}
+#menu .sc .buy:disabled{opacity:.3;filter:grayscale(.7);cursor:not-allowed}
+.tpv{width:78%;display:flex;flex-direction:column;gap:8px}.tpv b{height:14px;border-radius:3px}.tpv span{height:24px;width:52%;border-radius:5px}.tpv u{height:6px;width:78%;background:#ffffff1c;border-radius:3px}
 </style>
 </head>
 <body>
@@ -206,13 +269,15 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 </div>
 <div class="info"><div id="hud"></div><div id="hint"></div></div>
 <div id="big"></div>
-<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft that only you can see. Press Publish season when it is ready.</div><h3>Add the track from Track Builder</h3><div class="orow2"><select id="adSel"></select><input id="adTrack" placeholder="Track name"></div><div class="orow2"><input id="adDesc" placeholder="Short description (optional)" style="width:100%"></div><div class="orow2"><button id="adPub">Add track to season</button></div><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Players</h3><div class="orow2"><button id="adUsers">Load players</button></div><div id="adUl"></div><div class="pd" id="adSt"></div></div>
+<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tSet">Settings</button><button id="tAdmin" class="hide">Admin</button><button id="tShop" class="hide">Shop</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl"><div><span><kbd>W A S D</kbd><kbd>Arrows</kbd></span>Drive</div><div><span><kbd>Shift</kbd></span>Nitro</div><div><span><kbd>S</kbd></span>While turning, flicks the rear out</div><div><span><kbd>C</kbd></span>Restart</div><div><span><kbd>B</kbd></span>Build mode</div><div><span><kbd>Esc</kbd></span>Menu</div></div></div>
+<div id="shop" class="hide"><div class="shopTop"><div class="coinBox"><i class="coin"></i><b id="coinN">0</b><small>coins</small></div><div class="pay" id="payN"></div><button data-shop="test" class="tst">+500 test coins</button></div><div class="shopTabs" id="shopTabs"></div><div class="sgrid" id="shopL"></div></div>
+<div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft that only you can see. Add tracks, build each one, then press Publish. Track marks: ○ to be built, ◐ building (saved but not finished), ● built.</div><h3>Medal times</h3><div class="pd">Author time in seconds for each track. Gold (+10%), silver (+30%) and bronze (+60%) are worked out from it.</div><div id="adMed"></div><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Players</h3><div class="orow2"><button id="adUsers">Load players</button></div><div id="adUl"></div><div class="pd" id="adSt"></div></div>
+<div id="setup" class="hide"><h3>Race setup</h3><div class="opts" id="setupO"></div></div>
 <div id="online" class="hide"><div class="orow2"><input id="mpname" maxlength="12" placeholder="Your name"></div><div class="orow2"><button id="mpHost">Host a room</button><input id="mpcode" maxlength="4" placeholder="CODE"><button id="mpJoin">Join</button></div><div class="pd" id="mpst">Host a room and share the 4-letter code, or enter a friend's code. Hosts pick the course on the left.</div><div class="plist" id="mpl"></div><div class="mfoot"><button class="go hide" id="mpGo">Start race</button><button id="mpLeave" class="hide">Leave room</button></div></div>
-<div class="mfoot" id="solofoot"><button class="go" id="mPlay">Start race</button><button id="mResume" class="hide">Resume</button><button id="mTune">Handling…</button></div></div></div><h3>Options</h3><div class="opts" id="opts"></div>
-<div class="keys"><span><kbd>W A S D</kbd>or<kbd>Arrows</kbd>drive</span><span><kbd>Shift</kbd>nitro</span><span><kbd>S</kbd>while turning flicks the rear out</span><span><kbd>C</kbd>restart</span><span><kbd>B</kbd>build</span><span><kbd>Esc</kbd>menu</span></div></div></div>
-<div id="res" class="hide"><div class="rc"><div class="rk" id="rk"></div><div class="rt" id="rtt"></div><div class="rtime" id="rtime"></div><div class="rsub" id="rsub"></div><div class="pbb hide" id="rpb">NEW PERSONAL BEST</div><table id="rtab"></table><div class="rbtn"><button class="go" id="rRetry">Retry</button><button id="rMenu">Menu</button></div></div></div>
+<div class="mfoot" id="solofoot"><button class="go" id="mPlay">Start race</button><button id="mResume" class="hide">Resume</button><button id="mTune">Handling…</button></div></div></div></div></div>
+<div id="res" class="hide"><div class="rc"><div class="rk" id="rk"></div><div class="rt" id="rtt"></div><div class="rtime" id="rtime"></div><div class="rsub" id="rsub"></div><div class="rsub" id="rmed" style="font-weight:700"></div><div class="pbb hide" id="rpb">NEW PERSONAL BEST</div><table id="rtab"></table><div class="rbtn"><button class="go" id="rRetry">Retry</button><button id="rMenu">Menu</button></div></div></div>
 <div id="auth" class="hide"><div class="ap"><h1>Drift Box</h1><div class="sub">Sign in to save your times</div><div class="atabs"><button id="auIn" class="on">Sign in</button><button id="auUp">Create account</button></div><label>Name<input id="auName" maxlength="16" autocomplete="username"></label><label>Password<input id="auPw" type="password" autocomplete="current-password"></label><div class="aerr" id="auErr"></div><button class="go" id="auGo">Sign in</button><div class="amode" id="auMode"></div><details class="hide"><summary>Server address</summary><div class="orow2"><input id="auApi" placeholder="https://driftbox-api.yourname.workers.dev"><button id="auApiSave">Save</button></div></details></div></div>
-<div id="toast" class="hide"></div><canvas id="conf" class="hide"></canvas><div id="tune" class="info hide"></div><div id="timer" class="info hide"><div id="tm"></div></div><canvas id="mini" width="240" height="240" class="hide"></canvas><canvas id="gauge" width="260" height="260"></canvas>
+<div id="toast" class="hide"></div><canvas id="conf" class="hide"></canvas><div id="tune" class="info hide"></div><div id="timer" class="info hide"><div id="tm"></div></div><canvas id="mini" width="240" height="240" class="hide"></canvas><canvas id="gauge" width="260" height="260"></canvas><div id="nbar"><b>NITRO</b><div class="nt"><i id="nf"></i></div><span id="np">100</span></div><div id="bld" class="hide"><b id="bldN"></b><span id="bldS"></span><span id="bldD"></span><input id="bldA" type="number" step="0.01" min="1" max="900" placeholder="Author time (s)"><button id="bldSave">Save</button><button id="bldBack">Back to seasons</button></div>
 <div id="pad" class="hide"><button data-k="KeyA">◀</button><button data-k="KeyW">▲</button><button data-k="KeyD">▶</button><button data-k="Nitro">N</button><button data-k="KeyS">▼</button></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -304,7 +369,7 @@ for(const sx of[-1,1]){const hl=new THREE.SpotLight(0xfff1c9,5,85,.6,.7,1.2);hl.
   const bm=new THREE.Mesh(new THREE.PlaneGeometry(11,22).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(q),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.55}));
   bm.position.set(0,.22,12.4);bm.userData.beam=1;car.add(bm)}
 let race={route:null},bots=[],paused=true,started=false,cf={x:0,z:0},slipI=0,skT=0,sl=null,spd=0,assist=true,nitro=100,c,pan={x:0,z:0},cH=0,cur=0,best=0,idle=0,shk=0,em=0;
-function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false});resetBots()}hideRes();if(MP&&MP.ready){c.x=SLOT[MP.idx][0];c.z=SLOT[MP.idx][1]}cur=0;idle=0}
+function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots()}hideRes();if(MP&&MP.ready){c.x=SLOT[MP.idx][0];c.z=SLOT[MP.idx][1]}cur=0;idle=0}
 resetCar();
 const RAD=1.25;
 
@@ -363,15 +428,15 @@ function rebuildBoxes(){
 }
 function erase(x,z){
   const i=blocks.findIndex(b=>Math.abs(x-b.x)<=b.half&&Math.abs(z-b.z)<=b.half);
-  if(i>=0){S.remove(blocks[i].m);blocks.splice(i,1);rebuildBoxes()}
+  if(i>=0){S.remove(blocks[i].m);blocks.splice(i,1);rebuildBoxes();if(BLD)BLD.dirty=true}
 }
 function placeTile(kd,x,z,r){
   erase(x,z);
   const m=build(kd);m.position.set(x,0,z);m.rotation.y=r*Math.PI/2;S.add(m);m.traverse(o=>{if(o.isMesh)o.castShadow=o.receiveShadow=true});
-  blocks.push({k:kd,x,z,rot:r,m,half:K[kd].half||12});rebuildBoxes();
+  blocks.push({k:kd,x,z,rot:r,m,half:K[kd].half||12});rebuildBoxes();if(BLD)BLD.dirty=true;
 }
 function place(x,z){placeTile(tool,x,z,rot)}
-function clearAll(){blocks.forEach(b=>S.remove(b.m));blocks=[];if(sl){S.remove(sl);sl=null}rebuildBoxes()}
+function clearAll(){if(BLD&&blocks.length)BLD.dirty=true;blocks.forEach(b=>S.remove(b.m));blocks=[];if(sl){S.remove(sl);sl=null}rebuildBoxes()}
 function sides(r){let a=[0,1],b=[1,0];for(let i=0;i<r;i++){a=[a[1],-a[0]];b=[b[1],-b[0]]}return[a,b]}
 // Courses: one letter per tile (S straight, L/R corner), starting at the origin heading south
 function loadCourse(str){
@@ -416,16 +481,16 @@ const tex=(()=>{const q=document.createElement('canvas');q.width=q.height=64;con
   r.addColorStop(0,'rgba(255,255,255,.9)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(q)})();
 const sh=new THREE.Mesh(new THREE.PlaneGeometry(3.6,4.2).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:tex,color:0x000000,transparent:true,opacity:.55,depthWrite:false}));S.add(sh);sh.visible=false;
 const skidM=new THREE.MeshBasicMaterial({color:0x0b0b0d,transparent:true,opacity:.4,depthWrite:false}),skidG=new THREE.PlaneGeometry(.4,.9).rotateX(-Math.PI/2),skids=[];let si=0;
-function skid(x,z,h){let m=skids[si];if(!m){m=new THREE.Mesh(skidG,skidM);m.position.y=.15;S.add(m);skids[si]=m}m.position.x=x;m.position.z=z;m.rotation.y=h;si=(si+1)%900}
+function skid(x,z,h,me){let m=skids[si];if(!m){m=new THREE.Mesh(skidG,skidM.clone());m.position.y=.15;S.add(m);skids[si]=m}const tm=me?trailMark():null;m.material.color.setHex(tm?tm.c:0x0b0b0d);m.material.opacity=tm?tm.o:.4;m.position.x=x;m.position.z=z;m.rotation.y=h;si=(si+1)%900}
 const puffs=[];
 for(let i=0;i<160;i++){
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,color:dark?0xb4c0da:0xb4c0da}));
   s.visible=false;S.add(s);puffs.push({s,a:0,age:0,l:1,vx:0,vy:0,vz:0});
 }
-function puff(x,z,vx,vz){
+function puff(x,z,vx,vz,me){
   const p=puffs.find(p=>!p.a);if(!p)return;
   p.a=1;p.age=0;p.l=.7+Math.random()*.5;p.s.position.set(x,.4,z);
-  p.vx=vx*.25+(Math.random()-.5)*1.2;p.vz=vz*.25+(Math.random()-.5)*1.2;p.vy=.8+Math.random()*.8;p.s.visible=true;
+  p.vx=vx*.25+(Math.random()-.5)*1.2;p.vz=vz*.25+(Math.random()-.5)*1.2;p.vy=.8+Math.random()*.8;p.s.visible=true;p.s.material.color.setHex(me?trailSmoke():0xb4c0da);
 }
 function updPuffs(dt){
   for(const p of puffs){
@@ -467,7 +532,7 @@ $('#bClr').onclick=()=>{clearAll();race={route:null};closeBots()};
 document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
 function setTool(t){tool=t;document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));syncGhost()}
 function setMode(m){
-  mode=m;$('#mDrive').classList.toggle('on',m==='drive');$('#mBuild').classList.toggle('on',m==='build');
+  hideTune();mode=m;$('#mDrive').classList.toggle('on',m==='drive');$('#mBuild').classList.toggle('on',m==='build');
   $('#tools').classList.toggle('hide',m!=='build');
   $('#pad').classList.toggle('hide',m!=='drive'||!matchMedia('(pointer:coarse)').matches);
   if(m==='build'){cam.fov=45;cam.updateProjectionMatrix();pan.x=c.x;pan.z=c.z;cam.up.set(0,0,-1)}else cam.up.set(0,0,-1);
@@ -498,8 +563,11 @@ function drive(dt){
   const WA=[1,.5,0][OPT.drive||0],ER=[.1,.25,.4][OPT.drive||0];let hitN=null;
   const fr=race.state==='count',up=!fr&&(k.ArrowUp||k.KeyW),dn=!fr&&(k.ArrowDown||k.KeyS);
   const st=fr?0:(k.ArrowLeft||k.KeyA?1:0)-(k.ArrowRight||k.KeyD?1:0);
-  const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up;nitro=nit&&!AD?Math.max(0,nitro-35*dt):Math.min(100,nitro+(AD?100:10)*dt);
-  if(up)vf+=(P.power*(AD?1+AD*1.2:1)+(nit?30:0)*(AD?2:1))*dt;
+  const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up;nitOn=nit;
+  nitro=nit&&!AD?Math.max(0,nitro-(BO.tank?23:35)*dt):Math.min(100,nitro+(AD?100:(BO.refill?20:10))*dt);
+  if(BO.charge&&!nit&&slipI>.25)nitro=Math.min(100,nitro+22*slipI*dt);
+  if(up)vf+=(P.power*(AD?1+AD*1.2:1)+(nit?(BO.punch?44:30):0)*(AD?2:1))*dt;
+  if(BO.launch&&up&&race.state==='run'&&race.lapT<1.6)vf+=22*dt;
   if(dn)vf-=(vf>0?20*(1-.6*Math.min(1,Math.abs(vl)/Math.max(Math.abs(vf),6))):16)*dt;
   vf-=vf*(AD?.85/(1+AD*.9):.85)*dt;if(vf<-10)vf=-10;
   if(WA>0&&Math.abs(c.s)>.55&&vf>22)vf-=vf*.45*WA*dt;
@@ -552,9 +620,9 @@ function drive(dt){
   // smoke from the rear wheels
   const int=sp>6?Math.min(1,Math.max(0,(slip-2.5)/8)):0;
   slipI=int;skT+=dt;
-  if(int>.25&&skT>.035){skT=0;for(const sd of[-1,1])skid(c.x-sn*.95+sd*cs*1.02,c.z-cs*.95-sd*sn*1.02,c.h)}
+  if(int>.25&&skT>.035){skT=0;for(const sd of[-1,1])skid(c.x-sn*.95+sd*cs*1.02,c.z-cs*.95-sd*sn*1.02,c.h,1)}
   em+=dt*int*35;
-  while(em>=1){em--;for(const sd of[-1,1])puff(c.x-sn*.9+sd*cs*.8,c.z-cs*.9-sd*sn*.8,c.vx,c.vz)}
+  while(em>=1){em--;for(const sd of[-1,1])puff(c.x-sn*.9+sd*cs*.8,c.z-cs*.9-sd*sn*.8,c.vx,c.vz,1)}
   if(sp>8&&ang>.3){cur+=dt*sp*ang*3;idle=0}
   else if(cur>0){idle+=dt;if(idle>.6){best=Math.max(best,cur);cur=0}}
   $('#hud').textContent=`Drift ${Math.round(cur)} · Best drift ${Math.round(Math.max(best,cur))}`;
@@ -587,9 +655,10 @@ function lapDone(closed){
     try{localStorage.setItem(pk(R.key),JSON.stringify({t,s:R.bestS}));localStorage.setItem(pk('g:'+R.key),JSON.stringify(R.gh))}catch(e){}
     submitPB(R.course,t);
   }
+  const mm=awardMedal(R.course,t);if(mm)R.medalMsg=mm;
   if(closed)R.laps++;
   if(!closed||R.laps>=OPT.laps){R.state='done';finishRace();return}
-  toast('Lap '+R.laps+'/'+OPT.laps+'   '+fmt(t)+(pb?'   PB!':''));
+  toast('Lap '+R.laps+'/'+OPT.laps+'   '+fmt(t)+(pb?'   PB!':'')+(mm?'   '+mm:''));
   R.lapT=0;R.next=1;R.splits=[];R.delta=null;R.rec=[];R.rt=0;
 }
 function setLamps(on,green){const L=sl&&sl.userData.lamps;if(L)L.forEach((m,i)=>m.color.setHex(green?0x25e06a:i<on?0xff2a2a:0x2a1010))}
@@ -662,7 +731,7 @@ const TUNE=[['grip','Grip',5,14,.1],['slide','Drift tendency',.05,.35,.01],['reg
 const DRV=[{grip:12,slide:.13,regrip:5,steer:3.1,stab:3.2,power:30,sd:.02},{grip:10,slide:.2,regrip:3.6,steer:3,stab:2.2,power:34,sd:.03},{grip:9,slide:.24,regrip:2.4,steer:3.1,stab:1.2,power:36,sd:.035}];
 const P0=DRV[1];
 const PRE={Drifty:{grip:8.5,slide:.26,regrip:2.2,steer:3.1,stab:1.2,power:36},Balanced:P0,Grippy:{grip:12,slide:.1,regrip:5.5,steer:2.6,stab:3,power:34}};
-let P={...DRV[(()=>{try{return JSON.parse(localStorage.getItem('dbx:opt')||'{}').drive||0}catch(e){return 0}})()]};try{Object.assign(P,JSON.parse(localStorage.getItem('dbx:tune3')||'{}'))}catch(e){}
+let P={...DRV[0]};try{Object.assign(P,JSON.parse(localStorage.getItem('dbx:tune3')||'{}'))}catch(e){}
 function setDrive(i){Object.assign(P,DRV[i]);syncTune()}
 const tp=$('#tune');
 function syncTune(){tp.querySelectorAll('label').forEach(r=>{const v=P[r.dataset.k];r.querySelector('input').value=v;r.querySelector('b').textContent=String(+(+v).toFixed(2))});try{localStorage.setItem('dbx:tune3',JSON.stringify(P))}catch(e){}}
@@ -683,6 +752,7 @@ function loadDonut(){
 // ---------- menu, options, bots, ghost, finish ----------
 const OPT={bots:2,diff:0,laps:2,drive:0,zoom:1,shadow:1,sound:1,assist:1,ghost:1,pix:.6};
 try{Object.assign(OPT,JSON.parse(localStorage.getItem('dbx:opt')||'{}'))}catch(e){}
+OPT.drive=0;
 const ZK={boost:1,slick:1,jump:1,gravel:1},TOOLS=['straight','corner','wide','boost','chicane','slick','jump','gravel','slalom','gate','erase'];
 const COURSES=[
   {name:'Grand Prix',str:'gp',gp:1,desc:'4-race championship · points · bot rankings'},
@@ -700,7 +770,7 @@ const COURSES=[
   {name:'Free Drive',str:'free',desc:'Empty field · no timer'},
   {name:'Track Builder',str:'build',desc:'Design your own course'}
 ];
-const OPTS=[['drive','Driving',[[0,'Easy'],[1,'Standard'],[2,'Pro']]],['bots','Bots',[[0,'None'],[1,'1'],[2,'2'],[3,'3']]],['diff','Difficulty',[[0,'Easy'],[1,'Normal'],[2,'Hard']]],['laps','Laps',[[1,'1'],[3,'3'],[5,'5']]],['zoom','Camera',[[.75,'Close'],[1,'Normal'],[1.35,'Far']]],['shadow','Shadows',[[1,'On'],[0,'Off']]],['sound','Sound',[[1,'On'],[0,'Off']]],['assist','Assist',[[1,'On'],[0,'Off']]],['ghost','PB ghost',[[1,'On'],[0,'Off']]],['pix','Pixels',[[1,'Off'],[.6,'Slight'],[.4,'Chunky']]],['admin','Admin car',[[0,'Off'],[1,'Boosted'],[2,'Insane']],true]];
+const OPTS=[['bots','Bots',[[0,'None'],[1,'1'],[2,'2'],[3,'3']]],['diff','Bot difficulty',[[0,'Easy'],[1,'Normal'],[2,'Hard']]],['laps','Laps',[[1,'1'],[3,'3'],[5,'5']]],['zoom','Camera',[[.75,'Close'],[1,'Normal'],[1.35,'Far']]],['shadow','Shadows',[[1,'On'],[0,'Off']]],['sound','Sound',[[1,'On'],[0,'Off']]],['assist','Assist',[[1,'On'],[0,'Off']]],['ghost','PB ghost',[[1,'On'],[0,'Off']]],['pix','Pixels',[[1,'Off'],[.6,'Slight'],[.4,'Chunky']]],['admin','Admin car',[[0,'Off'],[1,'Boosted'],[2,'Insane']],true]];
 const saveOpt=()=>{try{localStorage.setItem('dbx:opt',JSON.stringify(OPT))}catch(e){}};
 function applyOpt(){snd=!!OPT.sound;assist=!!OPT.assist;sun.castShadow=!!OPT.shadow;resize();if(snd)initAudio()}
 let selC=Math.max(0,COURSES.findIndex(c=>c.name==='Speedway'));
@@ -744,12 +814,13 @@ function buildMenuOld(){
     r.append(sg);o.append(r);
   });
 }
-function openMenu(){paused=!(MP&&MP.ready);mOpen=true;buildMenu();$('#menu').classList.remove('hide');$('#mResume').classList.toggle('hide',!started)}
-function closeMenu(){paused=false;mOpen=false;$('#menu').classList.add('hide')}
+function openMenu(){hideTune();paused=!(MP&&MP.ready);mOpen=true;buildMenu();$('#menu').classList.remove('hide');$('#mResume').classList.toggle('hide',!started)}
+function closeMenu(){hideTune();paused=false;mOpen=false;$('#menu').classList.add('hide')}
 function toggleMenu(){mOpen?(started&&closeMenu()):openMenu()}
 var GP=null;
 const GPCAL=['Speedway','Harbor Loop','Coastline','Midnight Circuit'],PTS=[25,18,15,12];
 function startGame(){
+  if(BLD){if(BLD.dirty&&!confirm('You have unsaved changes to this track. Leave without saving?'))return;leaveBuilderUI()}
   let cc=COURSES[selC];started=true;closeBots();GP=null;if(MP)mpClose();
   if(cc.gp){GP={r:0,pts:{}};cc=COURSES.find(x=>x.name===GPCAL[0])}
   if(cc.str==='donut')loadDonut();
@@ -774,7 +845,7 @@ function finishRace(){
   }
   $('#rk').textContent=top;$('#rk').className='rk r'+Math.min(cls,4);$('#rtt').textContent=title;
   $('#rtime').textContent=fmt(R.t);$('#rsub').textContent=isFinite(R.best)?'Best lap '+fmt(R.best):'';
-  $('#rpb').classList.toggle('hide',!R.anyPB);$('#rtab').innerHTML=html;
+  $('#rpb').classList.toggle('hide',!R.anyPB);$('#rmed').textContent=R.medalMsg||'';$('#rtab').innerHTML=html;
   $('#rRetry').textContent=MP?'Menu':btn;$('#rRetry').onclick=MP?openMenu:GP?(last?openMenu:nextRace):()=>resetCar();
   $('#res').classList.remove('hide');
   if(champ||(!GP&&(rank===1||R.anyPB)))confetti();
@@ -904,7 +975,7 @@ var MP=null,menuTab='solo',mOpen=true;
 const SLOT=[[0,0],[-7,0],[7,0],[0,-7]],RCOL=[0x2ecc71,0xe03e3e,0xf2c230,0xa55cf2];
 let ws=null,mpT=0;
 const mpSay=t=>{$('#mpst').textContent=t};
-function setTab(t){menuTab=t;$('#tSolo').classList.toggle('on',t==='solo');$('#tOnline').classList.toggle('on',t==='online');$('#online').classList.toggle('hide',t!=='online');$('#solofoot').classList.toggle('hide',t!=='solo');$('#admin').classList.toggle('hide',t!=='admin');$('#tAdmin').classList.toggle('on',t==='admin');$('#lb').classList.toggle('hide',t!=='solo');$('#menu').classList.toggle('adm',t==='admin');if(t==='admin')adminUI();lobbyUI()}
+function setTab(t){menuTab=t;$('#tSolo').classList.toggle('on',t==='solo');$('#tOnline').classList.toggle('on',t==='online');$('#online').classList.toggle('hide',t!=='online');$('#solofoot').classList.toggle('hide',t!=='solo');$('#admin').classList.toggle('hide',t!=='admin');$('#shop').classList.toggle('hide',t!=='shop');$('#settings').classList.toggle('hide',t!=='settings');$('#tSet').classList.toggle('on',t==='settings');$('#tShop').classList.toggle('on',t==='shop');$('#tAdmin').classList.toggle('on',t==='admin');$('#lb').classList.toggle('hide',t!=='solo');$('#menu').classList.toggle('adm',t==='admin'||t==='shop'||t==='settings');if(t==='admin')adminUI();if(t==='shop')shopUI();renderSetup();if(t==='settings')renderSettings();lobbyUI()}
 function lobbyUI(){
   const inRoom=!!MP;
   $('#mpl').innerHTML=inRoom?MP.players.map(p=>'<span>'+p.name+(p.idx===0?' (host)':'')+(p.idx===MP.idx?' \u00b7 you':'')+'</span>').join(''):'';
@@ -986,7 +1057,7 @@ function mpTick(dt){
   const R=race;mpSend({t:'s',x:+c.x.toFixed(2),z:+c.z.toFixed(2),h:+c.h.toFixed(3),vx:+c.vx.toFixed(2),vz:+c.vz.toFixed(2),p:+pProg().toFixed(2),f:R.state==='done'?1:0,ft:+(R.t||0).toFixed(2)});
 }
 $('#mpHost').onclick=mpHost;$('#mpJoin').onclick=mpJoin;$('#mpGo').onclick=hostStart;$('#mpLeave').onclick=mpClose;
-$('#tSolo').onclick=()=>setTab('solo');$('#tOnline').onclick=()=>setTab('online');
+$('#tSolo').onclick=()=>setTab('solo');$('#tOnline').onclick=()=>setTab('online');$('#tSet').onclick=()=>setTab('settings');
 try{$('#mpname').value=localStorage.getItem('dbx:name')||''}catch(e){}
 // ---------- menu (v3): restrained, motorsport-style ----------
 let routeAnim=0,lastSel=-1;
@@ -1033,14 +1104,9 @@ function buildMenu(){
     hz=[...new Set(cs.map(c=>c.k))].filter(k=>HAZ[k]).map(k=>'<span style="--c:'+HAZ[k][1]+'">'+HAZ[k][0]+'</span>').join('')}
   else if(cc.gp){h=spec('Races',GPCAL.length)+spec('Format','Championship')+spec('Laps',OPT.laps)+spec('Best','\u2014');hz=GPCAL.map((n,i)=>'<span>'+(i+1)+'. '+n+'</span>').join('')}
   else h=spec('Mode',cc.str==='random'?'Random':'Free')+spec('Timer',cc.str==='random'?'Yes':'No')+spec('Bots',cc.str==='random'?(OPT.bots||'None'):'\u2014')+spec('Best',pb||'\u2014');
-  $('#chips').innerHTML='<div class="specs">'+h+'</div><div class="hz">'+hz+'</div>';
+  $('#chips').innerHTML='<div class="specs">'+h+'</div><div class="hz">'+hz+'</div>'+medalRow(cc);
   $('#mPlay').textContent=cc.str==='build'?'Open builder':cc.gp?'Start championship':'Start race';
-  const o=$('#opts');o.innerHTML='';
-  OPTS.forEach(([key,label,ch])=>{
-    const r=document.createElement('div'),sg=document.createElement('div');r.className='orow';sg.className='seg';r.innerHTML='<span>'+label+'</span>';
-    ch.forEach(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.className=OPT[key]===v?'on':'';b.onclick=()=>{OPT[key]=v;if(key==='drive')setDrive(v);saveOpt();applyOpt();buildMenu()};sg.append(b)});
-    r.append(sg);o.append(r);
-  });
+  renderSetup();renderSettings();
 }
 // ---------- accounts, seasons and leaderboards ----------
 // To make the leaderboard global, deploy the Worker in /driftbox-server and put its address in DEFAULT_API.
@@ -1086,13 +1152,13 @@ async function doAuth(){
   $('#auGo').disabled=false;
 }
 function acctUI(){
-  $('#acct').innerHTML=SESS?'<span>'+esc(SESS.name)+(SESS.owner?' \u00b7 Owner':'')+'</span><button id="outBtn">Sign out</button>':'';
+  $('#acct').innerHTML=SESS?'<span>'+esc(SESS.name)+(SESS.owner?' \u00b7 Owner \u00b7 '+OWN.coins+' coins':'')+'</span><button id="outBtn">Sign out</button>':'';
   if(SESS)$('#outBtn').onclick=logout;
-  $('#tAdmin').classList.toggle('hide',!(SESS&&SESS.owner&&API_URL));
+  $('#tAdmin').classList.toggle('hide',!(SESS&&SESS.owner&&API_URL));$('#tShop').classList.toggle('hide',!(SESS&&SESS.owner));
 }
-function logout(){SESS=null;try{localStorage.removeItem('dbx:sess')}catch(e){}acctUI();setTab('solo');showAuth()}
+function logout(){SESS=null;try{localStorage.removeItem('dbx:sess')}catch(e){}loadOwn();acctUI();setTab('solo');showAuth()}
 async function afterLogin(){
-  $('#auth').classList.add('hide');$('#auPw').value='';acctUI();
+  $('#auth').classList.add('hide');$('#auPw').value='';loadOwn();acctUI();
   await fetchSeasons();await syncPBs();buildMenu();
 }
 async function boot(){
@@ -1108,8 +1174,8 @@ function setCustom(list){
 async function fetchSeasons(){
   if(!API_URL){SEASONS=[{id:1,name:'Season 1'}];setCustom([]);return}
   try{
-    const j=await api('/api/seasons'),tr=[];SEASONS=j.seasons;
-    j.seasons.forEach(s=>s.tracks.forEach(t=>tr.push({name:t.name,str:t.str,desc:t.desc||s.name+' track',custom:1,season:s.id,tid:'t'+t.id})));
+    const j=await api('/api/seasons'),tr=[];SEASONS=j.seasons;AUTH_SRV=j.authors||{};
+    j.seasons.forEach(s=>s.tracks.filter(t=>t.str).forEach(t=>tr.push({name:t.name,str:t.str,desc:t.desc||s.name+' track',custom:1,season:s.id,tid:'t'+t.id})));
     setCustom(tr);
   }catch(e){}
 }
@@ -1189,20 +1255,36 @@ function routeFromBlocks(){
 }
 const adSay=t=>{$('#adSt').textContent=t};
 const allTracks=()=>COURSES.map(cc=>({cc,k:lbKey(cc)})).filter(x=>x.k);
+const tstat=t=>t.status||(t.str?'built':'todo'),ST={built:['\u25cf','Built','ok'],building:['\u25d0','Building','wip'],todo:['\u25cb','To be built','todo']};
 function adminUI(){
   const ss=SEASONS.filter(x=>x.id>1);
-  $('#adSel').innerHTML=ss.map(x=>'<option value="'+x.id+'">'+esc(x.name)+(x.live===false?' (draft)':'')+'</option>').join('')||'<option value="">Create a season first</option>';
-  $('#adSeasons').innerHTML=SEASONS.map(x=>'<div class="adrow"><b>'+esc(x.name)+'</b><span class="chip2 '+(x.live===false?'dr':'')+'">'+(x.live===false?'Draft':'Live')+'</span>'+(x.id>1?'<button data-act="live" data-id="'+x.id+'" data-live="'+(x.live===false?1:0)+'">'+(x.live===false?'Publish season':'Unpublish')+'</button>':'')+'</div>'+(x.tracks||[]).map(t=>'<div class="adrow sub2"><span>'+esc(t.name)+'</span><button data-act="deltrack" data-id="'+t.id+'">Delete</button></div>').join('')).join('');
+  $('#adSeasons').innerHTML=ss.length?ss.map(x=>{
+    const tr=x.tracks||[],live=x.live!==false;
+    return '<div class="sblk"><div class="shead"><b>'+esc(x.name)+'</b><span class="chip2 '+(live?'':'dr')+'">'+(live?'Live':'Draft \u00b7 not published')+'</span>'
+      +'<button data-act="live" data-id="'+x.id+'" data-live="'+(live?0:1)+'">'+(live?'Unpublish':'Publish')+'</button><button data-act="delseason" data-id="'+x.id+'">Delete</button></div>'
+      +(tr.length?tr.map(t=>{const s=tstat(t),z=ST[s];return '<div class="adrow sub2"><span class="st '+z[2]+'">'+z[0]+'</span><span class="tn">'+esc(t.name)+'<small>'+(authorOf(x.id+'/t'+t.id)?'Author '+authorOf(x.id+'/t'+t.id).toFixed(2)+'s':'No author time yet')+'</small></span><em class="stl '+z[2]+'">'+z[1]+'</em><button data-act="build" data-id="'+t.id+'" data-season="'+x.id+'">'+(s==='todo'?'Build':'Edit')+'</button><button data-act="deltrack" data-id="'+t.id+'">Delete</button></div>'}).join(''):'<div class="lbn">No tracks yet.</div>')
+      +'<div class="orow2"><input class="adTn" data-s="'+x.id+'" maxlength="30" placeholder="New track name"><button data-act="addtrack" data-id="'+x.id+'">Add track</button></div></div>'}).join(''):'<div class="lbn">No seasons yet. Create one below.</div>';
+  const mr=[];
+  allTracks().filter(x=>x.k.season===1).forEach(x=>mr.push({key:'1/'+x.k.track,name:x.cc.name,sub:'Season 1'}));
+  SEASONS.filter(s=>s.id>1).forEach(s=>(s.tracks||[]).forEach(t=>mr.push({key:s.id+'/t'+t.id,name:t.name,sub:s.name+(t.str?'':' \u00b7 not built yet')})));
+  $('#adMed').innerHTML=mr.map(r=>{const a=authorOf(r.key),mt=medalTimes(r.key);return '<div class="adrow"><span class="tn">'+esc(r.name)+'<small>'+esc(r.sub)+(mt?' \u00b7 Bronze '+fmt(mt[0])+' \u00b7 Silver '+fmt(mt[1])+' \u00b7 Gold '+fmt(mt[2]):'')+'</small></span><input class="adAu" data-key="'+r.key+'" type="number" step="0.01" min="1" max="900" placeholder="Author s" value="'+(a||'')+'"><button data-act="setauth" data-key="'+r.key+'">Save</button></div>'}).join('');
   $('#adLbSel').innerHTML=allTracks().map((x,i)=>'<option value="'+i+'">Season '+x.k.season+' \u00b7 '+esc(x.cc.name)+'</option>').join('');
 }
+const apiMsg=e=>e.message==='Not found'?'The server needs the new update first (new worker.js, then run migrate-2.sql).':e.message;
 async function adAct(a,d){
   try{
-    if(a==='live'){await api('/api/season/live',{id:+d.id,live:d.live==='1'});adSay('Season updated.')}
+    if(a==='live'){
+      if(d.live==='1'){const s=SEASONS.find(x=>x.id==d.id),n=((s&&s.tracks)||[]).filter(t=>tstat(t)!=='built').length;if(n&&!confirm(n+(n>1?' tracks are':' track is')+' not built yet and will stay hidden from players. Publish anyway?'))return}
+      await api('/api/season/live',{id:+d.id,live:d.live==='1'});adSay('Season updated.')}
+    else if(a==='delseason'){if(!confirm('Delete this whole season, its tracks and all their times? This cannot be undone.'))return;await api('/api/season/delete',{id:+d.id});adSay('Season deleted.')}
+    else if(a==='addtrack'){const inp=document.querySelector('.adTn[data-s="'+d.id+'"]'),name=((inp&&inp.value)||'').trim();if(name.length<2){adSay('Give the track a name first.');return}await api('/api/track',{season:+d.id,name,str:'',desc:''});adSay('Added '+name+'. Press Build to make it.')}
+    else if(a==='setauth'){const inp=document.querySelector('.adAu[data-key="'+d.key+'"]'),raw=((inp&&inp.value)||'').trim(),v=raw===''?0:parseFloat(raw);if(raw!==''&&!(v>=1&&v<=900)){adSay('Author time must be between 1 and 900 seconds.');return}await api('/api/author',{key:d.key,author:v});adSay(v?'Author time saved.':'Author time cleared.')}
+    else if(a==='build'){const s=SEASONS.find(x=>x.id==d.season),t=s&&(s.tracks||[]).find(x=>x.id==d.id);if(t)enterBuilder(t,s.name,s.id);return}
     else if(a==='deltrack'){if(!confirm('Delete this track and all its times?'))return;await api('/api/track/delete',{id:+d.id});adSay('Track deleted.')}
     else if(a==='delpb'){await api('/api/pb/delete',{season:+d.season,track:d.track,name:d.name});adSay('Time removed.');return adLb()}
     else if(a==='ban'){await api('/api/ban',{name:d.name,banned:d.banned==='1'});adSay(d.banned==='1'?'Player banned.':'Player unbanned.');return adUsers()}
     await fetchSeasons();adminUI();buildMenu();
-  }catch(e){adSay(e.message)}
+  }catch(e){adSay(apiMsg(e))}
 }
 async function adLb(){
   const x=allTracks()[+$('#adLbSel').value];if(!x)return;
@@ -1215,20 +1297,241 @@ async function adUsers(){
 }
 async function adMk(){
   const name=$('#adSeason').value.trim();if(name.length<2){adSay('Give the season a name.');return}
-  try{await api('/api/season',{name});$('#adSeason').value='';adSay('Season created as a draft.');await fetchSeasons();adminUI();buildMenu()}catch(e){adSay(e.message)}
-}
-async function adPub(){
-  const r=routeFromBlocks();if(r.err){adSay(r.err);return}
-  const season=+$('#adSel').value,name=$('#adTrack').value.trim();
-  if(!season){adSay('Create a season first.');return}if(name.length<2){adSay('Give the track a name.');return}
-  try{await api('/api/track',{season,name,str:r.str,desc:$('#adDesc').value.trim()||(r.closed?'Circuit':'Point to point')});adSay('Added '+name+'. Publish the season when you are ready.');await fetchSeasons();adminUI();buildMenu()}catch(e){adSay(e.message)}
+  try{await api('/api/season',{name});$('#adSeason').value='';adSay('Season created as a draft.');await fetchSeasons();adminUI();buildMenu()}catch(e){adSay(apiMsg(e))}
 }
 $('#admin').onclick=e=>{const b=e.target.closest&&e.target.closest('button[data-act]');if(b)adAct(b.dataset.act,b.dataset)};
 $('#adLbGo').onclick=adLb;$('#adUsers').onclick=adUsers;
 $('#auIn').onclick=()=>setAuMode('in');$('#auUp').onclick=()=>setAuMode('up');$('#auGo').onclick=doAuth;
 $('#auPw').onkeydown=e=>{if(e.key==='Enter')doAuth()};$('#auName').onkeydown=e=>{if(e.key==='Enter')$('#auPw').focus()};
 $('#auApiSave').onclick=()=>{try{const v=($('#auApi').value||'').trim().replace(/\/$/,'');if(v)localStorage.setItem('dbx:api',v);else localStorage.removeItem('dbx:api');location.reload()}catch(e){}};
-$('#tAdmin').onclick=()=>setTab('admin');$('#adMk').onclick=adMk;$('#adPub').onclick=adPub;
+$('#tAdmin').onclick=()=>setTab('admin');$('#adMk').onclick=adMk;$('#tShop').onclick=()=>setTab('shop');
+
+// ---------- track builder for season tracks ----------
+var BLD=null;
+function leaveBuilderUI(){BLD=null;$('#bld').classList.add('hide');document.body.classList.remove('bldg')}
+function enterBuilder(t,seasonName,sid){
+  if(MP)mpClose();
+  BLD=null;closeBots();clearAll();race={route:null};started=false;
+  let saved=[];try{saved=JSON.parse(t.blocks||'[]')}catch(e){}
+  saved.forEach(b=>{if(K[b.k])placeTile(b.k,b.x,b.z,b.rot|0)});
+  BLD={id:t.id,name:t.name,season:seasonName,sid,dirty:false};$('#bldA').value=authorOf(sid+'/t'+t.id)||'';
+  resetCar();closeMenu();setMode('build');
+  document.body.classList.add('bldg');$('#bld').classList.remove('hide');bldInfo();
+}
+function bldInfo(){
+  if(!BLD)return;
+  $('#bldN').textContent=BLD.name+' \u00b7 '+BLD.season;
+  const s=$('#bldS');
+  if(!blocks.length){s.textContent='Empty. Start on the middle tile, heading south.';s.className='bad'}
+  else{const r=routeFromBlocks();if(r.err){s.textContent=r.err;s.className='bad'}else{s.textContent=(r.closed?'Valid circuit':'Valid point-to-point')+' \u00b7 '+r.str.length+' tiles';s.className='ok'}}
+  $('#bldD').textContent=BLD.dirty?'Unsaved changes':'';
+}
+async function bldSave(){
+  if(!BLD)return;
+  const raw=($('#bldA').value||'').trim(),av=raw===''?null:parseFloat(raw);
+  if(av!==null&&!(av>=1&&av<=900)){toast('Author time must be between 1 and 900 seconds');return}
+  const r=routeFromBlocks(),bl=blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot})),body={id:BLD.id,blocks:bl.length?JSON.stringify(bl):''};
+  if(!r.err)body.str=r.str;
+  try{
+    await api('/api/track/save',body);if(av!==null)await api('/api/author',{key:BLD.sid+'/t'+BLD.id,author:av});BLD.dirty=false;
+    toast(!bl.length?'Saved (empty)':r.err?'Saved as work in progress. '+r.err:'Saved. This track is built.');
+    await fetchSeasons();bldInfo();
+  }catch(e){toast(apiMsg(e))}
+}
+function bldBack(){
+  if(!BLD)return;
+  if(BLD.dirty&&!confirm('You have unsaved changes. Leave without saving?'))return;
+  leaveBuilderUI();clearAll();race={route:null};closeBots();started=false;setMode('drive');openMenu();setTab('admin');
+}
+$('#bldA').oninput=()=>{if(BLD)BLD.dirty=true};$('#bldSave').onclick=bldSave;$('#bldBack').onclick=bldBack;
+setInterval(()=>{if(BLD)bldInfo()},400);
+
+// ---------- medals, coins and the owner shop ----------
+const MEDALS=[['Bronze','#cd7f32'],['Silver','#c0c8d4'],['Gold','#ffd43b'],['Author','#3be07a']];
+const PAY=[10,25,50,100]; // coins paid for bronze, silver, gold, author (placeholders until you choose)
+// Author times in seconds. These are the starting values; times saved in Admin or the track builder replace them.
+const AUTH_DEF={'1/midnight-circuit':13.2,'1/speedway':6.95,'1/long-haul':9,'1/harbor-loop':11.6,'1/coastline':14.4,'1/dragon-tail':11.8,'1/serpent-run':10.5,'1/switchbacks':9.7,'1/staircase':3.24};
+const MEDAL_X=[1.6,1.3,1.1]; // bronze, silver, gold = author time x these
+var AUTH_SRV={};
+const authorOf=key=>{const a=AUTH_SRV[key]!=null?AUTH_SRV[key]:AUTH_DEF[key];return a>0?a:null};
+const medalTimes=key=>{const a=authorOf(key);return a?[...MEDAL_X.map(x=>Math.round(a*x*100)/100),a]:null};
+const SHOP={
+  boost:[['tank','Big Tank','Nitro lasts 50% longer.',150],['refill','Quick Refill','Nitro refills twice as fast.',150],['charge','Drift Charge','Sliding sideways slowly refills your nitro.',250],['launch','Launch Kick','Extra push for the first 1.5 seconds of a race.',200],['punch','Nitro Punch','Nitro pushes harder.',300]],
+  trail:[['classic','Classic','Black marks, grey smoke.',0],['neon','Neon Blue','Glowing blue marks and smoke.',350],['pink','Hot Pink','Pink marks and smoke.',350],['toxic','Toxic Green','Bright green marks and smoke.',350],['gold','Gold Rush','Gold marks and smoke.',500],['rainbow','Rainbow','Marks and smoke that cycle through every colour.',800]],
+  theme:[['ember','Ember','The original orange.',0],['mint','Neon Mint','Cool green menu.',200],['ultra','Ultraviolet','Purple and pink menu.',200],['red','Racing Red','Red menu.',200],['ice','Ice Blue','Pale blue menu.',200],['gold','Gold','Warm gold menu.',300]]
+};
+const TR={classic:{m:0x0b0b0d,o:.4,s:0xb4c0da,sw:'#333'},neon:{m:0x19c9f5,o:.8,s:0x7be3ff,sw:'#19c9f5'},pink:{m:0xff3da8,o:.8,s:0xff8ad0,sw:'#ff3da8'},toxic:{m:0x5dff3a,o:.8,s:0xb6ff9a,sw:'#5dff3a'},gold:{m:0xffc021,o:.8,s:0xffe38a,sw:'#ffc021'},rainbow:{rb:1,sw:'linear-gradient(90deg,#f33,#fc3,#3d6,#3bf,#a5f)'}};
+const TH={ember:['#ff8a3d','#ffd43b','#19c9f5','#ff5a2a'],mint:['#2ee6a6','#b6ffe3','#19c9f5','#17c98f'],ultra:['#a66bff','#ff6bd6','#6bd0ff','#8f4dff'],red:['#ff3b3b','#ff9a8a','#ffd43b','#e62b2b'],ice:['#6bd0ff','#d8f4ff','#a66bff','#3aa8e8'],gold:['#ffc021','#fff0a8','#ff8a3d','#e8a800']};
+var OWN={coins:0,items:[],trail:'classic',theme:'ember',medals:{}},BO={},nitOn=false;
+const tmpC=new THREE.Color();
+const ownOn=()=>!!(SESS&&SESS.owner);
+function loadOwn(){
+  OWN={coins:0,items:[],trail:'classic',theme:'ember',medals:{}};
+  if(ownOn()){try{Object.assign(OWN,JSON.parse(localStorage.getItem(pk('shop'))||'{}'))}catch(e){}}
+  BO={};if(ownOn())OWN.items.forEach(i=>{if(i.startsWith('boost:'))BO[i.slice(6)]=1});
+  applyTheme();
+}
+function saveOwn(){try{localStorage.setItem(pk('shop'),JSON.stringify(OWN))}catch(e){}}
+function applyTheme(){
+  const r=document.documentElement.style,t=TH[OWN.theme];
+  if(!ownOn()||!t||OWN.theme==='ember'){['--m1','--m2','--m3','--acc'].forEach(p=>r.removeProperty(p));return}
+  r.setProperty('--m1',t[0]);r.setProperty('--m2',t[1]);r.setProperty('--m3',t[2]);r.setProperty('--acc',t[3]);
+}
+function trailMark(){
+  const t=TR[ownOn()?OWN.trail:'classic']||TR.classic;
+  if(t.rb){tmpC.setHSL((performance.now()/5%360)/360,1,.55);return{c:tmpC.getHex(),o:.85}}
+  return{c:t.m,o:t.o};
+}
+function trailSmoke(){
+  const t=TR[ownOn()?OWN.trail:'classic']||TR.classic;
+  if(t.rb){tmpC.setHSL((performance.now()/5%360)/360,1,.7);return tmpC.getHex()}
+  return t.s;
+}
+const medalKey=cc=>{const k=cc&&lbKey(cc);return k?k.season+'/'+k.track:null};
+function awardMedal(cc,t){
+  if(!ownOn()||MP||(OPT.admin||0)>0)return '';
+  const key=medalKey(cc),mt=key&&medalTimes(key);if(!mt)return '';
+  let tier=0;mt.forEach((s,i)=>{if(s!=null&&t<=s)tier=i+1});
+  if(!tier)return '';
+  const had=OWN.medals[key]||0;let msg=MEDALS[tier-1][0]+' medal';
+  if(tier>had){let pay=0;for(let i=had;i<tier;i++)pay+=PAY[i];OWN.coins+=pay;OWN.medals[key]=tier;saveOwn();acctUI();msg+=' \u00b7 +'+pay+' coins'}
+  else msg+=' (already earned)';
+  return msg;
+}
+function medalRow(cc){
+  const key=medalKey(cc),mt=key&&medalTimes(key);if(!ownOn()||!mt)return '';
+  const got=OWN.medals[key]||0;
+  return '<div class="hz">'+MEDALS.map((m,i)=>mt[i]==null?'':'<span style="'+(got>i?'border-color:'+m[1]+';color:'+m[1]:'')+'">'+m[0]+' '+fmt(mt[i])+(got>i?' \u2713':'')+'</span>').join('')+'</div>';
+}
+var shopCat='boost';
+const BTINT={tank:'#19c9f5',refill:'#3be07a',charge:'#ffd43b',launch:'#ff8a3d',punch:'#ff4a3a'};
+const ICON={
+  tank:'<svg viewBox="0 0 48 48"><rect x="6" y="14" width="30" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="38" y="20" width="4" height="8" fill="currentColor"/><rect x="11" y="19" width="20" height="10" rx="2" fill="currentColor"/></svg>',
+  refill:'<svg viewBox="0 0 48 48"><path d="M36 18a14 14 0 0 0-24 0M12 30a14 14 0 0 0 24 0" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><path d="M38 8v11H27M10 40V29h11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  charge:'<svg viewBox="0 0 48 48"><path d="M27 4 11 27h11l-3 17 18-24H26z" fill="currentColor"/></svg>',
+  launch:'<svg viewBox="0 0 48 48"><path d="M8 38 24 6l16 32-16-8z" fill="currentColor"/><path d="M24 36v9" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg>',
+  punch:'<svg viewBox="0 0 48 48"><path d="M24 3c3 9 12 12 12 25a12 12 0 0 1-24 0c0-6 3-9 5-13 2 3 3 4 4 6 1-6 2-12 3-18z" fill="currentColor"/></svg>'
+};
+const trailHex=id=>id==='classic'?'#59606b':id==='rainbow'?'#ff6bd6':'#'+TR[id].m.toString(16).padStart(6,'0');
+function trailSvg(id,c){
+  const rb=id==='rainbow',g=rb?'<defs><linearGradient id="rbg" x1="0" x2="1"><stop offset="0" stop-color="#f33"/><stop offset=".25" stop-color="#fc3"/><stop offset=".5" stop-color="#3d6"/><stop offset=".75" stop-color="#3bf"/><stop offset="1" stop-color="#a5f"/></linearGradient></defs>':'',s=rb?'url(#rbg)':c;
+  return '<svg viewBox="0 0 200 96" preserveAspectRatio="xMidYMid meet">'+g+'<path d="M8 74C58 74 92 70 122 48S170 22 194 24" fill="none" stroke="'+s+'" stroke-width="6" stroke-linecap="round" opacity=".9"/><path d="M8 86C58 86 96 84 128 62S174 36 196 40" fill="none" stroke="'+s+'" stroke-width="6" stroke-linecap="round" opacity=".9"/><circle cx="174" cy="30" r="9" fill="'+s+'" opacity=".25"/><circle cx="188" cy="16" r="6" fill="'+s+'" opacity=".18"/></svg>';
+}
+function shopCard(cat,it){
+  const [id,name,desc,price]=it,owned=price===0||OWN.items.includes(cat+':'+id),eq=cat==='trail'?OWN.trail===id:cat==='theme'?OWN.theme===id:false;
+  let art;
+  if(cat==='boost'){const t=BTINT[id];art='<div class="art" style="--tint:'+t+';background:radial-gradient(circle at 50% 45%,'+t+'33,#0d0e10 72%)">'+ICON[id]+'</div>'}
+  else if(cat==='trail'){const t=trailHex(id);art='<div class="art wide" style="--tint:'+t+';background:#0b0f16">'+trailSvg(id,t)+'</div>'}
+  else{const t=TH[id];art='<div class="art" style="--tint:'+t[0]+';background:radial-gradient(circle at 50% 40%,'+t[0]+'26,#0d0e10 75%)"><div class="tpv"><b style="background:linear-gradient(90deg,'+t[0]+','+t[1]+','+t[2]+')"></b><span style="background:'+t[3]+'"></span><u></u></div></div>'}
+  const need=OWN.coins<price,at='data-cat="'+cat+'" data-id="'+id+'"';
+  const left=owned?'<span class="price free">'+(cat==='boost'?'Active':'Unlocked')+'</span>':'<span class="price"><i class="coin sm"></i>'+price+(need?'<span class="need">Need '+(price-OWN.coins)+' more</span>':'')+'</span>';
+  let act='';
+  if(cat==='boost'){if(!owned)act='<button class="buy" data-shop="buy" '+at+(need?' disabled':'')+'>Buy</button>'}
+  else if(eq)act='<span class="chip2">Equipped</span>';
+  else act='<button class="buy" data-shop="'+(owned?'equip':'buy')+'" '+at+(!owned&&need?' disabled':'')+'>'+(owned?'Equip':'Buy')+'</button>';
+  return '<div class="sc'+(owned?' own':'')+(eq?' eq':'')+'">'+(eq?'<div class="ribbon">EQUIPPED</div>':'')+art+'<div class="sbody"><b>'+esc(name)+'</b><span>'+esc(desc)+'</span></div><div class="sfoot">'+left+act+'</div></div>';
+}
+function shopUI(){
+  if(!ownOn())return;
+  $('#coinN').textContent=OWN.coins.toLocaleString();
+  $('#payN').innerHTML=MEDALS.map((m,i)=>'<span class="mp" style="--c:'+m[1]+'"><i></i>'+m[0]+' +'+PAY[i]+'</span>').join('');
+  const has=(cat,it)=>it[3]===0||OWN.items.includes(cat+':'+it[0]);
+  $('#shopTabs').innerHTML=[['boost','Boosts'],['trail','Drift patterns'],['theme','Menu colours']].map(([id,l])=>'<button data-shop="tab" data-id="'+id+'" class="'+(shopCat===id?'on':'')+'">'+l+'<small>'+SHOP[id].filter(it=>has(id,it)).length+'/'+SHOP[id].length+'</small></button>').join('');
+  $('#shopL').innerHTML=SHOP[shopCat].map(it=>shopCard(shopCat,it)).join('');
+  acctUI();
+}
+$('#shop').onclick=e=>{
+  const b=e.target.closest&&e.target.closest('button[data-shop]');if(!b||!ownOn())return;
+  const a=b.dataset.shop,cat=b.dataset.cat,id=b.dataset.id;
+  if(a==='tab'){shopCat=id;shopUI();return}
+  if(a==='test')OWN.coins+=500;
+  else{
+    const it=SHOP[cat]&&SHOP[cat].find(x=>x[0]===id);if(!it)return;
+    const key=cat+':'+id;
+    if(a==='buy'){if(OWN.coins<it[3]||OWN.items.includes(key))return;OWN.coins-=it[3];OWN.items.push(key);if(cat==='boost')BO[id]=1}
+    if(cat==='trail'&&(a==='buy'||a==='equip'))OWN.trail=id;
+    if(cat==='theme'&&(a==='buy'||a==='equip')){OWN.theme=id;applyTheme()}
+  }
+  saveOwn();shopUI();
+};
+
+// ---------- pixel flame while nitro is on ----------
+const FT=[0,1,2].map(f=>{
+  const q=document.createElement('canvas');q.width=6;q.height=12;const g=q.getContext('2d');let s=f*977+13;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+  const wd=[2,2,2,4,4,4,4,6,6,6,6,6],cut=Math.floor(rnd()*3);
+  for(let r=cut;r<12;r++){
+    const w=wd[r],x0=(6-w)/2;
+    for(let x=0;x<w;x++){
+      if((x===0||x===w-1)&&w>2&&rnd()<.3)continue;
+      g.fillStyle=r<4?'#ff3b1f':r<8?'#ff9a1f':r<10?'#ffe14a':'#fff6c8';g.fillRect(x0+x,r,1,1);
+    }
+  }
+  const t=new THREE.CanvasTexture(q);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t;
+});
+const flameMat=new THREE.MeshBasicMaterial({map:FT[0],transparent:true,alphaTest:.1,depthWrite:false,side:THREE.DoubleSide});
+const flames=[-.5,.5].map(x=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(.9,1.8).rotateX(-Math.PI/2),flameMat);m.position.set(x,.75,-2.3);m.visible=false;car.add(m);return m});
+let flT=0,flI=0;
+function flameTick(dt){
+  const on=nitOn&&!paused&&mode==='drive';
+  if(!on){if(flames[0].visible)flames.forEach(f=>f.visible=false);return}
+  flT+=dt;if(flT>.06){flT=0;flI=(flI+1)%3;flameMat.map=FT[flI]}
+  const sy=.8+Math.random()*.5;
+  flames.forEach(f=>{f.visible=true;f.scale.set(1,sy,1);f.position.z=-1.41-.9*sy});
+}
+
+// ---------- nitro bar ----------
+const nbEl=$('#nbar'),nfEl=$('#nf'),npEl=$('#np');let nbShow=null,nbN=-1,nbAct=null;
+function nbarTick(){
+  const show=!paused&&mode==='drive';
+  if(show!==nbShow){nbShow=show;nbEl.style.display=show?'':'none'}
+  if(!show)return;
+  const v=Math.round(nitro);
+  if(v!==nbN){nbN=v;nfEl.style.width=v+'%';npEl.textContent=v;nbEl.classList.toggle('low',v<20)}
+  if(nitOn!==nbAct){nbAct=nitOn;nbEl.classList.toggle('act',nitOn)}
+}
+
+// ---------- the Tune panel closes when you click elsewhere or leave ----------
+function hideTune(){$('#tune').classList.add('hide')}
+addEventListener('pointerdown',e=>{
+  const t=$('#tune');if(t.classList.contains('hide'))return;
+  if(e.target.closest&&e.target.closest('#tune,#bTune,#mTune,#sTune'))return;
+  hideTune();
+},true);
+addEventListener('keydown',e=>{if(e.code==='Escape')hideTune()});
+
+// ---------- settings: race setup next to Start, everything else in the Settings tab ----------
+const OHINT={bots:'Computer rivals on the track',diff:'How fast the bots drive',laps:'Laps per race on circuits',zoom:'How far the camera sits above the car',pix:'Retro chunky look. Also helps slow computers.',shadow:'Turn off if the game runs slowly',sound:'Engine and tyre noise',assist:'Stability help that stops the car spinning out',ghost:'Replays your best lap beside you',admin:'Owner-only test car'};
+function optRows(el,keys){
+  el.innerHTML='';
+  keys.forEach(key=>{
+    const o=OPTS.find(x=>x[0]===key);if(!o||(o[3]&&!ownOn()))return;
+    const r=document.createElement('div'),sg=document.createElement('div');r.className='orow';sg.className='seg';
+    r.innerHTML='<span>'+o[1]+'<small>'+(OHINT[key]||'')+'</small></span>';
+    o[2].forEach(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.className=OPT[key]===v?'on':'';b.onclick=()=>{OPT[key]=v;saveOpt();applyOpt();buildMenu()};sg.append(b)});
+    r.append(sg);el.append(r);
+  });
+}
+function renderSetup(){
+  const box=$('#setup');if(!box)return;
+  const cc=COURSES[selC],keys=[];
+  if(menuTab==='online'){if(!MP||MP.host)keys.push('laps')}
+  else if(menuTab==='solo'&&cc){
+    const rt=isRoute(cc.str),cs=rt?cellsOf(cc.str):null;
+    if(rt||cc.gp||cc.str==='random'){
+      if(!cc.gp)keys.push('bots');
+      if(cc.gp||OPT.bots>0)keys.push('diff');
+      if(cc.gp||cc.str==='random'||(cs&&cs.closed))keys.push('laps');
+    }
+  }
+  box.classList.toggle('hide',!keys.length);
+  optRows($('#setupO'),keys);
+}
+function renderSettings(){
+  optRows($('#setDisp'),['zoom','pix','shadow']);
+  optRows($('#setSnd'),['sound','assist','ghost']);
+  $('#setOwn').classList.toggle('hide',!ownOn());optRows($('#setAdm'),['admin']);
+}
+$('#sTune').onclick=()=>$('#tune').classList.toggle('hide');
 function resize(){R.setPixelRatio(Math.min(devicePixelRatio,2)*(OPT.pix||1));R.setSize(innerWidth,innerHeight);R.domElement.style.imageRendering=OPT.pix<1?'pixelated':'auto';cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();setMode('drive');
 applyOpt();loadCourse(COURSES[1].str);buildMenu();openMenu();boot();
@@ -1237,7 +1540,7 @@ let last=performance.now();
   requestAnimationFrame(frame);
   const dt=Math.min(.033,(t-last)/1000);last=t;
   if(paused)idleCam();else if(mode==='drive'){drive(dt);raceTick(dt);botsTick(dt);mpTick(dt)}else buildCam(dt);
-  drawGauge();audioTick();
+  drawGauge();nbarTick();flameTick(dt);audioTick();
   {const fx=Math.round((mode==='drive'?cf.x:pan.x)/4)*4,fz=Math.round((mode==='drive'?cf.z:pan.z)/4)*4;sun.position.set(fx-70,45,fz-45);sun.target.position.set(fx,0,fz)}
   updPuffs(dt);
   car.position.set(c.x,c.y||0,c.z);car.scale.setScalar(1+(c.y||0)*.05);car.rotation.y=c.h;car.rotation.z=c.rl||0;car.rotation.x=c.pt||0;sh.position.set(c.x,.16,c.z);sh.rotation.y=c.h;fw.forEach(p=>p.rotation.y=c.s*.5);
