@@ -256,7 +256,7 @@ body.bldg .bar{top:calc(52px + env(safe-area-inset-top,0px))}
   <button id="mBuild">Build</button>
   <div id="tools" class="hide">
     <button data-t="straight" class="on">Straight</button>
-    <button data-t="corner">Corner</button><button data-t="wide">Wide corner</button><button data-t="boost">Boost</button><button data-t="chicane">Chicane</button><button data-t="slick">Oil</button><button data-t="jump">Jump</button><button data-t="gravel">Gravel</button><button data-t="slalom">Slalom</button><button data-t="gate">Gate</button>
+    <button data-t="corner">Corner</button><button data-t="wide">Wide corner</button><button data-t="boost">Boost</button><button data-t="chicane">Chicane</button><button data-t="slick">Oil</button><button data-t="jump">Jump</button><button data-t="gravel">Gravel</button><button data-t="slalom">Slalom</button><button data-t="gate">Gate</button><button data-t="open" title="Road with no walls">Open road</button><button data-t="edge" title="Road with a wall on one side only. Rotate to pick the side.">Half border</button><button data-t="narrowL" title="Narrows from a wide corner to normal road. Free build only.">Narrow ◀</button><button data-t="narrowR" title="Mirror of the other narrowing piece. Free build only.">Narrow ▶</button><button data-t="ice" title="Very slippery">Ice</button><button data-t="refill" title="Refills nitro while you drive over it">Nitro pad</button><button data-t="rumble" title="Bumpy strips that slow you a little">Rumble</button><button data-t="squeeze" title="Road narrows to about half width">Squeeze</button><button data-t="drift" title="Low grip. Sliding here charges nitro.">Drift zone</button>
     <button data-t="erase">Erase</button>
     <button id="bRot">Rotate</button>
     <button id="bClr">Clear all</button>
@@ -271,7 +271,7 @@ body.bldg .bar{top:calc(52px + env(safe-area-inset-top,0px))}
 <div id="big"></div>
 <div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tSet">Settings</button><button id="tAdmin" class="hide">Admin</button><button id="tShop" class="hide">Shop</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl"><div><span><kbd>W A S D</kbd><kbd>Arrows</kbd></span>Drive</div><div><span><kbd>Shift</kbd></span>Nitro</div><div><span><kbd>S</kbd></span>While turning, flicks the rear out</div><div><span><kbd>C</kbd></span>Restart</div><div><span><kbd>B</kbd></span>Build mode</div><div><span><kbd>Esc</kbd></span>Menu</div></div></div>
 <div id="shop" class="hide"><div class="shopTop"><div class="coinBox"><i class="coin"></i><b id="coinN">0</b><small>coins</small></div><div class="pay" id="payN"></div><button data-shop="test" class="tst">+500 test coins</button></div><div class="shopTabs" id="shopTabs"></div><div class="sgrid" id="shopL"></div></div>
-<div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft that only you can see. Add tracks, build each one, then press Publish. Track marks: ○ to be built, ◐ building (saved but not finished), ● built.</div><h3>Medal times</h3><div class="pd">Author time in seconds for each track. Gold (+10%), silver (+30%) and bronze (+60%) are worked out from it.</div><div id="adMed"></div><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Players</h3><div class="orow2"><button id="adUsers">Load players</button></div><div id="adUl"></div><div class="pd" id="adSt"></div></div>
+<div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft that only you can see. Add tracks, build each one, then press Publish. Track marks: ○ to be built, ◐ building (saved but not finished), ● built.</div><h3>Medal times</h3><div class="pd">Author time in seconds for each track. Gold (+10%), silver (+30%) and bronze (+60%) are worked out from it.</div><div id="adMed"></div><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Reset</h3><div class="pd">Each button asks you to type a confirmation phrase, like "reset times". This cannot be undone. Your owner account and Season 1 always stay.</div><div class="orow2"><button data-act="reset" data-what="times">Reset times</button><button data-act="reset" data-what="accounts">Reset accounts</button><button data-act="reset" data-what="seasons">Reset seasons</button><button data-act="reset" data-what="everything">Reset everything</button></div><h3>Players</h3><div class="orow2"><input id="adQ" placeholder="Search players by name"><button id="adUsers">Search</button></div><div id="adUl"></div><div class="pd" id="adSt"></div></div>
 <div id="setup" class="hide"><h3>Race setup</h3><div class="opts" id="setupO"></div></div>
 <div id="online" class="hide"><div class="orow2"><input id="mpname" maxlength="12" placeholder="Your name"></div><div class="orow2"><button id="mpHost">Host a room</button><input id="mpcode" maxlength="4" placeholder="CODE"><button id="mpJoin">Join</button></div><div class="pd" id="mpst">Host a room and share the 4-letter code, or enter a friend's code. Hosts pick the course on the left.</div><div class="plist" id="mpl"></div><div class="mfoot"><button class="go hide" id="mpGo">Start race</button><button id="mpLeave" class="hide">Leave room</button></div></div>
 <div class="mfoot" id="solofoot"><button class="go" id="mPlay">Start race</button><button id="mResume" class="hide">Resume</button><button id="mTune">Handling…</button></div></div></div></div></div>
@@ -386,19 +386,38 @@ const K={
   jump:{line:true,parts:SP},
   gravel:{parts:SP},
   slalom:{line:true,parts:[...SP,[-3.5,-7,.9,.9],[3.5,0,.9,.9],[-3.5,7,.9,.9]]},
-  gate:{line:true,parts:[...SP,[-8,0,3,.8],[8,0,3,.8]]}
+  gate:{line:true,parts:[...SP,[-8,0,3,.8],[8,0,3,.8]]},
+  open:{line:true,parts:[]},
+  edge:{line:true,parts:[[11.5,0,.5,12]]},
+  ice:{line:true,parts:SP},
+  refill:{line:true,parts:SP},
+  rumble:{line:true,parts:SP},
+  drift:{line:true,parts:SP},
+  squeeze:{line:true,parts:[[-6.5,0,.5,6],[6.5,0,.5,6],...wallChain(-11.5,-12,-6.5,-6),...wallChain(-11.5,12,-6.5,6),...wallChain(11.5,-12,6.5,-6),...wallChain(11.5,12,6.5,6)]},
+  narrowR:narrowK(1),
+  narrowL:narrowK(-1)
 };
+function wallChain(x0,z0,x1,z1){const o=[],L=Math.hypot(x1-x0,z1-z0),n=Math.max(1,Math.ceil(L/1.4)),a=-Math.atan2(z1-z0,x1-x0);for(let i=0;i<=n;i++)o.push([x0+(x1-x0)*i/n,z0+(z1-z0)*i/n,.8,.8,a]);return o}
+// Narrowing piece for the wide corner: 48 wide at one end, one normal road wide at the other. m=1 keeps the right wall straight.
+function narrowK(m){return{shape:[[-23.5*m,-12],[23.5*m,-12],[23.5*m,12],[.5*m,12]],parts:[[23.5*m,0,.5,12],...wallChain(-23.5*m,-12,.5*m,12)],hw:24,hl:12,half:24}}
+// Is a point inside a piece's footprint (pieces can be 48 x 24, so a plain square is not enough)
+function inFoot(b,x,z,m=0){let lx=x-b.x,lz=z-b.z;for(let i=0;i<b.rot;i++){const t=lx;lx=-lz;lz=t}const kd=K[b.k];return Math.abs(lx)<=(kd.hw||b.half)+m&&Math.abs(lz)<=(kd.hl||b.half)+m}
+function edgeRot(h,ch){for(let r=0;r<4;r++){if(r%2!==(h[0]?1:0))continue;let w=[1,0];for(let i=0;i<r;i++)w=[w[1],-w[0]];const c=h[0]*w[1]-h[1]*w[0];if((c>0)===(ch==='E'))return r}return h[0]?1:0}
 const TILE=24,ringGeoW=new THREE.RingGeometry(.5,47.5,72,1,Math.PI/2,Math.PI/2),ringGeo=new THREE.RingGeometry(.5,23.5,48,1,Math.PI/2,Math.PI/2),roadGeo=new THREE.BoxGeometry(TILE,.1,TILE),lineGeo=new THREE.BoxGeometry(.3,.02,TILE);
-const mRoad=new THREE.MeshLambertMaterial({color:0x4b5565}),mBar=new THREE.MeshLambertMaterial({color:0xe8590c}),mLine=new THREE.MeshLambertMaterial({color:0xe9edf2}),mPad=new THREE.MeshBasicMaterial({color:0x19c9f5}),mOil=new THREE.MeshPhongMaterial({color:0x07090c,specular:0x88aaff,shininess:140}),mPost=new THREE.MeshLambertMaterial({color:0xffd43b}),mGrav=new THREE.MeshLambertMaterial({color:0x8a6b3f}),mRamp=new THREE.MeshLambertMaterial({color:0xffd43b});
+const mRoad=new THREE.MeshLambertMaterial({color:0x4b5565}),mBar=new THREE.MeshLambertMaterial({color:0xe8590c}),mLine=new THREE.MeshLambertMaterial({color:0xe9edf2}),mPad=new THREE.MeshBasicMaterial({color:0x19c9f5}),mOil=new THREE.MeshPhongMaterial({color:0x07090c,specular:0x88aaff,shininess:140}),mPost=new THREE.MeshLambertMaterial({color:0xffd43b}),mGrav=new THREE.MeshLambertMaterial({color:0x8a6b3f}),mRamp=new THREE.MeshLambertMaterial({color:0xffd43b}),mIce=new THREE.MeshPhongMaterial({color:0xbfe9ff,specular:0xffffff,shininess:120}),mPadG=new THREE.MeshBasicMaterial({color:0x3be07a}),mDrift=new THREE.MeshLambertMaterial({color:0x5b3fc4}),mDriftL=new THREE.MeshLambertMaterial({color:0xb9a6ff});
 function build(kind,ghost){
   const g=new THREE.Group(),o=ghost?{transparent:true,opacity:.5}:{};
   const mk=m=>ghost?new THREE.MeshLambertMaterial({color:m.color,...o}):m;
-  const kd=K[kind],sz=kd.size||TILE;const r=new THREE.Mesh(kd.ring?(kd.size?ringGeoW:ringGeo):roadGeo,mk(mRoad));if(kd.ring){r.rotation.x=-Math.PI/2;r.position.set(sz/2,.06,sz/2)}else r.position.y=.05;g.add(r);
+  const kd=K[kind],sz=kd.size||TILE;if(kd.shape){const m0=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(kd.shape.map(q=>new THREE.Vector2(q[0],-q[1])))).rotateX(-Math.PI/2),mk(mRoad));m0.position.y=.06;g.add(m0)}else{const r=new THREE.Mesh(kd.ring?(kd.size?ringGeoW:ringGeo):roadGeo,mk(mRoad));if(kd.ring){r.rotation.x=-Math.PI/2;r.position.set(sz/2,.06,sz/2)}else r.position.y=.05;g.add(r)}
   if(K[kind].line){const l=new THREE.Mesh(lineGeo,mk(mLine));l.position.y=.11;g.add(l)}
   if(kind==='boost'){const p=new THREE.Mesh(new THREE.BoxGeometry(10,.04,8),mk(mPad));p.position.y=.1;g.add(p);for(const z of[-2.4,0,2.4]){const q=new THREE.Mesh(new THREE.BoxGeometry(7,.05,.7),mk(mLine));q.position.set(0,.13,z);g.add(q)}}
   if(kind==='slick'){const o=new THREE.Mesh(new THREE.CylinderGeometry(7,7,.04,32),mk(mOil));o.position.y=.1;g.add(o)}
   if(kind==='gravel'){const q=new THREE.Mesh(new THREE.BoxGeometry(22,.05,24),mk(mGrav));q.position.y=.11;g.add(q)}
   if(kind==='jump'){for(const s of[-1,1]){const q=new THREE.Mesh(new THREE.BoxGeometry(18,.35,4.6),mk(mRamp));q.position.set(0,.75,s*2.1);q.rotation.x=s*.32;g.add(q)}}
+  if(kind==='ice'){const q=new THREE.Mesh(new THREE.BoxGeometry(22,.05,24),mk(mIce));q.position.y=.11;g.add(q)}
+  if(kind==='refill'){const d=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.2,.05,24),mk(mPadG));d.position.y=.12;g.add(d);const rg=new THREE.Mesh(new THREE.RingGeometry(4.6,6.2,32).rotateX(-Math.PI/2),mk(mPadG));rg.position.y=.12;g.add(rg)}
+  if(kind==='rumble'){for(let i=-2;i<=2;i++){const q=new THREE.Mesh(new THREE.BoxGeometry(22,.16,1.1),mk(i%2?mLine:mBar));q.position.set(0,.13,i*4);g.add(q)}}
+  if(kind==='drift'){const q=new THREE.Mesh(new THREE.BoxGeometry(22,.05,24),mk(mDrift));q.position.y=.11;g.add(q);for(const z of[-6,0,6]){const c=new THREE.Mesh(new THREE.BoxGeometry(16,.06,1.1),mk(mDriftL));c.position.set(0,.13,z);c.rotation.y=.55;g.add(c)}}
   const arc=[],bx=[];for(const p of K[kind].parts)(p[4]===undefined?bx:arc).push(p);
   for(const [x,z,hx,hz] of bx){const b=new THREE.Mesh(new THREE.BoxGeometry(hx*2,1.1,hz*2),mk(hx>.7&&hx<1.5&&hz>.7&&hz<1.5?mPost:mBar));b.position.set(x,.55,z);g.add(b)}
   if(arc.length){
@@ -421,13 +440,13 @@ function rebuildBoxes(){
   }
   fitIsland();
   for(const t of trees){
-    const v=!blocks.some(b=>Math.abs(t.x-b.x)<=b.half+1.5&&Math.abs(t.z-b.z)<=b.half+1.5);
+    const v=!blocks.some(b=>inFoot(b,t.x,t.z,1.5));
     if(v!==t.vis){t.vis=v;treeSet(t,v)}
     if(v)boxes.push({x:t.x,z:t.z,hx:t.r,hz:t.r});
   }
 }
 function erase(x,z){
-  const i=blocks.findIndex(b=>Math.abs(x-b.x)<=b.half&&Math.abs(z-b.z)<=b.half);
+  const i=blocks.findIndex(b=>inFoot(b,x,z));
   if(i>=0){S.remove(blocks[i].m);blocks.splice(i,1);rebuildBoxes();if(BLD)BLD.dirty=true}
 }
 function placeTile(kd,x,z,r){
@@ -443,9 +462,10 @@ function loadCourse(str){
   clearAll();let cx=0,cz=0,h=[0,1];const route=[];
   for(const ch of str){
     const h2=ch==='L'?[h[1],-h[0]]:ch==='R'?[-h[1],h[0]]:h;let r=0;
-    if('SBCOJGMT'.includes(ch))r=h[0]?1:0;
+    if('SBCOJGMTNIPUQD'.includes(ch))r=h[0]?1:0;
+    else if(ch==='E'||ch==='F')r=edgeRot(h,ch);
     else{const a=[-h[0],-h[1]];for(r=0;r<4;r++){const s=sides(r);if(s.some(v=>v[0]===a[0]&&v[1]===a[1])&&s.some(v=>v[0]===h2[0]&&v[1]===h2[1]))break}}
-    route.push({x:cx,z:cz,k:ch,h1:h,h2});placeTile(({S:'straight',B:'boost',C:'chicane',O:'slick',J:'jump',G:'gravel',M:'slalom',T:'gate'})[ch]||'corner',cx*TILE,cz*TILE,r);cx+=h2[0];cz+=h2[1];h=h2;
+    route.push({x:cx,z:cz,k:ch,h1:h,h2});placeTile(({S:'straight',B:'boost',C:'chicane',O:'slick',J:'jump',G:'gravel',M:'slalom',T:'gate',N:'open',I:'ice',P:'refill',U:'rumble',Q:'squeeze',D:'drift',E:'edge',F:'edge'})[ch]||'corner',cx*TILE,cz*TILE,r);cx+=h2[0];cz+=h2[1];h=h2;
   }
   const map={};route.forEach((p,i)=>map[p.x+','+p.z]=i);if(!(cx===0&&cz===0))map[cx+','+cz]=route.length;
   let sv=null;try{sv=JSON.parse(localStorage.getItem(pk(str)))}catch(e){}
@@ -546,11 +566,11 @@ function aim(e){
   ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);cam.updateMatrixWorld();
   ray.setFromCamera(ndc,cam);return ray.ray.intersectPlane(plane,pt);
 }
-const snap=v=>tool==='wide'?Math.round((v-12)/24)*24+12:Math.round(v/TILE)*TILE;
-cv.addEventListener('pointermove',e=>{if(mode==='build'&&aim(e)){gx=snap(pt.x);gz=snap(pt.z)}});
+const snapP=(px,pz)=>{const sx=v=>Math.round(v/TILE)*TILE,so=v=>Math.round((v-12)/24)*24+12;if(tool==='wide')return[so(px),so(pz)];if(tool==='narrowL'||tool==='narrowR')return rot%2?[sx(px),so(pz)]:[so(px),sx(pz)];return[sx(px),sx(pz)]};
+cv.addEventListener('pointermove',e=>{if(mode==='build'&&aim(e)){[gx,gz]=snapP(pt.x,pt.z)}});
 cv.addEventListener('pointerdown',e=>{
   if(mode!=='build'||e.button!==0||!aim(e))return;
-  gx=snap(pt.x);gz=snap(pt.z);
+  [gx,gz]=snapP(pt.x,pt.z);
   race={route:null};closeBots();tool==='erase'?erase(pt.x,pt.z):place(gx,gz);
 });
 cv.addEventListener('contextmenu',e=>{e.preventDefault();if(mode==='build'&&aim(e)){race={route:null};closeBots();erase(pt.x,pt.z)}});
@@ -571,8 +591,8 @@ function drive(dt){
   if(dn)vf-=(vf>0?20*(1-.6*Math.min(1,Math.abs(vl)/Math.max(Math.abs(vf),6))):16)*dt;
   vf-=vf*(AD?.85/(1+AD*.9):.85)*dt;if(vf<-10)vf=-10;
   if(WA>0&&Math.abs(c.s)>.55&&vf>22)vf-=vf*.45*WA*dt;
-  if(race.route&&!blocks.some(b=>Math.abs(c.x-b.x)<=b.half&&Math.abs(c.z-b.z)<=b.half))vf-=vf*.9*dt;
-  let zb=0,zs=0,zg=0;
+  if(race.route&&!blocks.some(b=>inFoot(b,c.x,c.z)))vf-=vf*.9*dt;
+  let zb=0,zs=0,zg=0,zi=0,zr=0,zu=0,zd=0;
   for(const b of blocks){
     if(!ZK[b.k])continue;
     let lx=c.x-b.x,lz=c.z-b.z;
@@ -580,14 +600,21 @@ function drive(dt){
     if(b.k==='boost'&&Math.abs(lx)<5&&Math.abs(lz)<4)zb=1;
     if(b.k==='slick'&&Math.hypot(lx,lz)<7)zs=1;
     if(b.k==='gravel'&&Math.abs(lx)<11&&Math.abs(lz)<12)zg=1;
+    if(b.k==='ice'&&Math.abs(lx)<11&&Math.abs(lz)<12)zi=1;
+    if(b.k==='refill'&&Math.abs(lx)<8&&Math.abs(lz)<8)zr=1;
+    if(b.k==='rumble'&&Math.abs(lx)<11&&Math.abs(lz)<8)zu=1;
+    if(b.k==='drift'&&Math.abs(lx)<11&&Math.abs(lz)<12)zd=1;
     if(b.k==='jump'&&Math.abs(lx)<9&&Math.abs(lz)<2.5&&!(c.air>0)&&!(c.jc>0)&&Math.hypot(vf,vl)>10){c.air=c.at=.3+Math.hypot(vf,vl)*.012;c.jc=1;shk=Math.max(shk,.2)}
   }
   if(zb){vf+=45*dt;shk=Math.max(shk,.1)}
   if(zs){if(!c.oil){c.oil=1;c.w+=(Math.random()<.5?-1:1)*(4+Math.random()*2);vl+=(Math.random()-.5)*8}vf-=vf*.25*dt}else c.oil=0;
   if(zg)vf-=vf*1.1*dt;
+  if(zr)nitro=Math.min(100,nitro+60*dt);
+  if(zu&&Math.hypot(vf,vl)>8){vf-=vf*.3*dt;shk=Math.max(shk,.12)}
+  if(zd&&slipI>.25)nitro=Math.min(100,nitro+16*dt);
   // eased steering, grip is lost fast but returns gradually
   c.s+=(st-c.s)*Math.min(1,dt*(st?8:4));
-  const gT=Math.max(.7,P.grip+AD*3-Math.min(P.grip*.58,Math.abs(c.s*vf)*P.slide)-(dn&&vf>10&&st?3.2:0)-(up&&st&&vf>16?1.4:0)-(zs?7:0)-(zg?2.5:0));
+  const gT=Math.max(.7,P.grip+AD*3-Math.min(P.grip*.58,Math.abs(c.s*vf)*P.slide)-(dn&&vf>10&&st?3.2:0)-(up&&st&&vf>16?1.4:0)-(zs?7:0)-(zg?2.5:0)-(zi?7.5:0)-(zd?3.2:0));
   c.g+=((c.air>0?.05:gT)-c.g)*Math.min(1,dt*(gT>c.g?P.regrip:8));
   const slip=Math.abs(vl);
   vl*=Math.exp(-c.g*dt);
@@ -595,7 +622,7 @@ function drive(dt){
   c.vx=sn*vf+cs*vl;c.vz=cs*vf-sn*vl;
   // yaw has momentum, plus a gentle pull toward the travel direction
   const wT=c.s*P.steer/(1+Math.abs(vf)*(P.sd||.03))*Math.min(1,.3+Math.abs(vf)/6)*dir*(dn&&st&&vf>10?1.3:1)-(vf>0?(assist?P.stab:P.stab*.4)*vl/Math.max(vf,6):0);
-  c.w+=(wT-c.w)*Math.min(1,dt*(zs?1.6:6));c.h+=c.w*dt;
+  c.w+=(wT-c.w)*Math.min(1,dt*(zs?1.6:zi?3:6));c.h+=c.w*dt;
   c.x+=c.vx*dt;c.z+=c.vz*dt;
   c.jc=Math.max(0,(c.jc||0)-dt);
   if(c.air>0){c.air-=dt;const u=1-Math.max(0,c.air)/c.at;c.y=c.at*20*u*(1-u);if(c.air<=0){c.y=0;shk=Math.max(shk,.3);for(let i=0;i<8;i++)puff(c.x,c.z,c.vx,c.vz)}}
@@ -753,7 +780,7 @@ function loadDonut(){
 const OPT={bots:2,diff:0,laps:2,drive:0,zoom:1,shadow:1,sound:1,assist:1,ghost:1,pix:.6};
 try{Object.assign(OPT,JSON.parse(localStorage.getItem('dbx:opt')||'{}'))}catch(e){}
 OPT.drive=0;
-const ZK={boost:1,slick:1,jump:1,gravel:1},TOOLS=['straight','corner','wide','boost','chicane','slick','jump','gravel','slalom','gate','erase'];
+const ZK={boost:1,slick:1,jump:1,gravel:1,ice:1,refill:1,rumble:1,drift:1},TOOLS=['straight','corner','wide','boost','chicane','slick','jump','gravel','slalom','gate','erase'];
 const COURSES=[
   {name:'Grand Prix',str:'gp',gp:1,desc:'4-race championship · points · bot rankings'},
   {name:'Midnight Circuit',str:'SBSLOLGLRRJSLMSBLCSTLSLRRL',desc:'26 tiles · jump, oil, gravel, slalom, gate, chicane'},
@@ -775,8 +802,8 @@ const saveOpt=()=>{try{localStorage.setItem('dbx:opt',JSON.stringify(OPT))}catch
 function applyOpt(){snd=!!OPT.sound;assist=!!OPT.assist;sun.castShadow=!!OPT.shadow;resize();if(snd)initAudio()}
 let selC=Math.max(0,COURSES.findIndex(c=>c.name==='Speedway'));
 function pbOf(s){try{const v=JSON.parse(localStorage.getItem(pk(s)));return v&&v.t?fmt(v.t):null}catch(e){return null}}
-const HAZ={B:['Boost','#7fb8d6'],O:['Oil','#9a8fc2'],J:['Jump','#d6b85a'],G:['Gravel','#a88b64'],C:['Chicane','#c98a63'],M:['Slalom','#c98a63'],T:['Gate','#c98a63']};
-const isRoute=s=>/^[SLRBCOJGMT]+$/.test(s);
+const HAZ={B:['Boost','#7fb8d6'],O:['Oil','#9a8fc2'],J:['Jump','#d6b85a'],G:['Gravel','#a88b64'],C:['Chicane','#c98a63'],M:['Slalom','#c98a63'],T:['Gate','#c98a63'],I:['Ice','#9fdcff'],P:['Nitro pad','#3be07a'],U:['Rumble','#c98a63'],Q:['Squeeze','#c98a63'],D:['Drift zone','#b9a6ff']};
+const isRoute=s=>/^[SLRBCOJGMTNIPUQDEF]+$/.test(s);
 function cellsOf(str){let cx=0,cz=0,h=[0,1];const o=[];for(const ch of str){o.push({x:cx,z:cz,k:ch});const h2=ch==='L'?[h[1],-h[0]]:ch==='R'?[-h[1],h[0]]:h;cx+=h2[0];cz+=h2[1];h=h2}o.closed=cx===0&&cz===0;return o}
 function drawRouteOld(cv,str,lab){
   const x=cv.getContext('2d'),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);
@@ -1233,7 +1260,7 @@ setInterval(()=>{if(mOpen&&menuTab==='solo'&&!document.hidden&&SESS)fetchLB()},2
 // Owner tools: turn the editor layout into a race track and publish it to a season
 function routeFromBlocks(){
   if(!blocks.length)return{err:'Place some track in the builder first.'};
-  const at=(cx,cz)=>blocks.find(b=>b.x===cx*TILE&&b.z===cz*TILE),KC={straight:'S',boost:'B',chicane:'C',slick:'O',jump:'J',gravel:'G',slalom:'M',gate:'T'};
+  const at=(cx,cz)=>blocks.find(b=>b.x===cx*TILE&&b.z===cz*TILE),KC={straight:'S',boost:'B',chicane:'C',slick:'O',jump:'J',gravel:'G',slalom:'M',gate:'T',open:'N',ice:'I',refill:'P',rumble:'U',squeeze:'Q',drift:'D'};
   let cx=0,cz=0,h=[0,1],s='';const seen=new Set();
   for(let i=0;i<60;i++){
     const b=at(cx,cz);
@@ -1244,10 +1271,14 @@ function routeFromBlocks(){
       if(!has(back))return{err:'The corner at '+cx+','+cz+' does not connect to the tile before it.'};
       const h2=(p[0]===back[0]&&p[1]===back[1])?q:p;
       s+=(h2[0]===h[1]&&h2[1]===-h[0])?'L':'R';h=h2;
+    }else if(b.k==='edge'){
+      if((h[0]?1:0)!==(b.rot%2))return{err:'The half-border piece at '+cx+','+cz+' is rotated the wrong way.'};
+      let w=[1,0];for(let i=0;i<b.rot;i++)w=[w[1],-w[0]];
+      s+=(h[0]*w[1]-h[1]*w[0])>0?'E':'F';
     }else if(KC[b.k]){
       if((h[0]?1:0)!==(b.rot%2))return{err:'The straight piece at '+cx+','+cz+' is rotated the wrong way.'};
       s+=KC[b.k];
-    }else return{err:'Wide corners cannot be used in a race track.'};
+    }else return{err:'Wide corners and narrowing pieces cannot be used in a race track.'};
     cx+=h[0];cz+=h[1];
     if(cx===0&&cz===0)return{str:s,closed:true};
   }
@@ -1281,6 +1312,7 @@ async function adAct(a,d){
     else if(a==='setauth'){const inp=document.querySelector('.adAu[data-key="'+d.key+'"]'),raw=((inp&&inp.value)||'').trim(),v=raw===''?0:parseFloat(raw);if(raw!==''&&!(v>=1&&v<=900)){adSay('Author time must be between 1 and 900 seconds.');return}await api('/api/author',{key:d.key,author:v});adSay(v?'Author time saved.':'Author time cleared.')}
     else if(a==='build'){const s=SEASONS.find(x=>x.id==d.season),t=s&&(s.tracks||[]).find(x=>x.id==d.id);if(t)enterBuilder(t,s.name,s.id);return}
     else if(a==='deltrack'){if(!confirm('Delete this track and all its times?'))return;await api('/api/track/delete',{id:+d.id});adSay('Track deleted.')}
+    else if(a==='reset'){const ph='reset '+d.what,t=prompt('This cannot be undone. Type "'+ph+'" to confirm.');if(t===null)return;if(t.trim().toLowerCase()!==ph){adSay('Nothing was reset: the phrase did not match.');return}await api('/api/admin/reset',{what:d.what});adSay('Done: '+ph+'.');if(d.what==='accounts'||d.what==='everything'){const ul=$('#adUl');if(ul)ul.innerHTML=''}}
     else if(a==='delpb'){await api('/api/pb/delete',{season:+d.season,track:d.track,name:d.name});adSay('Time removed.');return adLb()}
     else if(a==='ban'){await api('/api/ban',{name:d.name,banned:d.banned==='1'});adSay(d.banned==='1'?'Player banned.':'Player unbanned.');return adUsers()}
     await fetchSeasons();adminUI();buildMenu();
@@ -1292,7 +1324,7 @@ async function adLb(){
     $('#adLb').innerHTML=j.rows.length?j.rows.map((r,i)=>'<div class="adrow"><span>'+(i+1)+'. '+esc(r.name)+'</span><b>'+fmt(r.ms/1000)+'</b><button data-act="delpb" data-season="'+x.k.season+'" data-track="'+x.k.track+'" data-name="'+esc(r.name)+'">Remove</button></div>').join(''):'<div class="lbn">No times yet.</div>'}catch(e){adSay(e.message)}
 }
 async function adUsers(){
-  try{const j=await api('/api/admin/users');
+  try{const j=await api('/api/admin/users?q='+encodeURIComponent(($('#adQ').value||'').trim()));
     $('#adUl').innerHTML=j.users.map(u=>'<div class="adrow"><b>'+esc(u.name)+'</b>'+(u.banned?'<span class="chip2 dr">Banned</span>':'')+(u.owner?'<span class="chip2">Owner</span>':'<button data-act="ban" data-name="'+esc(u.name)+'" data-banned="'+(u.banned?0:1)+'">'+(u.banned?'Unban':'Ban')+'</button>')+'</div>').join('')}catch(e){adSay(e.message)}
 }
 async function adMk(){
@@ -1300,7 +1332,7 @@ async function adMk(){
   try{await api('/api/season',{name});$('#adSeason').value='';adSay('Season created as a draft.');await fetchSeasons();adminUI();buildMenu()}catch(e){adSay(apiMsg(e))}
 }
 $('#admin').onclick=e=>{const b=e.target.closest&&e.target.closest('button[data-act]');if(b)adAct(b.dataset.act,b.dataset)};
-$('#adLbGo').onclick=adLb;$('#adUsers').onclick=adUsers;
+$('#adLbGo').onclick=adLb;$('#adUsers').onclick=adUsers;$('#adQ').onkeydown=e=>{if(e.key==='Enter')adUsers()};$('#adQ').oninput=()=>{clearTimeout(adUsers.t);adUsers.t=setTimeout(adUsers,350)};
 $('#auIn').onclick=()=>setAuMode('in');$('#auUp').onclick=()=>setAuMode('up');$('#auGo').onclick=doAuth;
 $('#auPw').onkeydown=e=>{if(e.key==='Enter')doAuth()};$('#auName').onkeydown=e=>{if(e.key==='Enter')$('#auPw').focus()};
 $('#auApiSave').onclick=()=>{try{const v=($('#auApi').value||'').trim().replace(/\/$/,'');if(v)localStorage.setItem('dbx:api',v);else localStorage.removeItem('dbx:api');location.reload()}catch(e){}};
