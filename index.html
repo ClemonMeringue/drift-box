@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-26
+Last updated: 2026-10-27
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - This block exists so a fresh AI that is given only index.html knows the whole project.
@@ -26,6 +26,7 @@ NOTE TO ANY AI WORKING ON THIS FILE
   * They like the placeholder medal payouts (10 / 25 / 50 / 100 coins). Do not change them unless asked.
   * They want the "+500 test coins" button to exist for the owner only.
   * The owner wants to see everything (every shop item, admin tools).
+  * Nothing neon, no glows. Colours in the shop and on the car are muted. Shop art uses ONE studio plate and ONE car for every item, so the set looks consistent.
 
 ======================================================================
 2. WHAT THE PROJECT IS
@@ -74,6 +75,9 @@ If you need the exact source of worker.js or any other server file and it is not
 - Admin tab (owner only): seasons and tracks (status marks: circle = to be built, half = building, filled = built), medal author times, leaderboard viewer with remove, reset buttons (type a phrase to confirm), player search and ban.
 - Track builder for season tracks: owner opens a track from Admin, builds on a blank island, Save stores the raw layout (blocks) and, if the layout is a valid route starting on the middle tile heading south, the route string, making the track "built". Changing a built layout clears its old times.
 - Medals, coins, shop, Car tab, flames: see section 6.
+- Build toolbar: #tools holds #pieces (icon buttons in groups, generated from the PIECES array in JS; each has data-t), then rotate / Test drive / clear, then #toolName (selected piece). Icons are inline SVG strokes (ICO).
+- Test drive (testDrive, tdResult, tdExit, var TD): in build mode, validates the layout with routeFromBlocks, snapshots the placed blocks, loads the route as a one-lap race (race.test=true, so no PB, ghost or leaderboard writes) and shows #tdBar. The results card shows the best run and a suggested author time (best run x 0.98). "Use as author time" copies it into #bldA when leaving. Back to editor (Esc, B or the button) restores the exact layout and the old dirty flag.
+- Account settings (Settings tab, #setAcct): change username (needs current password) and change password (old password, new twice). acName/acPw. Renaming moves the local per-user keys (dbx:<name>:...) to the new name.
 - Skid marks: pooled meshes (900). They fade from 7 s and vanish by 11 s, and are cleared whenever a new map is loaded (clearAll).
 - Nitro bar and flame, Tune panel (closes when you click elsewhere), settings rows, resize, main frame loop (the last lines).
 
@@ -101,6 +105,7 @@ localStorage keys (all start with dbx:): tune3 (tuning), opt (settings), api (se
 - Everyone who is signed in gets medals, coins, the Shop tab and the Car tab. (Owner just also sees more.)
 - Medals per track from the author time A: bronze at A x 1.6, silver A x 1.3, gold A x 1.1, author at A. Paying coins only when you reach a higher tier than before: PAY = 10, 25, 50, 100 (placeholders the owner likes). Not awarded in online races.
 - Coins and purchases are saved in the browser (localStorage, per account name), NOT on the server. Cosmetic only, so editing them is low stakes. Moving them server side would need new tables and endpoints.
+- Shop layout (online-store style): store header with coins, tabs (Today's offers; owner also Catalogue), left sidebar with category filters and a sort menu (catalogue only), product cards (.pc) with a studio-plate picture (stageSvg), name, description, price and a Buy / Equip button. The featured daily item is a wide "hero" card.
 - SHOP object: categories paint, accent, lights, trail (drift patterns), flame, theme (menu colours). Each item is [id, name, description, price, data]. The FIRST item in each category is the free default. Free items have price 0. Data: paint/accent/lights = colour number; trail = {cols, mode one|alt|cycle, o opacity, sm optional smoke colour}; flame = 4 colours [tip, mid, hot, core]; theme = 4 colours [m1, m2, m3, acc].
 - To add an item: add a tuple to the right SHOP list. Item ids saved in players' browsers must not be renamed or removed.
 - What each does on the real car: paint sets the body colour, accent the roof stripe and rear wing, lights the headlight colour and beam, trail the colour of drift marks and smoke, flame the nitro flame sprite colours, theme the menu accent colours. Bots and online cars always use the standard look (botMesh swaps those materials back).
@@ -127,6 +132,8 @@ HTTP API (all JSON, CORS open):
   GET  /api/me                          returns name, owner flag, the player's PBs
   POST /api/pb {season,track,ms}        ignored for the owner; validates the track is live and built; keeps the best time
   GET  /api/lb?season=&track=           top 25 plus the caller's rank
+  POST /api/account/rename {name,hash,newHash}   signed in; hash = old name + password, newHash = new name + same password (the client hash is salted with the lowercase name, so it changes when the name changes). Moves users, pbs and sessions to the new name in one batch. 409 if taken.
+  POST /api/account/password {hash,newHash}   signed in; verifies the old hash, stores the new one, signs out all other sessions and returns a fresh token.
   GET  /api/seasons                     live seasons and built tracks for players; owner also gets drafts, unbuilt tracks, status and saved layouts; also returns author times
   Owner only POSTs: /api/season (create draft), /api/season/live, /api/season/delete, /api/track (add), /api/track/save, /api/track/delete, /api/author (set or clear author time), /api/pb/delete, /api/ban, /api/admin/reset {what: times|accounts|seasons|everything}
   GET /api/admin/users?q=               owner only, player search
@@ -154,6 +161,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-27  Shop redesigned as an online store (sidebar, sort, product cards, hero deal) with one consistent studio-plate picture per item. Muted the brightest cosmetic colours (nothing neon). Compact icon toolbar for the builder. Test drive in the builder with a suggested author time. Settings: change username and password. worker.js: /api/account/rename, /api/account/password, and register now guards against duplicate names (name_lc is the primary key). Deploy worker.js with npx wrangler deploy.
 2026-10-26  Added this handover block.
 2026-10-26  Shop restyled flat and restrained. Added daily shop (8 items, first 30% off), owner-only "Everything" tab. Added Car tab with automatic drift preview. Cosmetic catalogue expanded to paint, accent, lights, drift patterns (18), flames (10), menu colours (8). Skid marks fade out and clear on a new map. Bots and online cars keep the standard look.
 2026-10-26  Shop opened to all signed-in players. Removed all performance boosts (big tank, quick refill, drift charge, launch kick, nitro punch) and their code. Test coins button owner only.
@@ -429,6 +437,84 @@ body.bldg .bar{top:calc(52px + env(safe-area-inset-top,0px))}
 #menu .cchip.on{background:#14161a;border-color:var(--acc);color:#fff}
 .cchip i{width:18px;height:18px;border-radius:2px;flex:none;border:1px solid #ffffff2a}
 .cchip.rd i{border-radius:50%}
+
+/* ---- v4: compact top bar and build toolbar ---- */
+.bar{gap:4px}
+.bar>button{padding:5px 12px;border-radius:2px;background:#14161af2;border:1px solid #ffffff22;color:#cfd1d4;font:600 12.5px var(--hd);letter-spacing:.14em;text-transform:uppercase}
+.bar>button:hover{border-color:#ffffff55;color:#fff}
+.bar>button.on{background:var(--acc);border-color:transparent;color:#fff}
+#tools{display:flex;flex-wrap:wrap;align-items:center;gap:0;background:#0d0e10f2;border:1px solid #ffffff22;border-radius:3px;padding:2px}
+#tools .grp,#pieces .grp{display:flex;gap:1px;padding:0 4px;border-right:1px solid #ffffff1a;align-items:center}
+#pieces{display:flex;flex-wrap:wrap;align-items:center}
+#pieces .grp:last-child{border-right:1px solid #ffffff1a}
+#tools button{width:30px;height:30px;padding:0;border:1px solid transparent;background:none;border-radius:2px;color:#9da3ab;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 12px var(--hd);letter-spacing:.12em;text-transform:uppercase}
+#tools button svg{width:19px;height:19px;flex:none}
+#tools button:hover{background:#ffffff12;color:#fff}
+#tools button.on{background:#e9eaec;color:#0d0e10}
+#tools button.tdb{width:auto;padding:0 11px 0 8px;background:var(--acc);color:#fff}
+#tools button.tdb:hover{filter:brightness(1.1);background:var(--acc)}
+#tools button.tdb svg{width:15px;height:15px}
+#toolName{font:600 12px var(--hd);letter-spacing:.16em;text-transform:uppercase;color:#cfd1d4;min-width:96px;padding:0 10px}
+#tdBar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:17;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;padding:8px 12px;background:#0d0e10f2;border:1px solid #ffffff26;border-radius:3px;color:#e9eaec;max-width:calc(100% - 24px)}
+#tdBar b{font:700 14px var(--hd);letter-spacing:.16em;text-transform:uppercase}
+#tdBar span{color:var(--mut);font-size:12.5px}
+#tdBar button{font:600 12.5px var(--hd);letter-spacing:.12em;text-transform:uppercase;padding:6px 12px;border-radius:2px;background:none;border:1px solid #ffffff40;color:#e9eaec}
+#tdBar button:hover{border-color:#fff}
+
+/* ---- v4: account settings ---- */
+.acctGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px 44px;padding-bottom:6px}
+.acBox h5{margin:0 0 2px;font:600 15px var(--hd);letter-spacing:.14em;text-transform:uppercase;color:#e9eaec}
+.acBox label{display:block;margin:12px 0 0;color:var(--mut);font:500 11px var(--hd);letter-spacing:.2em;text-transform:uppercase}
+#menu .acBox input{display:block;width:100%;box-sizing:border-box;margin-top:6px;font:500 15px var(--ui);color:#fff;background:#14161a;border:1px solid #ffffff2e;border-radius:3px;padding:9px 11px}
+#menu .acBox input:focus{outline:none;border-color:var(--acc)}
+#menu .acBox button{margin-top:12px;background:none;border:1px solid #ffffff33;color:#cfd1d4;font:600 13px var(--hd);letter-spacing:.14em;text-transform:uppercase;padding:9px 18px;border-radius:2px}
+#menu .acBox button:hover{border-color:#fff;color:#fff}
+.aerr.ok{color:#8fcf9f}
+.acBox .aerr{min-height:18px;margin:8px 0 0}
+
+/* ---- v4: shop laid out like an online store ---- */
+.shopBar{gap:28px}
+.shopTitle b{display:block;font:italic 700 28px/1 var(--hd);letter-spacing:.05em;text-transform:uppercase;color:#fff}
+.shopTitle span{color:var(--mut);font:500 11px var(--hd);letter-spacing:.22em;text-transform:uppercase}
+.shopBody{display:grid;grid-template-columns:210px 1fr;gap:28px;align-items:start}
+.shopBody.noside{grid-template-columns:1fr}
+#shopSide{position:sticky;top:12px;padding-top:18px}
+.sideT{margin:18px 0 6px;font:600 11px var(--hd);letter-spacing:.22em;text-transform:uppercase;color:var(--mut)}
+.sideT:first-child{margin-top:0}
+#menu #shopSide .sb{display:flex;justify-content:space-between;align-items:baseline;width:100%;text-align:left;background:none;border:0;border-left:2px solid transparent;border-radius:0;padding:8px 10px;color:var(--mut);font:600 14px var(--hd);letter-spacing:.1em;text-transform:uppercase}
+#menu #shopSide .sb:hover{color:#fff;background:#ffffff08}
+#menu #shopSide .sb.on{color:#fff;border-left-color:var(--acc);background:#ffffff0d}
+#shopSide .sb small{opacity:.6;font-size:12px}
+.shopSort{width:100%;font:500 14px var(--ui);color:#e9eaec;background:#14161a;border:1px solid #ffffff2e;border-radius:3px;padding:8px 10px}
+.shopSort option{background:#14161a}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding-bottom:6px}
+.pc{display:flex;flex-direction:column;background:#14161a;border:1px solid #ffffff14;border-radius:2px;overflow:hidden}
+.pc:hover{border-color:#ffffff3a}
+.pc.eq{border-color:#ffffff55}
+.pimg{position:relative;aspect-ratio:8/5;background:#181b20;border-bottom:1px solid #ffffff10}
+.pimg svg{display:block;width:100%;height:100%}
+.pbadge{position:absolute;top:8px;left:8px;background:var(--acc);color:#fff;font:700 11px var(--hd);letter-spacing:.14em;text-transform:uppercase;padding:2px 8px;border-radius:2px}
+.pbadge.r{left:auto;right:8px;background:#0d0e10cc;color:#e9eaec;border:1px solid #ffffff33}
+.pinfo{padding:12px 14px 4px;flex:1}
+.pinfo small{display:block;color:var(--mut);font:500 11px var(--hd);letter-spacing:.2em;text-transform:uppercase}
+.pinfo h4{margin:2px 0 0;font:600 19px/1.15 var(--hd);letter-spacing:.04em;text-transform:uppercase;color:#fff}
+.pinfo p{margin:5px 0 0;color:var(--mut);font-size:12.5px;line-height:1.4}
+.pbuy{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px 14px}
+.pp{display:flex;align-items:center;font:600 18px var(--hd);letter-spacing:.04em;color:#fff}
+.pp s{color:var(--mut);font-size:13px;margin-left:8px}
+.pp.own{color:var(--mut);font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.pw .need{display:block;font:500 11px var(--ui);color:#d98a78;margin-top:2px}
+#menu .pbtn{font:700 13px var(--hd);letter-spacing:.14em;text-transform:uppercase;padding:9px 16px;border-radius:2px;border:1px solid #ffffff40;background:none;color:#e9eaec;cursor:pointer;white-space:nowrap}
+#menu .pbtn:hover{border-color:#fff}
+#menu .pbtn.buy{background:var(--acc);border-color:transparent;color:#fff}
+#menu .pbtn.buy:hover{filter:brightness(1.1)}
+#menu .pbtn:disabled{opacity:.3;cursor:not-allowed;filter:none}
+span.pbtn.eqd{display:inline-block;border:0;color:var(--mut);padding:9px 0}
+.pc.hero{grid-column:span 2;display:grid;grid-template-columns:1.25fr 1fr;grid-template-rows:1fr auto}
+.pc.hero .pimg{grid-row:1/3;aspect-ratio:auto;min-height:220px;border-bottom:0;border-right:1px solid #ffffff10}
+.pc.hero .pinfo{padding-top:18px}
+.pc.hero .pinfo h4{font-size:28px}
+@media (max-width:760px){.shopBody{grid-template-columns:1fr}#shopSide{position:static;padding-top:12px}.pc.hero{grid-column:auto;display:flex}.pc.hero .pimg{aspect-ratio:8/5;min-height:0;border-right:0;border-bottom:1px solid #ffffff10}}
 </style>
 </head>
 <body>
@@ -436,13 +522,7 @@ body.bldg .bar{top:calc(52px + env(safe-area-inset-top,0px))}
   <button id="bMenu">Menu</button>
   <button id="mDrive" class="on">Drive</button>
   <button id="mBuild">Build</button>
-  <div id="tools" class="hide">
-    <button data-t="straight" class="on">Straight</button>
-    <button data-t="corner">Corner</button><button data-t="wide">Wide corner</button><button data-t="boost">Boost</button><button data-t="chicane">Chicane</button><button data-t="slick">Oil</button><button data-t="jump">Jump</button><button data-t="gravel">Gravel</button><button data-t="slalom">Slalom</button><button data-t="gate">Gate</button><button data-t="open" title="Road with no walls">Open road</button><button data-t="edge" title="Road with a wall on one side only. Rotate to pick the side.">Half border</button><button data-t="narrowL" title="Narrows from a wide corner to normal road. Free build only.">Narrow ◀</button><button data-t="narrowR" title="Mirror of the other narrowing piece. Free build only.">Narrow ▶</button><button data-t="ice" title="Very slippery">Ice</button><button data-t="refill" title="Refills nitro while you drive over it">Nitro pad</button><button data-t="rumble" title="Bumpy strips that slow you a little">Rumble</button><button data-t="squeeze" title="Road narrows to about half width">Squeeze</button><button data-t="drift" title="Low grip. Sliding here charges nitro.">Drift zone</button>
-    <button data-t="erase">Erase</button>
-    <button id="bRot">Rotate</button>
-    <button id="bClr">Clear all</button>
-  </div>
+  <div id="tools" class="hide"><div id="pieces"></div><div class="grp"><button id="bRot" title="Rotate (R)"></button><button id="bTest" class="tdb" title="Drive this track from start to finish"></button><button id="bClr" title="Clear all pieces"></button></div><span id="toolName"></span></div>
   <div id="courses" class="hide"><button data-c="SSLSBSLSOSLSCSLS">Speedway</button><button data-c="SBSLLSCSRRSOSLLSBS">Switchbacks</button><button data-c="SLCRBLOR">Staircase</button><button data-c="SSOLSBSLSSCSSLSCSLBS">Grand Prix</button><button data-c="donut">Donut</button><button data-c="random">Random</button></div>
   <button id="bAssist" class="on hide">Assist: on</button>
   <button id="bSnd" class="on hide">Sound: on</button>
@@ -451,15 +531,15 @@ body.bldg .bar{top:calc(52px + env(safe-area-inset-top,0px))}
 </div>
 <div class="info"><div id="hud"></div><div id="hint"></div></div>
 <div id="big"></div>
-<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tCar" class="hide">Car</button><button id="tShop" class="hide">Shop</button><button id="tSet">Settings</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl"><div><span><kbd>W A S D</kbd><kbd>Arrows</kbd></span>Drive</div><div><span><kbd>Shift</kbd></span>Nitro</div><div><span><kbd>S</kbd></span>While turning, flicks the rear out</div><div><span><kbd>C</kbd></span>Restart</div><div><span><kbd>B</kbd></span>Build mode</div><div><span><kbd>Esc</kbd></span>Menu</div></div></div>
-<div id="shop" class="hide"><div class="shopBar"><div class="coinBox"><i class="coin"></i><b id="coinN">0</b><small>coins</small></div><div class="pay" id="payN"></div><button data-shop="test" class="tst hide">+500 test coins</button></div><div class="shopNav" id="shopTabs"></div><div id="shopHead"></div><div class="sgrid" id="shopL"></div></div><div id="car" class="hide"><div><canvas id="cpv" width="800" height="450"></canvas><div class="lbn" id="carNote"></div></div><div id="carSlots"></div></div>
+<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tCar" class="hide">Car</button><button id="tShop" class="hide">Shop</button><button id="tSet">Settings</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><div id="setAcct" class="hide"><h3>Account</h3><div class="acctGrid"><div class="acBox"><h5>Change username</h5><label>New username<input id="acNewName" maxlength="16" autocomplete="off"></label><label>Current password<input id="acNamePw" type="password" autocomplete="current-password"></label><button id="acNameGo">Change username</button><div class="aerr" id="acNameMsg"></div></div><div class="acBox"><h5>Change password</h5><label>Old password<input id="acOld" type="password" autocomplete="current-password"></label><label>New password<input id="acPw1" type="password" autocomplete="new-password"></label><label>New password again<input id="acPw2" type="password" autocomplete="new-password"></label><button id="acPwGo">Change password</button><div class="aerr" id="acPwMsg"></div></div></div></div><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl"><div><span><kbd>W A S D</kbd><kbd>Arrows</kbd></span>Drive</div><div><span><kbd>Shift</kbd></span>Nitro</div><div><span><kbd>S</kbd></span>While turning, flicks the rear out</div><div><span><kbd>C</kbd></span>Restart</div><div><span><kbd>B</kbd></span>Build mode</div><div><span><kbd>Esc</kbd></span>Menu</div></div></div>
+<div id="shop" class="hide"><div class="shopBar"><div class="shopTitle"><b>Garage shop</b><span>Cosmetics only</span></div><div class="coinBox"><i class="coin"></i><b id="coinN">0</b><small>coins</small></div><div class="pay" id="payN"></div><button data-shop="test" class="tst hide">+500 test coins</button></div><div class="shopNav" id="shopTabs"></div><div class="shopBody" id="shopBody"><aside id="shopSide"></aside><div class="shopMain"><div id="shopHead"></div><div class="pgrid" id="shopL"></div></div></div></div><div id="car" class="hide"><div><canvas id="cpv" width="800" height="450"></canvas><div class="lbn" id="carNote"></div></div><div id="carSlots"></div></div>
 <div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft that only you can see. Add tracks, build each one, then press Publish. Track marks: ○ to be built, ◐ building (saved but not finished), ● built.</div><h3>Medal times</h3><div class="pd">Author time in seconds for each track. Gold (+10%), silver (+30%) and bronze (+60%) are worked out from it.</div><div id="adMed"></div><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Reset</h3><div class="pd">Each button asks you to type a confirmation phrase, like "reset times". This cannot be undone. Your owner account and Season 1 always stay.</div><div class="orow2"><button data-act="reset" data-what="times">Reset times</button><button data-act="reset" data-what="accounts">Reset accounts</button><button data-act="reset" data-what="seasons">Reset seasons</button><button data-act="reset" data-what="everything">Reset everything</button></div><h3>Players</h3><div class="orow2"><input id="adQ" placeholder="Search players by name"><button id="adUsers">Search</button></div><div id="adUl"></div><div class="pd" id="adSt"></div></div>
 <div id="setup" class="hide"><h3>Race setup</h3><div class="opts" id="setupO"></div></div>
 <div id="online" class="hide"><div class="orow2"><input id="mpname" maxlength="12" placeholder="Your name"></div><div class="orow2"><button id="mpHost">Host a room</button><input id="mpcode" maxlength="4" placeholder="CODE"><button id="mpJoin">Join</button></div><div class="pd" id="mpst">Host a room and share the 4-letter code, or enter a friend's code. Hosts pick the course on the left.</div><div class="plist" id="mpl"></div><div class="mfoot"><button class="go hide" id="mpGo">Start race</button><button id="mpLeave" class="hide">Leave room</button></div></div>
 <div class="mfoot" id="solofoot"><button class="go" id="mPlay">Start race</button><button id="mResume" class="hide">Resume</button><button id="mTune">Handling…</button></div></div></div></div></div>
-<div id="res" class="hide"><div class="rc"><div class="rk" id="rk"></div><div class="rt" id="rtt"></div><div class="rtime" id="rtime"></div><div class="rsub" id="rsub"></div><div class="rsub" id="rmed" style="font-weight:700"></div><div class="pbb hide" id="rpb">NEW PERSONAL BEST</div><table id="rtab"></table><div class="rbtn"><button class="go" id="rRetry">Retry</button><button id="rMenu">Menu</button></div></div></div>
+<div id="res" class="hide"><div class="rc"><div class="rk" id="rk"></div><div class="rt" id="rtt"></div><div class="rtime" id="rtime"></div><div class="rsub" id="rsub"></div><div class="rsub" id="rmed" style="font-weight:700"></div><div class="pbb hide" id="rpb">NEW PERSONAL BEST</div><table id="rtab"></table><div class="rbtn"><button class="go" id="rRetry">Retry</button><button id="rUse" class="hide">Use as author time</button><button id="rMenu">Menu</button></div></div></div>
 <div id="auth" class="hide"><div class="ap"><h1>Drift Box</h1><div class="sub">Sign in to save your times</div><div class="atabs"><button id="auIn" class="on">Sign in</button><button id="auUp">Create account</button></div><label>Name<input id="auName" maxlength="16" autocomplete="username"></label><label>Password<input id="auPw" type="password" autocomplete="current-password"></label><div class="aerr" id="auErr"></div><button class="go" id="auGo">Sign in</button><div class="amode" id="auMode"></div><details class="hide"><summary>Server address</summary><div class="orow2"><input id="auApi" placeholder="https://driftbox-api.yourname.workers.dev"><button id="auApiSave">Save</button></div></details></div></div>
-<div id="toast" class="hide"></div><canvas id="conf" class="hide"></canvas><div id="tune" class="info hide"></div><div id="timer" class="info hide"><div id="tm"></div></div><canvas id="mini" width="240" height="240" class="hide"></canvas><canvas id="gauge" width="260" height="260"></canvas><div id="nbar"><b>NITRO</b><div class="nt"><i id="nf"></i></div><span id="np">100</span></div><div id="bld" class="hide"><b id="bldN"></b><span id="bldS"></span><span id="bldD"></span><input id="bldA" type="number" step="0.01" min="1" max="900" placeholder="Author time (s)"><button id="bldSave">Save</button><button id="bldBack">Back to seasons</button></div>
+<div id="tdBar" class="hide"><b>Test drive</b><span id="tdInfo"></span><button id="tdRestart">Restart</button><button id="tdExit">Back to editor</button></div><div id="toast" class="hide"></div><canvas id="conf" class="hide"></canvas><div id="tune" class="info hide"></div><div id="timer" class="info hide"><div id="tm"></div></div><canvas id="mini" width="240" height="240" class="hide"></canvas><canvas id="gauge" width="260" height="260"></canvas><div id="nbar"><b>NITRO</b><div class="nt"><i id="nf"></i></div><span id="np">100</span></div><div id="bld" class="hide"><b id="bldN"></b><span id="bldS"></span><span id="bldD"></span><input id="bldA" type="number" step="0.01" min="1" max="900" placeholder="Author time (s)"><button id="bldSave">Save</button><button id="bldBack">Back to seasons</button></div>
 <div id="pad" class="hide"><button data-k="KeyA">◀</button><button data-k="KeyW">▲</button><button data-k="KeyD">▶</button><button data-k="Nitro">N</button><button data-k="KeyS">▼</button></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -714,14 +794,14 @@ addEventListener('keydown',e=>{
   k[e.code]=true;
   if(/^(Space|Arrow)/.test(e.code))e.preventDefault();
   if(e.repeat)return;
-  if(e.code==='KeyB')setMode(mode==='drive'?'build':'drive');
+  if(e.code==='KeyB'){if(TD)tdExit();else setMode(mode==='drive'?'build':'drive')}
   if(e.code==='KeyC'&&!MP)resetCar();
   if(e.code==='KeyR'){rot=(rot+1)%4;syncGhost()}
   if(mOpen&&menuTab==='solo'&&!(e.target&&e.target.tagName==='INPUT')){
     if(e.code==='ArrowDown'||e.code==='ArrowUp'){const p=Math.max(0,Math.min(MENU_ORDER.length-1,MENU_ORDER.indexOf(selC)+(e.code==='ArrowDown'?1:-1)));selC=MENU_ORDER[p]??selC;buildMenu();return}
     if(e.code==='Enter'){startGame();return}
   }
-  if(e.code==='Escape')toggleMenu();
+  if(e.code==='Escape'){if(TD)tdExit();else toggleMenu()}
   if(mode==='build'&&/^Digit\d$/.test(e.code)){const d=+e.code[5],t=TOOLS[d?d-1:10];if(t)setTool(t)}
 });
 addEventListener('keyup',e=>k[e.code]=false);
@@ -735,9 +815,23 @@ $('#bAssist').onclick=e=>{assist=!assist;e.target.classList.toggle('on',assist);
 document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{(b.dataset.c==='donut'?loadDonut():loadCourse(b.dataset.c==='random'?randomCourse():b.dataset.c));setMode('drive')});
 document.querySelectorAll('[data-k]').forEach(b=>{const s=v=>e=>{e.preventDefault();k[b.dataset.k]=v};b.onpointerdown=s(true);b.onpointerup=b.onpointerleave=b.onpointercancel=s(false)});
 $('#bClr').onclick=()=>{clearAll();race={route:null};closeBots()};
+// ---------- compact build toolbar: small icons in groups ----------
+const ICO=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
+const PIECES=[
+ [['straight','Straight','<path d="M7 3v18M17 3v18"/>'],['corner','Corner','<path d="M4 21V11a7 7 0 0 1 7-7h10M13 21v-5a3 3 0 0 1 3-3h5"/>'],['wide','Wide corner','<path d="M3 21C3 11 11 3 21 3M3 13C3 8 8 3 13 3"/>'],['open','Open road','No walls','<path d="M7 3v18M17 3v18" stroke-dasharray="2 3"/>'],['edge','Half border','Wall on one side. Rotate to pick the side.','<path d="M7 3v18" stroke-dasharray="2 3"/><path d="M17 3v18"/>'],['squeeze','Squeeze','Road narrows to about half width','<path d="M5 3v6l3 3-3 3v6M19 3v6l-3 3 3 3v6"/>'],['narrowL','Narrow left','Free build only','<path d="M3 3l7 18M21 3v18"/>'],['narrowR','Narrow right','Free build only','<path d="M3 3v18M21 3l-7 18"/>']],
+ [['chicane','Chicane','<path d="M9 3c0 6 6 6 6 9s-6 3-6 9"/>'],['slalom','Slalom','<circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>'],['gate','Gate','<path d="M4 6v14M20 6v14M4 9h16"/>'],['jump','Jump','<path d="M3 19h18M3 19l12-9v9"/>'],['rumble','Rumble strips','Bumpy strips that slow you a little','<path d="M5 6h14M5 10h14M5 14h14M5 18h14"/>']],
+ [['boost','Boost','<path d="M6 10l6-5 6 5M6 18l6-5 6 5"/>'],['refill','Nitro pad','Refills nitro','<circle cx="12" cy="12" r="7"/><path d="M12 8.5v7M8.5 12h7"/>'],['drift','Drift zone','Low grip. Sliding here charges nitro.','<path d="M5 20c0-8 6-8 9-11s3-5 5-5M9 21c0-6 4-6 7-8"/>'],['slick','Oil','<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>'],['gravel','Gravel','<circle cx="7" cy="8" r="1.3"/><circle cx="14" cy="6" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="10" cy="13" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>'],['ice','Ice','Very slippery','<path d="M12 3v18M4.5 7.5l15 9M4.5 16.5l15-9"/>']],
+ [['erase','Erase','<path d="M6 6l12 12M18 6L6 18"/>']]
+];
+$('#pieces').innerHTML=PIECES.map(g=>'<div class="grp">'+g.map(a=>{const t=a[0],n=a[1],p=a[a.length-1],h=a.length>3?a[2]:'';return '<button data-t="'+t+'" title="'+n+(h?' - '+h:'')+'" aria-label="'+n+'">'+ICO(p)+'</button>'}).join('')+'</div>').join('');
+$('#bRot').innerHTML=ICO('<path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5"/>');
+$('#bClr').innerHTML=ICO('<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/>');
+$('#bTest').innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg><span>Test drive</span>';
+$('#pieces [data-t="straight"]').classList.add('on');$('#toolName').textContent='Straight';
 document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>setTool(b.dataset.t));
-function setTool(t){tool=t;document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));syncGhost()}
+function setTool(t){tool=t;document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t===t));const bt=document.querySelector('#pieces [data-t="'+t+'"]');$('#toolName').textContent=bt?bt.getAttribute('aria-label'):'';syncGhost()}
 function setMode(m){
+  if(TD&&m==='build'){tdExit();return}
   hideTune();mode=m;$('#mDrive').classList.toggle('on',m==='drive');$('#mBuild').classList.toggle('on',m==='build');
   $('#tools').classList.toggle('hide',m!=='build');
   $('#pad').classList.toggle('hide',m!=='drive'||!matchMedia('(pointer:coarse)').matches);
@@ -863,8 +957,8 @@ function lapDone(closed){
   if(t<R.best){
     pb=true;R.anyPB=true;R.best=t;R.bestS=R.splits.slice();
     R.gh=R.rec.map((v,i)=>i%3===2?Math.round(v*100)/100:Math.round(v*10)/10);
-    try{localStorage.setItem(pk(R.key),JSON.stringify({t,s:R.bestS}));localStorage.setItem(pk('g:'+R.key),JSON.stringify(R.gh))}catch(e){}
-    submitPB(R.course,t);
+    if(!R.test)try{localStorage.setItem(pk(R.key),JSON.stringify({t,s:R.bestS}));localStorage.setItem(pk('g:'+R.key),JSON.stringify(R.gh))}catch(e){}
+    if(!R.test)submitPB(R.course,t);
   }
   const mm=awardMedal(R.course,t);if(mm)R.medalMsg=mm;
   if(closed)R.laps++;
@@ -1027,7 +1121,7 @@ function buildMenuOld(){
 }
 function openMenu(){hideTune();paused=!(MP&&MP.ready);mOpen=true;buildMenu();$('#menu').classList.remove('hide');$('#mResume').classList.toggle('hide',!started);if(menuTab==='car')cpvStart()}
 function closeMenu(){hideTune();paused=false;mOpen=false;$('#menu').classList.add('hide')}
-function toggleMenu(){mOpen?(started&&closeMenu()):openMenu()}
+function toggleMenu(){if(TD){tdExit();return}mOpen?(started&&closeMenu()):openMenu()}
 var GP=null;
 const GPCAL=['Speedway','Harbor Loop','Coastline','Midnight Circuit'],PTS=[25,18,15,12];
 function startGame(){
@@ -1057,7 +1151,7 @@ function finishRace(){
   $('#rk').textContent=top;$('#rk').className='rk r'+Math.min(cls,4);$('#rtt').textContent=title;
   $('#rtime').textContent=fmt(R.t);$('#rsub').textContent=isFinite(R.best)?'Best lap '+fmt(R.best):'';
   $('#rpb').classList.toggle('hide',!R.anyPB);$('#rmed').textContent=R.medalMsg||'';$('#rtab').innerHTML=html;
-  $('#rRetry').textContent=MP?'Menu':btn;$('#rRetry').onclick=MP?openMenu:GP?(last?openMenu:nextRace):()=>resetCar();
+  $('#rRetry').textContent=MP?'Menu':btn;$('#rRetry').onclick=MP?openMenu:GP?(last?openMenu:nextRace):()=>resetCar();if(R.test)tdResult(R);
   $('#res').classList.remove('hide');
   if(champ||(!GP&&(rank===1||R.anyPB)))confetti();
 }
@@ -1368,6 +1462,58 @@ function acctUI(){
   $('#tAdmin').classList.toggle('hide',!(SESS&&SESS.owner&&API_URL));$('#tShop').classList.toggle('hide',!SESS);$('#tCar').classList.toggle('hide',!SESS);
 }
 function logout(){SESS=null;try{localStorage.removeItem('dbx:sess')}catch(e){}loadOwn();acctUI();setTab('solo');showAuth()}
+// ---------- account settings: change username or password ----------
+const acMsg=(id,t,ok)=>{const e=$(id);e.textContent=t||'';e.classList.toggle('ok',!!ok)};
+function moveLocal(oldLc,newLc){
+  const op='dbx:'+oldLc+':',np='dbx:'+newLc+':',ks=[];
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(op))ks.push(k)}
+  ks.forEach(k=>{localStorage.setItem(np+k.slice(op.length),localStorage.getItem(k));localStorage.removeItem(k)});
+}
+async function acName(){
+  if(!SESS)return;
+  const nn=($('#acNewName').value||'').trim(),pw=$('#acNamePw').value||'';
+  if(!/^[A-Za-z0-9_ -]{3,16}$/.test(nn)){acMsg('#acNameMsg','Name: 3 to 16 letters, numbers, spaces, _ or -');return}
+  if(nn===SESS.name){acMsg('#acNameMsg','That is already your username.');return}
+  if(!pw){acMsg('#acNameMsg','Enter your password to confirm.');return}
+  acMsg('#acNameMsg','');$('#acNameGo').disabled=true;
+  try{
+    const oldLc=SESS.name.toLowerCase(),newLc=nn.toLowerCase(),hash=await hashPw(SESS.name,pw),newHash=await hashPw(nn,pw);
+    if(!API_URL){
+      const us=JSON.parse(localStorage.getItem('dbx:users')||'{}'),me=us[oldLc];
+      if(!me||me.hash!==hash)throw new Error('Password is wrong');
+      if(newLc!==oldLc&&(us[newLc]||newLc==='clem'))throw new Error('That name is taken');
+      delete us[oldLc];us[newLc]={name:nn,hash:newHash};localStorage.setItem('dbx:users',JSON.stringify(us));
+      const all=JSON.parse(localStorage.getItem('dbx:lb')||'{}');for(const k in all)all[k].forEach(r=>{if(r.name===SESS.name)r.name=nn});localStorage.setItem('dbx:lb',JSON.stringify(all));
+    }else await api('/api/account/rename',{name:nn,hash,newHash});
+    if(newLc!==oldLc)moveLocal(oldLc,newLc);
+    SESS.name=nn;localStorage.setItem('dbx:sess',JSON.stringify(SESS));
+    $('#acNewName').value='';$('#acNamePw').value='';
+    loadOwn();acctUI();acMsg('#acNameMsg','Username changed to '+nn+'.',1);fetchLB();
+  }catch(e){acMsg('#acNameMsg',e.message)}
+  $('#acNameGo').disabled=false;
+}
+async function acPw(){
+  if(!SESS)return;
+  const o=$('#acOld').value||'',a=$('#acPw1').value||'',b=$('#acPw2').value||'';
+  if(!o){acMsg('#acPwMsg','Enter your old password.');return}
+  if(a.length<6){acMsg('#acPwMsg','New password must be at least 6 characters.');return}
+  if(a!==b){acMsg('#acPwMsg','The two new passwords do not match.');return}
+  if(a===o){acMsg('#acPwMsg','The new password must be different from the old one.');return}
+  acMsg('#acPwMsg','');$('#acPwGo').disabled=true;
+  try{
+    const hash=await hashPw(SESS.name,o),newHash=await hashPw(SESS.name,a);
+    if(!API_URL){
+      const us=JSON.parse(localStorage.getItem('dbx:users')||'{}'),lc=SESS.name.toLowerCase();
+      if(!us[lc]||us[lc].hash!==hash)throw new Error('Old password is wrong');
+      us[lc].hash=newHash;localStorage.setItem('dbx:users',JSON.stringify(us));
+    }else{const r=await api('/api/account/password',{hash,newHash});SESS.token=r.token;localStorage.setItem('dbx:sess',JSON.stringify(SESS))}
+    $('#acOld').value=$('#acPw1').value=$('#acPw2').value='';
+    acMsg('#acPwMsg','Password changed.'+(API_URL?' Other devices were signed out.':''),1);
+  }catch(e){acMsg('#acPwMsg',e.message)}
+  $('#acPwGo').disabled=false;
+}
+$('#acNameGo').onclick=acName;$('#acPwGo').onclick=acPw;
+$('#acNamePw').onkeydown=e=>{if(e.key==='Enter')acName()};$('#acPw2').onkeydown=e=>{if(e.key==='Enter')acPw()};
 async function afterLogin(){
   $('#auth').classList.add('hide');$('#auPw').value='';loadOwn();acctUI();
   await fetchSeasons();await syncPBs();buildMenu();
@@ -1561,6 +1707,46 @@ function bldBack(){
 }
 $('#bldA').oninput=()=>{if(BLD)BLD.dirty=true};$('#bldSave').onclick=bldSave;$('#bldBack').onclick=bldBack;
 setInterval(()=>{if(BLD)bldInfo()},400);
+// ---------- test drive: drive the track you are building, start to finish ----------
+var TD=null;
+function testDrive(){
+  if(TD||mode!=='build')return;
+  const r=routeFromBlocks();
+  if(r.err){toast(r.err);return}
+  TD={layout:blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot})),dirty:!!(BLD&&BLD.dirty),laps:OPT.laps,best:Infinity,sug:null,use:false};
+  OPT.laps=1;closeBots();
+  loadCourse(r.str);
+  Object.assign(race,{test:true,best:Infinity,bestS:null,gh:null,course:null});
+  resetCar();setMode('drive');
+  $('#rUse').classList.add('hide');$('#tdInfo').textContent='Drive start to finish. Your best run sets the suggested author time.';
+  $('#tdBar').classList.remove('hide');
+}
+function tdResult(R){
+  if(!TD)return;
+  TD.best=Math.min(TD.best,R.t);TD.sug=Math.max(1,Math.round(TD.best*.98*100)/100);
+  $('#rk').textContent='TEST';$('#rk').className='rk r1';$('#rtt').textContent='TEST DRIVE';
+  $('#rtime').textContent=fmt(R.t);
+  $('#rsub').textContent='Best run '+fmt(TD.best)+' · suggested author time '+TD.sug.toFixed(2)+' s';
+  $('#rmed').textContent=(ownOn()&&(OPT.admin||0)>0)?'The admin car is on, so this time is not realistic.':'Drive it a few times: the best run is used, then trimmed by about 2%.';
+  $('#rpb').classList.add('hide');$('#rtab').innerHTML='';
+  $('#rRetry').textContent='Drive again';$('#rRetry').onclick=()=>resetCar();
+  $('#rMenu').textContent='Back to editor';$('#rMenu').onclick=tdExit;
+  const u=$('#rUse');u.classList.toggle('hide',!BLD);u.textContent=TD.use?'Added ✓':'Use as author time';u.onclick=()=>{TD.use=true;u.textContent='Added ✓'};
+  $('#tdInfo').textContent='Best '+fmt(TD.best)+' · suggested author time '+TD.sug.toFixed(2)+' s';
+}
+function tdExit(){
+  if(!TD)return;
+  const T=TD;TD=null;
+  OPT.laps=T.laps;closeBots();clearAll();race={route:null};
+  T.layout.forEach(b=>placeTile(b.k,b.x,b.z,b.rot));
+  if(BLD)BLD.dirty=T.dirty;
+  if(T.use&&T.sug&&BLD){$('#bldA').value=T.sug.toFixed(2);BLD.dirty=true}
+  hideRes();$('#tdBar').classList.add('hide');$('#rUse').classList.add('hide');
+  $('#rMenu').textContent='Menu';$('#rMenu').onclick=openMenu;$('#rRetry').textContent='Retry';
+  resetCar();setMode('build');
+}
+$('#bTest').onclick=testDrive;$('#tdExit').onclick=tdExit;$('#tdRestart').onclick=()=>resetCar();
+
 
 // ---------- medals, coins and the owner shop ----------
 const MEDALS=[['Bronze','#cd7f32'],['Silver','#c0c8d4'],['Gold','#ffd43b'],['Author','#3be07a']];
@@ -1585,28 +1771,28 @@ const SHOP={
   ],
   accent:[
     ['ember','Ember','The original orange stripe and wing.',0,0xff8a3d],['snow','Snow','',0,0xe9eaec],
-    ['red','Red','',100,0xe03e3e],['yellow','Yellow','',100,0xffd43b],['lime','Lime','',120,0x8be04a],['cyan','Cyan','',120,0x19c9f5],
-    ['magenta','Magenta','',120,0xff3da8],['violet','Violet','',140,0x9a5cff],['mint','Mint','',140,0x3be0a6],['teal','Teal','',140,0x14b8a6],
+    ['red','Red','',100,0xe03e3e],['yellow','Yellow','',100,0xffd43b],['lime','Lime','',120,0x7fae4a],['cyan','Sky','',120,0x4f9fc4],
+    ['magenta','Berry','',120,0xc2547f],['violet','Violet','',140,0x7f68c4],['mint','Mint','',140,0x5fbf9f],['teal','Teal','',140,0x14b8a6],
     ['rose','Rose','',140,0xff8fb0],['navy','Navy','',150,0x1f3a7a],['black','Black','',150,0x15181d],['silver','Silver','',180,0xc0c8d4],['gold','Gold','',220,0xe8b020]
   ],
   lights:[
     ['warm','Warm White','The standard headlights.',0,0xfff1c9],
-    ['cool','Cool White','',150,0xe6f2ff],['amber','Amber','',180,0xffb84a],['ice','Ice Blue','',200,0x9fd8ff],['lime','Lime','',200,0xc8ff7a],
-    ['rose','Rose','',220,0xff9ac8],['violet','Violet','',220,0xc9a6ff],['teal','Teal','',220,0x7affea],['red','Red','',260,0xff6a5a]
+    ['cool','Cool White','',150,0xe6f2ff],['amber','Amber','',180,0xffb84a],['ice','Ice Blue','',200,0x9fd8ff],['lime','Lime','',200,0xc9dd9a],
+    ['rose','Rose','',220,0xff9ac8],['violet','Violet','',220,0xcdb8f0],['teal','Teal','',220,0xa6e0d6],['red','Red','',260,0xff6a5a]
   ],
   trail:[
     ['classic','Classic','Black marks, grey smoke.',0,T([0x0b0b0d],'one',.4,0xb4c0da)],
-    ['neon','Cyan','',250,T([0x19c9f5])],['pink','Hot Pink','',250,T([0xff3da8])],['toxic','Toxic Green','',250,T([0x5dff3a])],
-    ['crimson','Crimson','',250,T([0xd8232a])],['orange','Orange','',250,T([0xff7a1a])],['violet','Violet','',250,T([0x8f4dff])],
-    ['teal','Teal','',250,T([0x14b8a6])],['chalk','Chalk','',300,T([0xf2f4f7])],['gold','Gold Rush','',400,T([0xffc021])],
-    ['candy','Candy','Marks alternate between pink and blue.',500,T([0xff3da8,0x6bd0ff],'alt')],
+    ['neon','Steel Blue','',250,T([0x4f8fc0])],['pink','Rose','',250,T([0xc2547f])],['toxic','Moss','',250,T([0x6fa14a])],
+    ['crimson','Crimson','',250,T([0xd8232a])],['orange','Orange','',250,T([0xd9782a])],['violet','Violet','',250,T([0x7a62c4])],
+    ['teal','Teal','',250,T([0x2c9c92])],['chalk','Chalk','',300,T([0xf2f4f7])],['gold','Gold Rush','',400,T([0xd9a928])],
+    ['candy','Candy','Marks alternate between pink and blue.',500,T([0xc2547f,0x7fb2d8],'alt')],
     ['bee','Bumblebee','Marks alternate between yellow and black.',500,T([0xffd43b,0x0b0b0d],'alt')],
     ['checker','Checkered','Marks alternate between white and black.',500,T([0xf2f4f7,0x0b0b0d],'alt')],
-    ['sunset','Sunset','Colours shift as you slide.',550,T([0xff8a3d,0xff3da8,0x8f4dff],'cycle')],
-    ['ocean','Ocean','Colours shift as you slide.',550,T([0x19c9f5,0x1fd49a,0x3b6cf0],'cycle')],
-    ['inferno','Inferno','Colours shift as you slide.',600,T([0xd8232a,0xff7a1a,0xffd43b],'cycle')],
-    ['aurora','Aurora','Colours shift as you slide.',800,T([0x1fd49a,0x19c9f5,0x8f4dff,0xff3da8],'cycle')],
-    ['rainbow','Rainbow','Colours shift as you slide.',900,T([0xff3333,0xffcc33,0x33dd66,0x33bbff,0xaa55ff],'cycle')]
+    ['sunset','Sunset','Colours shift as you slide.',550,T([0xd9782a,0xc2547f,0x7f68c4],'cycle')],
+    ['ocean','Ocean','Colours shift as you slide.',550,T([0x4f9fc4,0x2c9c92,0x4a6fc0],'cycle')],
+    ['inferno','Inferno','Colours shift as you slide.',600,T([0xc23a3a,0xd9782a,0xe0b53a],'cycle')],
+    ['aurora','Aurora','Colours shift as you slide.',800,T([0x2c9c92,0x4f8fc0,0x7f68c4,0xc2547f],'cycle')],
+    ['rainbow','Rainbow','Colours shift as you slide.',900,T([0xd24b4b,0xd9a441,0x5aa56a,0x4f8fc0,0x8b6bc4],'cycle')]
   ],
   flame:[
     ['fire','Fire','The standard orange flame.',0,['#ff3b1f','#ff9a1f','#ffe14a','#fff6c8']],
@@ -1685,24 +1871,58 @@ function medalRow(cc){
   const got=OWN.medals[key]||0;
   return '<div class="hz">'+MEDALS.map((m,i)=>mt[i]==null?'':'<span style="'+(got>i?'border-color:'+m[1]+';color:'+m[1]:'')+'">'+m[0]+' '+fmt(mt[i])+(got>i?' ✓':'')+'</span>').join('')+'</div>';
 }
-// ---------- item pictures (flat, no glow) ----------
-function carSvg(o){
-  const h=hexs;
-  return '<svg viewBox="0 0 60 100">'+(o.beam?'<path d="M17 36 L43 36 L58 4 L2 4Z" fill="'+h(o.lights)+'" opacity=".3"/>':'')
-  +'<g fill="#0c0e12"><rect x="10" y="41" width="5" height="13" rx="1"/><rect x="45" y="41" width="5" height="13" rx="1"/><rect x="10" y="62" width="5" height="13" rx="1"/><rect x="45" y="62" width="5" height="13" rx="1"/></g>'
-  +'<rect x="15" y="36" width="30" height="44" rx="4" fill="'+h(o.paint)+'" stroke="#00000055"/>'
-  +'<rect x="28" y="36" width="4" height="44" fill="'+h(o.accent)+'"/>'
-  +'<rect x="19" y="48" width="22" height="20" rx="1" fill="#0f1a2b"/>'
-  +'<rect x="14" y="71" width="32" height="7" fill="'+h(o.accent)+'"/>'
-  +'<rect x="17" y="37" width="7" height="3" fill="'+h(o.lights)+'"/><rect x="36" y="37" width="7" height="3" fill="'+h(o.lights)+'"/></svg>';
-}
+// ---------- item pictures: every item is shown on the same studio plate, with the same car ----------
 let svgN=0;
-function trailSvg(v){
-  const c=v.cols.map(q=>q===0x0b0b0d?'#59606b':hexs(q));let s1,s2,defs='';
-  if(v.mode==='cycle'){const id='tg'+(svgN++);defs='<defs><linearGradient id="'+id+'" x1="0" x2="1">'+c.map((q,i)=>'<stop offset="'+(i/(c.length-1))+'" stop-color="'+q+'"/>').join('')+'</linearGradient></defs>';s1=s2='url(#'+id+')'}
-  else if(v.mode==='alt'){s1=c[0];s2=c[1]}
-  else s1=s2=c[0];
-  return '<svg viewBox="0 0 200 96">'+defs+'<path d="M8 74C58 74 92 70 122 48S170 22 194 24" fill="none" stroke="'+s1+'" stroke-width="6" opacity=".9"/><path d="M8 86C58 86 96 84 128 62S174 36 196 40" fill="none" stroke="'+s2+'" stroke-width="6" opacity=".9"/></svg>';
+const lerpHex=(a,b,f)=>{const r=(a>>16&255)*(1-f)+(b>>16&255)*f,g=(a>>8&255)*(1-f)+(b>>8&255)*f,l=(a&255)*(1-f)+(b&255)*f;return(Math.round(r)<<16)|(Math.round(g)<<8)|Math.round(l)};
+const trailAt=(v,i,n)=>{const c=v.cols;let q;if(v.mode==='cycle'){const f=i/(n-1)*(c.length-1),k=Math.min(c.length-2,Math.floor(f));q=lerpHex(c[k],c[k+1],f-k)}else if(v.mode==='alt')q=c[i%c.length];else q=c[0];return q===0x0b0b0d?0x59606b:q};
+// The car, drawn top-down and centred on 0,0 (about 38 wide and 56 long), nose pointing up.
+function carParts(o){
+  const h=hexs;
+  return '<g fill="#0c0e12"><rect x="-24" y="-29" width="8" height="20" rx="1.5"/><rect x="16" y="-29" width="8" height="20" rx="1.5"/><rect x="-24" y="9" width="8" height="20" rx="1.5"/><rect x="16" y="9" width="8" height="20" rx="1.5"/></g>'
+  +'<rect x="-19" y="-28" width="38" height="56" rx="5" fill="'+h(o.paint)+'" stroke="#000" stroke-opacity=".4"/>'
+  +'<rect x="-4" y="-28" width="8" height="56" fill="'+h(o.accent)+'"/>'
+  +'<rect x="-15" y="-10" width="30" height="28" fill="#0f1a2b"/>'
+  +'<rect x="-18" y="23" width="36" height="11" fill="'+h(o.accent)+'"/>'
+  +'<rect x="-14" y="-29" width="8" height="4" fill="'+h(o.lights)+'"/><rect x="6" y="-29" width="8" height="4" fill="'+h(o.lights)+'"/>'
+  +'<rect x="-14" y="26" width="8" height="3" fill="#9a3030"/><rect x="6" y="26" width="8" height="3" fill="#9a3030"/>';
+}
+function themeArt(v){
+  let s='<rect x="46" y="20" width="148" height="110" fill="#101215" stroke="#fff" stroke-opacity=".12"/>'
+  +'<path d="M62 32h5l-3 12h-5z" fill="'+v[3]+'"/><rect x="74" y="35" width="52" height="6" fill="#e9eaec" opacity=".85"/>'
+  +'<rect x="46" y="50" width="148" height="1" fill="#fff" opacity=".1"/>';
+  [60,80,100].forEach((y,i)=>{
+    if(i===0)s+='<rect x="47" y="'+y+'" width="146" height="16" fill="#fff" opacity=".07"/><rect x="47" y="'+y+'" width="2.5" height="16" fill="'+v[0]+'"/>';
+    s+='<rect x="58" y="'+(y+5)+'" width="'+[70,58,64][i]+'" height="5" fill="#8b9098" opacity="'+(i?.55:.9)+'"/><rect x="'+(i?160:156)+'" y="'+(y+5)+'" width="'+(i?24:28)+'" height="5" fill="'+(i?'#8b9098':v[1])+'" opacity="'+(i?.4:.9)+'"/>';
+  });
+  s+='<rect x="58" y="117" width="8" height="8" fill="'+v[0]+'"/><rect x="70" y="117" width="8" height="8" fill="'+v[1]+'"/><rect x="82" y="117" width="8" height="8" fill="'+v[2]+'"/>';
+  return s;
+}
+function stageSvg(cat,it){
+  const v=it[4],o={paint:eqv('paint'),accent:eqv('accent'),lights:eqv('lights')};
+  let defs='',body='';
+  if(cat==='paint')o.paint=v;else if(cat==='accent')o.accent=v;else if(cat==='lights')o.lights=v;
+  const base='<rect width="240" height="150" fill="#181b20"/><path d="M0 50H240M0 100H240M60 0V150M120 0V150M180 0V150" stroke="#fff" stroke-opacity=".035"/>';
+  if(cat==='theme')body=themeArt(v);
+  else if(cat==='trail'){
+    const A=[22,128],C=[72,128],E=[152,72],N=20;
+    const P=t=>{const a=1-t;return[a*a*A[0]+2*a*t*C[0]+t*t*E[0],a*a*A[1]+2*a*t*C[1]+t*t*E[1]]};
+    const D=t=>[2*(1-t)*(C[0]-A[0])+2*t*(E[0]-C[0]),2*(1-t)*(C[1]-A[1])+2*t*(E[1]-C[1])];
+    for(let i=0;i<N;i++){
+      const t=.04+.9*i/(N-1),p=P(t),d=D(t),th=Math.atan2(d[1],d[0]),nx=-Math.sin(th),ny=Math.cos(th),col=hexs(trailAt(v,i,N)),deg=(th*180/Math.PI-90).toFixed(1);
+      for(const sd of[-1,1])body+='<rect x="-2.2" y="-4.5" width="4.4" height="9" rx="1" fill="'+col+'" opacity="'+(.4+.55*t).toFixed(2)+'" transform="translate('+(p[0]+nx*sd*11).toFixed(1)+' '+(p[1]+ny*sd*11).toFixed(1)+') rotate('+deg+')"/>';
+    }
+    body+='<g transform="translate('+E[0]+' '+E[1]+') rotate(30) scale(.85)">'+carParts(o)+'</g>';
+  }else if(cat==='flame'){
+    const u=flameSet(it[0]).cv[1].toDataURL();let fl='';
+    for(const fx of[-10,10])fl+='<g transform="translate('+fx+' 28) scale(1 -1)"><image href="'+u+'" x="-9" y="-36" width="18" height="36" preserveAspectRatio="none" style="image-rendering:pixelated"/></g>';
+    body='<ellipse cx="124" cy="80" rx="26" ry="48" fill="#000" opacity=".3"/><g transform="translate(120 50) scale(1.1)">'+fl+carParts(o)+'</g>';
+  }else{
+    const id='bm'+(svgN++);
+    if(cat==='lights'){defs='<linearGradient id="'+id+'" gradientUnits="userSpaceOnUse" x1="0" y1="-30" x2="0" y2="-125"><stop offset="0" stop-color="'+hexs(v)+'" stop-opacity=".4"/><stop offset="1" stop-color="'+hexs(v)+'" stop-opacity="0"/></linearGradient>';
+      body+='<g transform="translate(120 84) scale(1.25)"><path d="M-12 -30L12 -30L58 -125L-58 -125Z" fill="url(#'+id+')"/></g>'}
+    body+='<ellipse cx="124" cy="90" rx="29" ry="46" fill="#000" opacity=".32"/><g transform="translate(120 84) scale(1.25)">'+carParts(o)+'</g>';
+  }
+  return '<svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid slice" role="img">'+(defs?'<defs>'+defs+'</defs>':'')+base+body+'</svg>';
 }
 function swatch(cat,it){
   const v=it[4];
@@ -1711,15 +1931,8 @@ function swatch(cat,it){
   if(cat==='flame')return 'linear-gradient(0deg,'+v[3]+','+v[2]+','+v[1]+','+v[0]+')';
   return 'linear-gradient(90deg,'+v[0]+','+v[1]+','+v[2]+')';
 }
-function itemArt(cat,it){
-  const v=it[4],cur={paint:eqv('paint'),accent:eqv('accent'),lights:eqv('lights')};
-  if(cat==='paint')return carSvg({...cur,paint:v});
-  if(cat==='accent')return carSvg({...cur,accent:v});
-  if(cat==='lights')return carSvg({...cur,lights:v,beam:1});
-  if(cat==='trail')return trailSvg(v);
-  if(cat==='flame'){const u=flameSet(it[0]).cv[1].toDataURL();return '<img class="fl" src="'+u+'"><img class="fl" src="'+u+'">'}
-  return '<div class="tpv"><b style="background:'+v[0]+'"></b><b style="background:'+v[1]+'"></b><span style="background:'+v[3]+'"></span><u></u></div>';
-}
+const itemArt=(cat,it)=>stageSvg(cat,it);
+
 // ---------- shop: a daily rotation, plus everything for the owner ----------
 var shopTab='daily',shopFilter='all',dayShown=0;
 const dk=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()};
@@ -1734,12 +1947,15 @@ function dailyList(){
   for(const x of all){if((cnt[x.c]||0)>=2)continue;cnt[x.c]=(cnt[x.c]||0)+1;out.push({...x,feat:!out.length});if(out.length>=8)break}
   return out;
 }
+var shopSort='feat';
 function shopCard(cat,it,o){
   o=o||{};const id=it[0],price=o.feat?featPrice(it[3]):it[3],have=owned(cat,it),eq=eqOf(cat)[0]===id,need=OWN.coins<price,at='data-cat="'+cat+'" data-id="'+id+'"'+(o.daily?' data-d="1"':'');
-  let left,act='';
-  if(have){left='<span class="price free">'+(price===0?'Free':'Owned')+'</span>';act=eq?'<span class="chip2">Equipped</span>':'<button class="buy alt" data-shop="equip" '+at+'>Equip</button>'}
-  else{left='<div><span class="price"><i class="coin sm"></i>'+price+(o.feat?'<s>'+it[3]+'</s>':'')+'</span>'+(need?'<span class="need">Need '+(price-OWN.coins)+' more</span>':'')+'</div>';act='<button class="buy" data-shop="buy" '+at+(need?' disabled':'')+'>Buy</button>'}
-  return '<div class="sc'+(eq?' eq':'')+'"><div class="art">'+itemArt(cat,it)+(o.feat?'<span class="tg">-30%</span>':'')+'</div><div class="sbody"><small>'+catName[cat]+'</small><b>'+esc(it[1])+'</b>'+(it[2]?'<span>'+esc(it[2])+'</span>':'')+'</div><div class="sfoot">'+left+act+'</div></div>';
+  let pr,act;
+  if(have){pr='<span class="pp own">'+(price===0?'Free':'Owned')+'</span>';act=eq?'<span class="pbtn eqd">Equipped</span>':'<button class="pbtn" data-shop="equip" '+at+'>Equip</button>'}
+  else{pr='<span class="pp"><i class="coin sm"></i>'+price+(o.feat?'<s>'+it[3]+'</s>':'')+'</span>'+(need?'<span class="need">'+(price-OWN.coins)+' more coins</span>':'');act='<button class="pbtn buy" data-shop="buy" '+at+(need?' disabled':'')+'>Buy now</button>'}
+  return '<article class="pc'+(eq?' eq':'')+(o.hero?' hero':'')+'"><div class="pimg">'+itemArt(cat,it)+(o.feat?'<span class="pbadge">-30%</span>':'')+(eq?'<span class="pbadge r">In use</span>':'')+'</div>'
+    +'<div class="pinfo"><small>'+catName[cat]+'</small><h4>'+esc(it[1])+'</h4>'+(it[2]?'<p>'+esc(it[2])+'</p>':'')+'</div>'
+    +'<div class="pbuy"><div class="pw">'+pr+'</div>'+act+'</div></article>';
 }
 function shopUI(){
   if(!shopOn())return;
@@ -1747,21 +1963,27 @@ function shopUI(){
   if(!ownOn())shopTab='daily';
   $('#coinN').textContent=OWN.coins.toLocaleString();
   $('#payN').innerHTML=MEDALS.map((m,i)=>'<span class="mp" style="--c:'+m[1]+'"><i></i>'+m[0]+' +'+PAY[i]+'</span>').join('');
-  const tabs=[['daily','Daily shop']];if(ownOn())tabs.push(['all','Everything']);
+  const tabs=[['daily','Today’s offers']];if(ownOn())tabs.push(['all','Catalogue']);
   $('#shopTabs').innerHTML=tabs.length>1?tabs.map(([id,l])=>'<button data-shop="tab" data-id="'+id+'" class="'+(shopTab===id?'on':'')+'">'+l+'</button>').join(''):'';
-  let head='',cards='';
+  let head='',cards='',side='';
   if(shopTab==='daily'){
     dayShown=dk();
-    head='<div class="dHead"><b>Today’s shop</b><span>New items in <em id="dLeft">'+leftStr()+'</em></span></div>';
-    cards=dailyList().map(x=>shopCard(x.c,x.it,{daily:1,feat:x.feat})).join('');
+    head='<div class="dHead"><b>Today’s offers</b><span>New items in <em id="dLeft">'+leftStr()+'</em></span></div>';
+    cards=dailyList().map(x=>shopCard(x.c,x.it,{daily:1,feat:x.feat,hero:x.feat})).join('');
   }else{
-    const has=c=>SHOP[c].filter(it=>owned(c,it)).length;
-    head='<div class="shopSub">'+[['all','All'],...CATS].map(([id,l])=>'<button data-shop="cat" data-id="'+id+'" class="'+(shopFilter===id?'on':'')+'">'+l+(id==='all'?'':'<small>'+has(id)+'/'+SHOP[id].length+'</small>')+'</button>').join('')+'</div>';
-    cards=CATS.filter(([c])=>shopFilter==='all'||shopFilter===c).map(([c])=>SHOP[c].map(it=>shopCard(c,it)).join('')).join('');
+    const has=c=>SHOP[c].filter(it=>owned(c,it)).length,tot=CATS.reduce((a,[c])=>a+SHOP[c].length,0),own=CATS.reduce((a,[c])=>a+has(c),0);
+    let list=[];CATS.forEach(([c])=>{if(shopFilter==='all'||shopFilter===c)SHOP[c].forEach(it=>list.push({c,it,p:it[3]}))});
+    if(shopSort==='price')list.sort((a,b)=>a.p-b.p);else if(shopSort==='priceD')list.sort((a,b)=>b.p-a.p);else if(shopSort==='name')list.sort((a,b)=>a.it[1].localeCompare(b.it[1]));
+    side='<div class="sideT">Categories</div>'+[['all','All items',own+'/'+tot],...CATS.map(([id,l])=>[id,l,has(id)+'/'+SHOP[id].length])].map(([id,l,n])=>'<button class="sb'+(shopFilter===id?' on':'')+'" data-shop="cat" data-id="'+id+'"><span>'+l+'</span><small>'+n+'</small></button>').join('')
+      +'<div class="sideT">Sort by</div><select id="shopSort" class="shopSort">'+[['feat','Featured'],['price','Price: low to high'],['priceD','Price: high to low'],['name','Name']].map(([v,l])=>'<option value="'+v+'"'+(shopSort===v?' selected':'')+'>'+l+'</option>').join('')+'</select>';
+    head='<div class="dHead"><b>'+(shopFilter==='all'?'All items':catName[shopFilter])+'</b><span>'+list.length+' items</span></div>';
+    cards=list.map(x=>shopCard(x.c,x.it)).join('');
   }
+  $('#shopSide').innerHTML=side;$('#shopSide').classList.toggle('hide',!side);$('#shopBody').classList.toggle('noside',!side);
   $('#shopHead').innerHTML=head;$('#shopL').innerHTML=cards;
   acctUI();
 }
+$('#shop').addEventListener('change',e=>{if(e.target&&e.target.id==='shopSort'){shopSort=e.target.value;shopUI()}});
 function equipItem(cat,id){
   const it=item(cat,id);if(!it||!usable(cat,it))return;
   OWN[cat]=id;if(cat==='theme')applyTheme();applyCar();
@@ -1943,7 +2165,7 @@ function renderSetup(){
   optRows($('#setupO'),keys);
 }
 function renderSettings(){
-  optRows($('#setDisp'),['zoom','pix','shadow']);
+  $('#setAcct').classList.toggle('hide',!SESS);optRows($('#setDisp'),['zoom','pix','shadow']);
   optRows($('#setSnd'),['sound','assist','ghost']);
   $('#setOwn').classList.toggle('hide',!ownOn());optRows($('#setAdm'),['admin']);
 }
