@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-27
+Last updated: 2026-10-27 (b)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - This block exists so a fresh AI that is given only index.html knows the whole project.
@@ -46,6 +46,7 @@ wrangler.toml     Worker config: name driftbox-api, main worker.js, D1 binding D
 schema.sql        Creates the tables (see section 7). Run once on a new database.
 migrate.sql       Run ONCE on an old database: adds users.banned and seasons.live columns.
 migrate-2.sql     Run ONCE: adds tracks.blocks column (unfinished track layouts) and creates the medals table (author times). If it says duplicate column, run only the second line.
+oliver.sql        Same as owner.sql but for the second owner account "Oliver" (made with make-owner.mjs). Never commit it. Run with npx wrangler d1 execute driftbox --remote --file=oliver.sql
 owner.sql         One INSERT creating the owner account (Clem). Contains a password hash. NEVER commit it to a public repo and never paste its contents into index.html.
 make-owner.mjs    Usage: node make-owner.mjs <name> <password> > owner.sql   Generates owner.sql using the same PBKDF2 settings as the game.
 reset-times.sql       Deletes every leaderboard time.
@@ -95,7 +96,9 @@ localStorage keys (all start with dbx:): tune3 (tuning), opt (settings), api (se
 5. ACCOUNT RULES
 ======================================================================
 - Names 3 to 16 characters (letters, numbers, space, underscore, dash). Passwords at least 6. The name "clem" is reserved in local mode.
-- The owner account is created only through owner.sql. The owner's runs do not count on leaderboards and do not trigger server PBs. The Admin car setting (boosted/insane) is owner only and disables medal rewards while on.
+- There are two owner accounts: Clem and Oliver (is_owner=1, identical admin powers). Owner accounts are created only through SQL files made by make-owner.mjs (owner.sql, oliver.sql). Oliver is a co-builder: the two owners agree to work on different tracks; there is no lock, so if both save the same track the last save wins.
+- Usernames are case-insensitive and unique: users.name_lc (lowercase) is the primary key, so "Oliver", "oliver" and "OLIVER" are one name. Display keeps the capitals the person typed.
+- (Old line) The owner account is created only through owner.sql. The owner's runs do not count on leaderboards and do not trigger server PBs. The Admin car setting (boosted/insane) is owner only and disables medal rewards while on.
 - Banned accounts cannot sign in. Banning deletes their sessions.
 - Times are reported by the game, so a determined player could fake one. Server only accepts 3 s to 900 s.
 
@@ -161,6 +164,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-27  Added second owner account Oliver (oliver.sql, run once on the database). Confirmed names are case-insensitive via name_lc.
 2026-10-27  Shop redesigned as an online store (sidebar, sort, product cards, hero deal) with one consistent studio-plate picture per item. Muted the brightest cosmetic colours (nothing neon). Compact icon toolbar for the builder. Test drive in the builder with a suggested author time. Settings: change username and password. worker.js: /api/account/rename, /api/account/password, and register now guards against duplicate names (name_lc is the primary key). Deploy worker.js with npx wrangler deploy.
 2026-10-26  Added this handover block.
 2026-10-26  Shop restyled flat and restrained. Added daily shop (8 items, first 30% off), owner-only "Everything" tab. Added Car tab with automatic drift preview. Cosmetic catalogue expanded to paint, accent, lights, drift patterns (18), flames (10), menu colours (8). Skid marks fade out and clear on a new map. Bots and online cars keep the standard look.
