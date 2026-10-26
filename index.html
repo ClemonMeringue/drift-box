@@ -584,10 +584,8 @@ function drive(dt){
   const fr=race.state==='count',up=!fr&&(k.ArrowUp||k.KeyW),dn=!fr&&(k.ArrowDown||k.KeyS);
   const st=fr?0:(k.ArrowLeft||k.KeyA?1:0)-(k.ArrowRight||k.KeyD?1:0);
   const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up;nitOn=nit;
-  nitro=nit&&!AD?Math.max(0,nitro-(BO.tank?23:35)*dt):Math.min(100,nitro+(AD?100:(BO.refill?20:10))*dt);
-  if(BO.charge&&!nit&&slipI>.25)nitro=Math.min(100,nitro+22*slipI*dt);
-  if(up)vf+=(P.power*(AD?1+AD*1.2:1)+(nit?(BO.punch?44:30):0)*(AD?2:1))*dt;
-  if(BO.launch&&up&&race.state==='run'&&race.lapT<1.6)vf+=22*dt;
+  nitro=nit&&!AD?Math.max(0,nitro-35*dt):Math.min(100,nitro+(AD?100:10)*dt);
+  if(up)vf+=(P.power*(AD?1+AD*1.2:1)+(nit?30:0)*(AD?2:1))*dt;
   if(dn)vf-=(vf>0?20*(1-.6*Math.min(1,Math.abs(vl)/Math.max(Math.abs(vf),6))):16)*dt;
   vf-=vf*(AD?.85/(1+AD*.9):.85)*dt;if(vf<-10)vf=-10;
   if(WA>0&&Math.abs(c.s)>.55&&vf>22)vf-=vf*.45*WA*dt;
@@ -1179,9 +1177,9 @@ async function doAuth(){
   $('#auGo').disabled=false;
 }
 function acctUI(){
-  $('#acct').innerHTML=SESS?'<span>'+esc(SESS.name)+(SESS.owner?' \u00b7 Owner \u00b7 '+OWN.coins+' coins':'')+'</span><button id="outBtn">Sign out</button>':'';
+  $('#acct').innerHTML=SESS?'<span>'+esc(SESS.name)+(SESS.owner?' \u00b7 Owner':'')+' \u00b7 '+OWN.coins+' coins'+'</span><button id="outBtn">Sign out</button>':'';
   if(SESS)$('#outBtn').onclick=logout;
-  $('#tAdmin').classList.toggle('hide',!(SESS&&SESS.owner&&API_URL));$('#tShop').classList.toggle('hide',!(SESS&&SESS.owner));
+  $('#tAdmin').classList.toggle('hide',!(SESS&&SESS.owner&&API_URL));$('#tShop').classList.toggle('hide',!SESS);
 }
 function logout(){SESS=null;try{localStorage.removeItem('dbx:sess')}catch(e){}loadOwn();acctUI();setTab('solo');showAuth()}
 async function afterLogin(){
@@ -1388,40 +1386,39 @@ var AUTH_SRV={};
 const authorOf=key=>{const a=AUTH_SRV[key]!=null?AUTH_SRV[key]:AUTH_DEF[key];return a>0?a:null};
 const medalTimes=key=>{const a=authorOf(key);return a?[...MEDAL_X.map(x=>Math.round(a*x*100)/100),a]:null};
 const SHOP={
-  boost:[['tank','Big Tank','Nitro lasts 50% longer.',150],['refill','Quick Refill','Nitro refills twice as fast.',150],['charge','Drift Charge','Sliding sideways slowly refills your nitro.',250],['launch','Launch Kick','Extra push for the first 1.5 seconds of a race.',200],['punch','Nitro Punch','Nitro pushes harder.',300]],
   trail:[['classic','Classic','Black marks, grey smoke.',0],['neon','Neon Blue','Glowing blue marks and smoke.',350],['pink','Hot Pink','Pink marks and smoke.',350],['toxic','Toxic Green','Bright green marks and smoke.',350],['gold','Gold Rush','Gold marks and smoke.',500],['rainbow','Rainbow','Marks and smoke that cycle through every colour.',800]],
   theme:[['ember','Ember','The original orange.',0],['mint','Neon Mint','Cool green menu.',200],['ultra','Ultraviolet','Purple and pink menu.',200],['red','Racing Red','Red menu.',200],['ice','Ice Blue','Pale blue menu.',200],['gold','Gold','Warm gold menu.',300]]
 };
 const TR={classic:{m:0x0b0b0d,o:.4,s:0xb4c0da,sw:'#333'},neon:{m:0x19c9f5,o:.8,s:0x7be3ff,sw:'#19c9f5'},pink:{m:0xff3da8,o:.8,s:0xff8ad0,sw:'#ff3da8'},toxic:{m:0x5dff3a,o:.8,s:0xb6ff9a,sw:'#5dff3a'},gold:{m:0xffc021,o:.8,s:0xffe38a,sw:'#ffc021'},rainbow:{rb:1,sw:'linear-gradient(90deg,#f33,#fc3,#3d6,#3bf,#a5f)'}};
 const TH={ember:['#ff8a3d','#ffd43b','#19c9f5','#ff5a2a'],mint:['#2ee6a6','#b6ffe3','#19c9f5','#17c98f'],ultra:['#a66bff','#ff6bd6','#6bd0ff','#8f4dff'],red:['#ff3b3b','#ff9a8a','#ffd43b','#e62b2b'],ice:['#6bd0ff','#d8f4ff','#a66bff','#3aa8e8'],gold:['#ffc021','#fff0a8','#ff8a3d','#e8a800']};
-var OWN={coins:0,items:[],trail:'classic',theme:'ember',medals:{}},BO={},nitOn=false;
+var OWN={coins:0,items:[],trail:'classic',theme:'ember',medals:{}},nitOn=false;
 const tmpC=new THREE.Color();
-const ownOn=()=>!!(SESS&&SESS.owner);
+const ownOn=()=>!!(SESS&&SESS.owner),shopOn=()=>!!SESS;
 function loadOwn(){
   OWN={coins:0,items:[],trail:'classic',theme:'ember',medals:{}};
-  if(ownOn()){try{Object.assign(OWN,JSON.parse(localStorage.getItem(pk('shop'))||'{}'))}catch(e){}}
-  BO={};if(ownOn())OWN.items.forEach(i=>{if(i.startsWith('boost:'))BO[i.slice(6)]=1});
+  if(shopOn()){try{Object.assign(OWN,JSON.parse(localStorage.getItem(pk('shop'))||'{}'))}catch(e){}}
+  OWN.items=(OWN.items||[]).filter(i=>!i.startsWith('boost:'));
   applyTheme();
 }
 function saveOwn(){try{localStorage.setItem(pk('shop'),JSON.stringify(OWN))}catch(e){}}
 function applyTheme(){
   const r=document.documentElement.style,t=TH[OWN.theme];
-  if(!ownOn()||!t||OWN.theme==='ember'){['--m1','--m2','--m3','--acc'].forEach(p=>r.removeProperty(p));return}
+  if(!shopOn()||!t||OWN.theme==='ember'){['--m1','--m2','--m3','--acc'].forEach(p=>r.removeProperty(p));return}
   r.setProperty('--m1',t[0]);r.setProperty('--m2',t[1]);r.setProperty('--m3',t[2]);r.setProperty('--acc',t[3]);
 }
 function trailMark(){
-  const t=TR[ownOn()?OWN.trail:'classic']||TR.classic;
+  const t=TR[shopOn()?OWN.trail:'classic']||TR.classic;
   if(t.rb){tmpC.setHSL((performance.now()/5%360)/360,1,.55);return{c:tmpC.getHex(),o:.85}}
   return{c:t.m,o:t.o};
 }
 function trailSmoke(){
-  const t=TR[ownOn()?OWN.trail:'classic']||TR.classic;
+  const t=TR[shopOn()?OWN.trail:'classic']||TR.classic;
   if(t.rb){tmpC.setHSL((performance.now()/5%360)/360,1,.7);return tmpC.getHex()}
   return t.s;
 }
 const medalKey=cc=>{const k=cc&&lbKey(cc);return k?k.season+'/'+k.track:null};
 function awardMedal(cc,t){
-  if(!ownOn()||MP||(OPT.admin||0)>0)return '';
+  if(!shopOn()||MP||(ownOn()&&(OPT.admin||0)>0))return '';
   const key=medalKey(cc),mt=key&&medalTimes(key);if(!mt)return '';
   let tier=0;mt.forEach((s,i)=>{if(s!=null&&t<=s)tier=i+1});
   if(!tier)return '';
@@ -1431,19 +1428,11 @@ function awardMedal(cc,t){
   return msg;
 }
 function medalRow(cc){
-  const key=medalKey(cc),mt=key&&medalTimes(key);if(!ownOn()||!mt)return '';
+  const key=medalKey(cc),mt=key&&medalTimes(key);if(!shopOn()||!mt)return '';
   const got=OWN.medals[key]||0;
   return '<div class="hz">'+MEDALS.map((m,i)=>mt[i]==null?'':'<span style="'+(got>i?'border-color:'+m[1]+';color:'+m[1]:'')+'">'+m[0]+' '+fmt(mt[i])+(got>i?' \u2713':'')+'</span>').join('')+'</div>';
 }
-var shopCat='boost';
-const BTINT={tank:'#19c9f5',refill:'#3be07a',charge:'#ffd43b',launch:'#ff8a3d',punch:'#ff4a3a'};
-const ICON={
-  tank:'<svg viewBox="0 0 48 48"><rect x="6" y="14" width="30" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="38" y="20" width="4" height="8" fill="currentColor"/><rect x="11" y="19" width="20" height="10" rx="2" fill="currentColor"/></svg>',
-  refill:'<svg viewBox="0 0 48 48"><path d="M36 18a14 14 0 0 0-24 0M12 30a14 14 0 0 0 24 0" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><path d="M38 8v11H27M10 40V29h11" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  charge:'<svg viewBox="0 0 48 48"><path d="M27 4 11 27h11l-3 17 18-24H26z" fill="currentColor"/></svg>',
-  launch:'<svg viewBox="0 0 48 48"><path d="M8 38 24 6l16 32-16-8z" fill="currentColor"/><path d="M24 36v9" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg>',
-  punch:'<svg viewBox="0 0 48 48"><path d="M24 3c3 9 12 12 12 25a12 12 0 0 1-24 0c0-6 3-9 5-13 2 3 3 4 4 6 1-6 2-12 3-18z" fill="currentColor"/></svg>'
-};
+var shopCat='trail';
 const trailHex=id=>id==='classic'?'#59606b':id==='rainbow'?'#ff6bd6':'#'+TR[id].m.toString(16).padStart(6,'0');
 function trailSvg(id,c){
   const rb=id==='rainbow',g=rb?'<defs><linearGradient id="rbg" x1="0" x2="1"><stop offset="0" stop-color="#f33"/><stop offset=".25" stop-color="#fc3"/><stop offset=".5" stop-color="#3d6"/><stop offset=".75" stop-color="#3bf"/><stop offset="1" stop-color="#a5f"/></linearGradient></defs>':'',s=rb?'url(#rbg)':c;
@@ -1452,35 +1441,34 @@ function trailSvg(id,c){
 function shopCard(cat,it){
   const [id,name,desc,price]=it,owned=price===0||OWN.items.includes(cat+':'+id),eq=cat==='trail'?OWN.trail===id:cat==='theme'?OWN.theme===id:false;
   let art;
-  if(cat==='boost'){const t=BTINT[id];art='<div class="art" style="--tint:'+t+';background:radial-gradient(circle at 50% 45%,'+t+'33,#0d0e10 72%)">'+ICON[id]+'</div>'}
-  else if(cat==='trail'){const t=trailHex(id);art='<div class="art wide" style="--tint:'+t+';background:#0b0f16">'+trailSvg(id,t)+'</div>'}
+  if(cat==='trail'){const t=trailHex(id);art='<div class="art wide" style="--tint:'+t+';background:#0b0f16">'+trailSvg(id,t)+'</div>'}
   else{const t=TH[id];art='<div class="art" style="--tint:'+t[0]+';background:radial-gradient(circle at 50% 40%,'+t[0]+'26,#0d0e10 75%)"><div class="tpv"><b style="background:linear-gradient(90deg,'+t[0]+','+t[1]+','+t[2]+')"></b><span style="background:'+t[3]+'"></span><u></u></div></div>'}
   const need=OWN.coins<price,at='data-cat="'+cat+'" data-id="'+id+'"';
-  const left=owned?'<span class="price free">'+(cat==='boost'?'Active':'Unlocked')+'</span>':'<span class="price"><i class="coin sm"></i>'+price+(need?'<span class="need">Need '+(price-OWN.coins)+' more</span>':'')+'</span>';
+  const left=owned?'<span class="price free">Unlocked</span>':'<span class="price"><i class="coin sm"></i>'+price+(need?'<span class="need">Need '+(price-OWN.coins)+' more</span>':'')+'</span>';
   let act='';
-  if(cat==='boost'){if(!owned)act='<button class="buy" data-shop="buy" '+at+(need?' disabled':'')+'>Buy</button>'}
-  else if(eq)act='<span class="chip2">Equipped</span>';
+  if(eq)act='<span class="chip2">Equipped</span>';
   else act='<button class="buy" data-shop="'+(owned?'equip':'buy')+'" '+at+(!owned&&need?' disabled':'')+'>'+(owned?'Equip':'Buy')+'</button>';
   return '<div class="sc'+(owned?' own':'')+(eq?' eq':'')+'">'+(eq?'<div class="ribbon">EQUIPPED</div>':'')+art+'<div class="sbody"><b>'+esc(name)+'</b><span>'+esc(desc)+'</span></div><div class="sfoot">'+left+act+'</div></div>';
 }
 function shopUI(){
-  if(!ownOn())return;
+  if(!shopOn())return;
+  $('#shop').querySelector('[data-shop="test"]').classList.toggle('hide',!ownOn());
   $('#coinN').textContent=OWN.coins.toLocaleString();
   $('#payN').innerHTML=MEDALS.map((m,i)=>'<span class="mp" style="--c:'+m[1]+'"><i></i>'+m[0]+' +'+PAY[i]+'</span>').join('');
   const has=(cat,it)=>it[3]===0||OWN.items.includes(cat+':'+it[0]);
-  $('#shopTabs').innerHTML=[['boost','Boosts'],['trail','Drift patterns'],['theme','Menu colours']].map(([id,l])=>'<button data-shop="tab" data-id="'+id+'" class="'+(shopCat===id?'on':'')+'">'+l+'<small>'+SHOP[id].filter(it=>has(id,it)).length+'/'+SHOP[id].length+'</small></button>').join('');
+  $('#shopTabs').innerHTML=[['trail','Drift patterns'],['theme','Menu colours']].map(([id,l])=>'<button data-shop="tab" data-id="'+id+'" class="'+(shopCat===id?'on':'')+'">'+l+'<small>'+SHOP[id].filter(it=>has(id,it)).length+'/'+SHOP[id].length+'</small></button>').join('');
   $('#shopL').innerHTML=SHOP[shopCat].map(it=>shopCard(shopCat,it)).join('');
   acctUI();
 }
 $('#shop').onclick=e=>{
-  const b=e.target.closest&&e.target.closest('button[data-shop]');if(!b||!ownOn())return;
+  const b=e.target.closest&&e.target.closest('button[data-shop]');if(!b||!shopOn())return;
   const a=b.dataset.shop,cat=b.dataset.cat,id=b.dataset.id;
   if(a==='tab'){shopCat=id;shopUI();return}
-  if(a==='test')OWN.coins+=500;
+  if(a==='test'){if(!ownOn())return;OWN.coins+=500}
   else{
     const it=SHOP[cat]&&SHOP[cat].find(x=>x[0]===id);if(!it)return;
     const key=cat+':'+id;
-    if(a==='buy'){if(OWN.coins<it[3]||OWN.items.includes(key))return;OWN.coins-=it[3];OWN.items.push(key);if(cat==='boost')BO[id]=1}
+    if(a==='buy'){if(OWN.coins<it[3]||OWN.items.includes(key))return;OWN.coins-=it[3];OWN.items.push(key)}
     if(cat==='trail'&&(a==='buy'||a==='equip'))OWN.trail=id;
     if(cat==='theme'&&(a==='buy'||a==='equip')){OWN.theme=id;applyTheme()}
   }
