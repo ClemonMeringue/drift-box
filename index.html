@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-27 (c)
+Last updated: 2026-10-27 (d)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - This block exists so a fresh AI that is given only index.html knows the whole project.
@@ -45,6 +45,7 @@ worker.js         Cloudflare Worker: HTTP API (accounts, leaderboard, seasons, t
 wrangler.toml     Worker config: name driftbox-api, main worker.js, D1 binding DB (database name driftbox), Durable Object binding ROOMS -> class Room, migration tag v1 with new_sqlite_classes Room. The D1 database_id is filled in by the owner.
 schema.sql        Creates the tables (see section 7). Run once on a new database.
 migrate.sql       Run ONCE on an old database: adds users.banned and seasons.live columns.
+migrate-3.sql     Run ONCE (before deploying the new worker.js): adds users.is_admin, tracks.cps (checkpoints) and the hats table.
 migrate-2.sql     Run ONCE: adds tracks.blocks column (unfinished track layouts) and creates the medals table (author times). If it says duplicate column, run only the second line.
 oliver.sql        Same as owner.sql but for the second owner account "Oliver" (made with make-owner.mjs). Never commit it. Run with npx wrangler d1 execute driftbox --remote --file=oliver.sql
 owner.sql         One INSERT creating the owner account (Clem). Contains a password hash. NEVER commit it to a public repo and never paste its contents into index.html.
@@ -99,6 +100,7 @@ localStorage keys (all start with dbx:): tune3 (tuning), opt (settings), api (se
 - There are two owner accounts: Clem and Oliver (is_owner=1, identical admin powers). Owner accounts are created only through SQL files made by make-owner.mjs (owner.sql, oliver.sql). Oliver is a co-builder: the two owners agree to work on different tracks; there is no lock, so if both save the same track the last save wins.
 - Usernames are case-insensitive and unique: users.name_lc (lowercase) is the primary key, so "Oliver", "oliver" and "OLIVER" are one name. Display keeps the capitals the person typed.
 - (Old line) The owner account is created only through owner.sql. The owner's runs do not count on leaderboards and do not trigger server PBs. The Admin car setting (boosted/insane) is owner only and disables medal rewards while on.
+- Admin role (users.is_admin): the owner makes a player admin in Admin > Players (Make admin / Remove admin, next to Ban). Admins see the Admin tab and can add tracks, build and save them, and set author times. Only owners can create, publish, unpublish or delete seasons, delete tracks, remove times, ban, reset, make admins or manage hats. Admin runs still count on leaderboards. Server helper: staff() (owner or admin) versus owner().
 - Banned accounts cannot sign in. Banning deletes their sessions.
 - Times are reported by the game, so a determined player could fake one. Server only accepts 3 s to 900 s.
 
@@ -117,15 +119,22 @@ localStorage keys (all start with dbx:): tune3 (tuning), opt (settings), api (se
 - Hats: SHOP.hat (category "Hat"). Item data {kind:'box'} or null for none. A hat is a THREE group (hatG) on the car roof, rebuilt by applyHat() from applyCar(); bots and ghosts hide it (botMesh). Currently one placeholder item, Black Box, and hats are owner only: HATS_PUBLIC=false (not in the daily shop, hidden in the Car tab for players). To add a hat: add an item and a branch in applyHat plus the picture branch in carParts/cpvDraw. Rubber duck and others are to come from the owner.
 - "+500 test coins": owner only (hidden for others and blocked in the click handler).
 
+- Checkpoints: gates on the join between two route tiles, 1 or 2 tiles wide. Data {x,z,o,w}: x,z centre in world units, o 0 = gate runs along x (track runs along z), o 1 = the other way, w = 1 or 2. They can be driven through in any order and ALL are needed before a lap or finish counts (race.cps, race.cpSet, cpCross, cpReset). Bots ignore them. Season 1 gates are listed in S1CP (route index of the tile the gate sits after; jointsOf converts to positions). Season tracks keep them in tracks.cps (JSON) and inside the saved blocks as {k:'cp'} entries for the editor. Builder tools: Checkpoint (cp1) and Wide checkpoint (cp2), R turns them; routeFromBlocks checks every gate sits on a join. Online: the host sends cps in the start message and the Room relays them.
+- Online: if you are off every track tile for 0.6 s (for example after jumping a wall) your run restarts (resetCar).
+- Hats: kinds 'box' and 'img'. 'img' hats are a flat picture on the roof with spin (degrees per second) and size. Built in: Rubber Duck (DUCK_PNG, from the owner's Piskel file) and Black Box. Owner-made hats are stored on the server (hats table, /api/hat*), loaded by loadHats() into SHOP.hat as ids "h<id>". Hats are owner-only unless pub is set (Admin > Hats "Players can buy").
+- Menu colour themes: class "themed" on <html> when a non-Ember theme is equipped; the v5 CSS block at the end of the style uses --m1, --m2, --m3 and --acc in different places (title gradient, tab underline, Go button, selected row, prices, badges, route preview, confetti). The default Ember theme is unchanged.
+
 ======================================================================
 7. SERVER (worker.js) AND DATABASE
 ======================================================================
 Tables (schema.sql, plus the two migrations):
-  users(name_lc PRIMARY KEY, display, salt, hash, is_owner, banned, created)
+  users(name_lc PRIMARY KEY, display, salt, hash, is_owner, is_admin, banned, created)   is_admin added by migrate-3.sql
   sessions(token PRIMARY KEY, name_lc, exp)
   seasons(id AUTOINCREMENT, name, live, created)          Season 1 inserted by schema.sql
   tracks(id AUTOINCREMENT, season, name, str, desc, created, blocks)   blocks added by migrate-2.sql; str empty = not built
   pbs(season, track, name_lc, ms, ts)  PRIMARY KEY (season, track, name_lc)   index pbs_rank on (season, track, ms)
+  hats(id AUTOINCREMENT, name, png (data URL), spin, speed deg/s, size, price, pub, created)   migrate-3.sql
+  tracks also has cps TEXT (checkpoints JSON, migrate-3.sql)
   medals(key PRIMARY KEY, author REAL)   key looks like 1/speedway or 2/t5 (author times)
 Track ids: Season 1 uses the slug (midnight-circuit etc). Seasons 2+ use "t" + track id.
 
@@ -139,7 +148,9 @@ HTTP API (all JSON, CORS open):
   POST /api/account/rename {name,hash,newHash}   signed in; hash = old name + password, newHash = new name + same password (the client hash is salted with the lowercase name, so it changes when the name changes). Moves users, pbs and sessions to the new name in one batch. 409 if taken.
   POST /api/account/password {hash,newHash}   signed in; verifies the old hash, stores the new one, signs out all other sessions and returns a fresh token.
   GET  /api/seasons                     live seasons and built tracks for players; owner also gets drafts, unbuilt tracks, status and saved layouts; also returns author times
-  Owner only POSTs: /api/season (create draft), /api/season/live, /api/season/delete, /api/track (add), /api/track/save, /api/track/delete, /api/author (set or clear author time), /api/pb/delete, /api/ban, /api/admin/reset {what: times|accounts|seasons|everything}
+  GET /api/hats                         signed in; owners get all hats, players only public ones
+  Staff (owner or admin) POSTs: /api/track (add), /api/track/save (also takes cps), /api/author
+  Owner only POSTs: /api/admin/role {name,admin}, /api/hat, /api/hat/save, /api/hat/delete, /api/season (create draft), /api/season/live, /api/season/delete, /api/track/delete, /api/author (set or clear author time), /api/pb/delete, /api/ban, /api/admin/reset {what: times|accounts|seasons|everything}
   GET /api/admin/users?q=               owner only, player search
   WebSocket /ws/<4 letters or digits>   Durable Object "Room": up to 4 players, ?join=1 to join an existing room, messages hello, s (state relay), start (host only, validated course string, laps 1 to 5). Replies lobby, start, s, full, none.
 After changing worker.js the owner must run npx wrangler deploy. Changes to index.html alone only need a commit to GitHub.
@@ -165,6 +176,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-27  Checkpoint gates (builder tools, racing rules, HUD, online relay, test drive) and gates on all Season 1 tracks. Rubber Duck hat and owner-uploaded PNG hats (spin or still, speed, size, price, public). Admin role, made in Admin > Players. Menu colour themes now use all their colours. Online: leaving the track restarts you. Route check gives clearer messages instead of "too short". Server: migrate-3.sql, worker.js redeploy.
 2026-10-27  Only lap 1 counts for leaderboard, PBs and medals. R restarts (rotates in build mode). Every shop item is 10-70% off daily. Hats prototyped (Black Box, owner only).
 2026-10-27  Added second owner account Oliver (oliver.sql, run once on the database). Confirmed names are case-insensitive via name_lc.
 2026-10-27  Shop redesigned as an online store (sidebar, sort, product cards, hero deal) with one consistent studio-plate picture per item. Muted the brightest cosmetic colours (nothing neon). Compact icon toolbar for the builder. Test drive in the builder with a suggested author time. Settings: change username and password. worker.js: /api/account/rename, /api/account/password, and register now guards against duplicate names (name_lc is the primary key). Deploy worker.js with npx wrangler deploy.
@@ -521,6 +533,28 @@ span.pbtn.eqd{display:inline-block;border:0;color:var(--mut);padding:9px 0}
 .pc.hero .pinfo{padding-top:18px}
 .pc.hero .pinfo h4{font-size:28px}
 @media (max-width:760px){.shopBody{grid-template-columns:1fr}#shopSide{position:static;padding-top:12px}.pc.hero{grid-column:auto;display:flex}.pc.hero .pimg{aspect-ratio:8/5;min-height:0;border-right:0;border-bottom:1px solid #ffffff10}}
+
+/* ---- v5: menu colour themes use all of their colours (default Ember is unchanged) ---- */
+.themed #menu h1{background:linear-gradient(90deg,var(--m1),var(--m2),var(--m3));-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.themed #menu h1::before,.themed #auth h1::before{background:linear-gradient(180deg,var(--m1),var(--m3))}
+.themed #menu .tabs button.on,.themed #menu .shopNav button.on{border-bottom-color:transparent;background:linear-gradient(90deg,var(--m1),var(--m2),var(--m3)) left bottom/100% 2px no-repeat}
+.themed #menu .ci.sel{border-left-color:var(--m1);background:linear-gradient(90deg,color-mix(in srgb,var(--m1) 22%,transparent),transparent)}
+.themed #menu .go,.themed #res .go,.themed #auth .go{background:linear-gradient(100deg,var(--acc),var(--m1) 55%,var(--m3))!important;color:#0d0e10!important}
+.themed #menu .pbtn.buy{background:linear-gradient(90deg,var(--m1),var(--m3));color:#0d0e10}
+.themed .bar>button.on,.themed #menu .seg button.on{background:linear-gradient(90deg,var(--acc),var(--m1));color:#0d0e10}
+.themed .pbadge{background:linear-gradient(90deg,var(--m1),var(--m3));color:#0d0e10}
+.themed .lbt tr.me td,.themed #rtab tr.me td{color:var(--m2)}
+.themed .pbb{border-color:var(--m2);color:var(--m2)}
+.themed .rk.r1{color:var(--m2)}
+.themed .pp,.themed #coinN,.themed #acct{color:var(--m2)}
+.themed .coin{background:var(--m2)}
+.themed #menu h3,.themed #menu .sech,.themed .sideT{color:var(--m3)}
+.themed #menu .cchip.on,.themed .pc.eq{border-color:var(--m1)}
+.themed #menu #shopSide .sb.on{border-left-color:var(--m1)}
+.themed #menu .specs b{color:var(--m2)}
+.hl{display:flex;flex-direction:column;gap:4px;font:500 11px var(--hd);letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+#admin .hl input[type=number]{width:96px}
+#admin .hl input[type=checkbox]{width:22px;height:22px;padding:0}
 </style>
 </head>
 <body>
@@ -539,7 +573,7 @@ span.pbtn.eqd{display:inline-block;border:0;color:var(--mut);padding:9px 0}
 <div id="big"></div>
 <div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tCar" class="hide">Car</button><button id="tShop" class="hide">Shop</button><button id="tSet">Settings</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><div id="setAcct" class="hide"><h3>Account</h3><div class="acctGrid"><div class="acBox"><h5>Change username</h5><label>New username<input id="acNewName" maxlength="16" autocomplete="off"></label><label>Current password<input id="acNamePw" type="password" autocomplete="current-password"></label><button id="acNameGo">Change username</button><div class="aerr" id="acNameMsg"></div></div><div class="acBox"><h5>Change password</h5><label>Old password<input id="acOld" type="password" autocomplete="current-password"></label><label>New password<input id="acPw1" type="password" autocomplete="new-password"></label><label>New password again<input id="acPw2" type="password" autocomplete="new-password"></label><button id="acPwGo">Change password</button><div class="aerr" id="acPwMsg"></div></div></div></div><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl"><div><span><kbd>W A S D</kbd><kbd>Arrows</kbd></span>Drive</div><div><span><kbd>Shift</kbd></span>Nitro</div><div><span><kbd>S</kbd></span>While turning, flicks the rear out</div><div><span><kbd>R</kbd><kbd>C</kbd></span>Restart (R rotates a piece in build mode)</div><div><span><kbd>B</kbd></span>Build mode</div><div><span><kbd>Esc</kbd></span>Menu</div></div></div>
 <div id="shop" class="hide"><div class="shopBar"><div class="shopTitle"><b>Garage shop</b><span>Cosmetics only</span></div><div class="coinBox"><i class="coin"></i><b id="coinN">0</b><small>coins</small></div><div class="pay" id="payN"></div><button data-shop="test" class="tst hide">+500 test coins</button></div><div class="shopNav" id="shopTabs"></div><div class="shopBody" id="shopBody"><aside id="shopSide"></aside><div class="shopMain"><div id="shopHead"></div><div class="pgrid" id="shopL"></div></div></div></div><div id="car" class="hide"><div><canvas id="cpv" width="800" height="450"></canvas><div class="lbn" id="carNote"></div></div><div id="carSlots"></div></div>
-<div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft that only you can see. Add tracks, build each one, then press Publish. Track marks: ○ to be built, ◐ building (saved but not finished), ● built.</div><h3>Medal times</h3><div class="pd">Author time in seconds for each track. Gold (+10%), silver (+30%) and bronze (+60%) are worked out from it.</div><div id="adMed"></div><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Reset</h3><div class="pd">Each button asks you to type a confirmation phrase, like "reset times". This cannot be undone. Your owner account and Season 1 always stay.</div><div class="orow2"><button data-act="reset" data-what="times">Reset times</button><button data-act="reset" data-what="accounts">Reset accounts</button><button data-act="reset" data-what="seasons">Reset seasons</button><button data-act="reset" data-what="everything">Reset everything</button></div><h3>Players</h3><div class="orow2"><input id="adQ" placeholder="Search players by name"><button id="adUsers">Search</button></div><div id="adUl"></div><div class="pd" id="adSt"></div></div>
+<div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2 ownOnly"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft. Admins can add and build tracks in any season; only an owner can publish, unpublish or delete. Track marks: ○ to be built, ◐ building (saved but not finished), ● built.</div><h3>Medal times</h3><div class="pd">Author time in seconds for each track. Gold (+10%), silver (+30%) and bronze (+60%) are worked out from it.</div><div id="adMed"></div><div class="ownOnly"><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Reset</h3><div class="pd">Each button asks you to type a confirmation phrase, like "reset times". This cannot be undone. Your owner account and Season 1 always stay.</div><div class="orow2"><button data-act="reset" data-what="times">Reset times</button><button data-act="reset" data-what="accounts">Reset accounts</button><button data-act="reset" data-what="seasons">Reset seasons</button><button data-act="reset" data-what="everything">Reset everything</button></div><h3>Players</h3><div class="orow2"><input id="adQ" placeholder="Search players by name"><button id="adUsers">Search</button></div><div id="adUl"></div></div><div class="ownOnly"><h3>Hats</h3><div class="pd">Upload a PNG (64 x 64 works well; bigger ones are shrunk to 128). The hat lies flat on the roof and the top of the picture points the way the car faces.</div><div id="adHats"></div><div class="sblk"><div class="shead"><b id="hatFT">New hat</b></div><div class="orow2"><input id="hatName" maxlength="24" placeholder="Hat name"><input id="hatFile" type="file" accept="image/png"><img id="hatPrev" class="hide" alt="" style="height:44px;image-rendering:pixelated"></div><div class="orow2"><label class="hl">Motion<select id="hatSpin"><option value="1">Spins</option><option value="0">Stands still</option></select></label><label class="hl">Speed (deg/s)<input id="hatSpeed" type="number" min="1" max="720" step="1" value="45"></label><label class="hl">Size<input id="hatSize" type="number" min="0.5" max="6" step="0.1" value="2"></label><label class="hl">Price (coins)<input id="hatPrice" type="number" min="0" max="5000" step="10" value="400"></label><label class="hl">Players can buy<input id="hatPub" type="checkbox"></label></div><div class="orow2"><button id="hatSave">Save hat</button><button id="hatNew">New / clear</button></div><div class="aerr" id="hatMsg"></div></div></div><div class="pd" id="adSt"></div></div>
 <div id="setup" class="hide"><h3>Race setup</h3><div class="opts" id="setupO"></div></div>
 <div id="online" class="hide"><div class="orow2"><input id="mpname" maxlength="12" placeholder="Your name"></div><div class="orow2"><button id="mpHost">Host a room</button><input id="mpcode" maxlength="4" placeholder="CODE"><button id="mpJoin">Join</button></div><div class="pd" id="mpst">Host a room and share the 4-letter code, or enter a friend's code. Hosts pick the course on the left.</div><div class="plist" id="mpl"></div><div class="mfoot"><button class="go hide" id="mpGo">Start race</button><button id="mpLeave" class="hide">Leave room</button></div></div>
 <div class="mfoot" id="solofoot"><button class="go" id="mPlay">Start race</button><button id="mResume" class="hide">Resume</button><button id="mTune">Handling…</button></div></div></div></div></div>
@@ -639,7 +673,7 @@ for(const sx of[-1,1]){const hl=new THREE.SpotLight(0xfff1c9,5,85,.6,.7,1.2);hl.
   const bm=new THREE.Mesh(new THREE.PlaneGeometry(11,22).rotateX(-Math.PI/2),(beamMat=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(q),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.55})));
   bm.position.set(0,.22,12.4);bm.userData.beam=1;car.add(bm);beamDef=beamMat.clone()}
 let race={route:null},bots=[],paused=true,started=false,cf={x:0,z:0},slipI=0,skT=0,sl=null,spd=0,assist=true,nitro=100,c,pan={x:0,z:0},cH=0,cur=0,best=0,idle=0,shk=0,em=0;
-function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots()}hideRes();if(MP&&MP.ready){c.x=SLOT[MP.idx][0];c.z=SLOT[MP.idx][1]}cur=0;idle=0}
+function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots();cpReset()}hideRes();if(MP&&MP.ready){c.x=SLOT[MP.idx][0];c.z=SLOT[MP.idx][1]}cur=0;idle=0}
 resetCar();
 const RAD=1.25;
 
@@ -697,9 +731,33 @@ function build(kind,ghost){
   return g;
 }
 let blocks=[],boxes=[],tool='straight',rot=0,mode='drive',gx=0,gz=0,ghost=null;
+// Checkpoint gates sit on the join between two track tiles. {x,z} = centre, o 0 = gate runs along x (track runs along z), o 1 = the other way, w = 1 or 2 tiles wide.
+var CPB=[],RG=[];
+const GATE_NEW=0xffcf3a,GATE_DONE=0x3be07a;
+function gateMesh(g,ghost){
+  const grp=new THREE.Group(),len=g.w*24-2,mat=new THREE.MeshBasicMaterial({color:GATE_NEW,transparent:true,opacity:ghost?.35:.6,depthWrite:false}),pm=new THREE.MeshLambertMaterial({color:GATE_NEW,transparent:!!ghost,opacity:ghost?.5:1});
+  const strip=new THREE.Mesh(new THREE.PlaneGeometry(len,3).rotateX(-Math.PI/2),mat);strip.position.y=.2;grp.add(strip);
+  for(const sd of[-1,1]){const p=new THREE.Mesh(new THREE.BoxGeometry(.9,5,.9),pm);p.position.set(sd*len/2,2.5,0);grp.add(p)}
+  grp.position.set(g.x,0,g.z);if(g.o===1)grp.rotation.y=Math.PI/2;
+  grp.userData.mat=mat;grp.userData.pm=pm;return grp;
+}
+function setGateCol(m,done){if(!m||!m.userData.mat)return;const c=done?GATE_DONE:GATE_NEW;m.userData.mat.color.setHex(c);m.userData.pm.color.setHex(c)}
+function addCp(g){
+  const i=CPB.findIndex(q=>q.x===g.x&&q.z===g.z&&q.o===g.o);if(i>=0){S.remove(CPB[i].m);CPB.splice(i,1)}
+  if(CPB.length>=24){toast('That is the most checkpoints a track can have (24)');return}
+  const m=gateMesh(g);S.add(m);CPB.push({x:g.x,z:g.z,o:g.o,w:g.w,m});if(BLD)BLD.dirty=true;
+}
+const clearRG=()=>{RG.forEach(m=>S.remove(m));RG.length=0};
+// Did the car cross this gate between two positions?
+function cpCross(g,x0,z0,x1,z1){
+  const hw=g.w*12+1.5;
+  if(g.o===0){if(z0===z1||(z0-g.z)*(z1-g.z)>0)return false;const t=(g.z-z0)/(z1-z0);return Math.abs(x0+(x1-x0)*t-g.x)<=hw}
+  if(x0===x1||(x0-g.x)*(x1-g.x)>0)return false;const t=(g.x-x0)/(x1-x0);return Math.abs(z0+(z1-z0)*t-g.z)<=hw;
+}
 function syncGhost(){
   if(ghost){S.remove(ghost);ghost=null}
   if(mode!=='build'||tool==='erase')return;
+  if(tool==='cp1'||tool==='cp2'){ghost=gateMesh({x:gx,z:gz,o:rot%2,w:tool==='cp2'?2:1},true);S.add(ghost);return}
   ghost=build(tool,true);ghost.rotation.y=rot*Math.PI/2;ghost.position.set(gx,0,gz);S.add(ghost);
 }
 function rebuildBoxes(){
@@ -716,6 +774,8 @@ function rebuildBoxes(){
   }
 }
 function erase(x,z){
+  const ci=CPB.findIndex(g=>g.o?(Math.abs(x-g.x)<=3&&Math.abs(z-g.z)<=g.w*12):(Math.abs(z-g.z)<=3&&Math.abs(x-g.x)<=g.w*12));
+  if(ci>=0){S.remove(CPB[ci].m);CPB.splice(ci,1);if(BLD)BLD.dirty=true;return}
   const i=blocks.findIndex(b=>inFoot(b,x,z));
   if(i>=0){S.remove(blocks[i].m);blocks.splice(i,1);rebuildBoxes();if(BLD)BLD.dirty=true}
 }
@@ -724,11 +784,11 @@ function placeTile(kd,x,z,r){
   const m=build(kd);m.position.set(x,0,z);m.rotation.y=r*Math.PI/2;S.add(m);m.traverse(o=>{if(o.isMesh)o.castShadow=o.receiveShadow=true});
   blocks.push({k:kd,x,z,rot:r,m,half:K[kd].half||12});rebuildBoxes();if(BLD)BLD.dirty=true;
 }
-function place(x,z){placeTile(tool,x,z,rot)}
-function clearAll(){clearSkids();if(BLD&&blocks.length)BLD.dirty=true;blocks.forEach(b=>S.remove(b.m));blocks=[];if(sl){S.remove(sl);sl=null}rebuildBoxes()}
+function place(x,z){if(tool==='cp1'||tool==='cp2'){addCp({x,z,o:rot%2,w:tool==='cp2'?2:1});return}placeTile(tool,x,z,rot)}
+function clearAll(){clearSkids();if(BLD&&(blocks.length||CPB.length))BLD.dirty=true;blocks.forEach(b=>S.remove(b.m));blocks=[];CPB.forEach(g=>S.remove(g.m));CPB.length=0;clearRG();if(sl){S.remove(sl);sl=null}rebuildBoxes()}
 function sides(r){let a=[0,1],b=[1,0];for(let i=0;i<r;i++){a=[a[1],-a[0]];b=[b[1],-b[0]]}return[a,b]}
 // Courses: one letter per tile (S straight, L/R corner), starting at the origin heading south
-function loadCourse(str){
+function loadCourse(str,cps){
   clearAll();let cx=0,cz=0,h=[0,1];const route=[];
   for(const ch of str){
     const h2=ch==='L'?[h[1],-h[0]]:ch==='R'?[-h[1],h[0]]:h;let r=0;
@@ -743,8 +803,12 @@ function loadCourse(str){
   sl=new THREE.Group();const g0=makeFinish();g0.position.set(0,0,-11.5);sl.add(g0);sl.userData.lamps=g0.userData.lamps;
   if(!race.closed){const lt=route[route.length-1],g1=makeFinish();g1.position.set(lt.x*TILE+h[0]*12,0,lt.z*TILE+h[1]*12);g1.rotation.y=h[0]?Math.PI/2:0;sl.add(g1)}
   S.add(sl);
+  race.cps=(cps||[]).filter(g=>g&&isFinite(g.x)&&isFinite(g.z)&&(g.o===0||g.o===1)&&(g.w===1||g.w===2)).map(g=>({x:+g.x,z:+g.z,o:g.o,w:g.w}));
+  race.cps.forEach(g=>{g.mesh=gateMesh(g);S.add(g.mesh);RG.push(g.mesh)});
+  race.cpSet=new Set();race.cpW=0;race.pp=null;
   resetCar();
 }
+function cpReset(){race.cpSet=new Set();race.cpW=0;race.pp=null;(race.cps||[]).forEach(g=>setGateCol(g.mesh,0))}
 function randomCourse(){
   let best='';
   for(let t=0;t<40;t++){
@@ -828,6 +892,7 @@ const PIECES=[
  [['straight','Straight','<path d="M7 3v18M17 3v18"/>'],['corner','Corner','<path d="M4 21V11a7 7 0 0 1 7-7h10M13 21v-5a3 3 0 0 1 3-3h5"/>'],['wide','Wide corner','<path d="M3 21C3 11 11 3 21 3M3 13C3 8 8 3 13 3"/>'],['open','Open road','No walls','<path d="M7 3v18M17 3v18" stroke-dasharray="2 3"/>'],['edge','Half border','Wall on one side. Rotate to pick the side.','<path d="M7 3v18" stroke-dasharray="2 3"/><path d="M17 3v18"/>'],['squeeze','Squeeze','Road narrows to about half width','<path d="M5 3v6l3 3-3 3v6M19 3v6l-3 3 3 3v6"/>'],['narrowL','Narrow left','Free build only','<path d="M3 3l7 18M21 3v18"/>'],['narrowR','Narrow right','Free build only','<path d="M3 3v18M21 3l-7 18"/>']],
  [['chicane','Chicane','<path d="M9 3c0 6 6 6 6 9s-6 3-6 9"/>'],['slalom','Slalom','<circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>'],['gate','Gate','<path d="M4 6v14M20 6v14M4 9h16"/>'],['jump','Jump','<path d="M3 19h18M3 19l12-9v9"/>'],['rumble','Rumble strips','Bumpy strips that slow you a little','<path d="M5 6h14M5 10h14M5 14h14M5 18h14"/>']],
  [['boost','Boost','<path d="M6 10l6-5 6 5M6 18l6-5 6 5"/>'],['refill','Nitro pad','Refills nitro','<circle cx="12" cy="12" r="7"/><path d="M12 8.5v7M8.5 12h7"/>'],['drift','Drift zone','Low grip. Sliding here charges nitro.','<path d="M5 20c0-8 6-8 9-11s3-5 5-5M9 21c0-6 4-6 7-8"/>'],['slick','Oil','<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>'],['gravel','Gravel','<circle cx="7" cy="8" r="1.3"/><circle cx="14" cy="6" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="10" cy="13" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>'],['ice','Ice','Very slippery','<path d="M12 3v18M4.5 7.5l15 9M4.5 16.5l15-9"/>']],
+ [['cp1','Checkpoint','One tile wide. Click on the join between two track tiles. R turns it.','<path d="M6 21V4M6 5h12l-3 4 3 4H6"/>'],['cp2','Wide checkpoint','Two tiles wide, for wide parts of a track.','<path d="M4 21V4M20 21V4M4 5h16"/><path d="M8 12h8" stroke-dasharray="2 2"/>']],
  [['erase','Erase','<path d="M6 6l12 12M18 6L6 18"/>']]
 ];
 $('#pieces').innerHTML=PIECES.map(g=>'<div class="grp">'+g.map(a=>{const t=a[0],n=a[1],p=a[a.length-1],h=a.length>3?a[2]:'';return '<button data-t="'+t+'" title="'+n+(h?' - '+h:'')+'" aria-label="'+n+'">'+ICO(p)+'</button>'}).join('')+'</div>').join('');
@@ -853,14 +918,14 @@ function aim(e){
   ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);cam.updateMatrixWorld();
   ray.setFromCamera(ndc,cam);return ray.ray.intersectPlane(plane,pt);
 }
-const snapP=(px,pz)=>{const sx=v=>Math.round(v/TILE)*TILE,so=v=>Math.round((v-12)/24)*24+12;if(tool==='wide')return[so(px),so(pz)];if(tool==='narrowL'||tool==='narrowR')return rot%2?[sx(px),so(pz)]:[so(px),sx(pz)];return[sx(px),sx(pz)]};
+const snapP=(px,pz)=>{const sx=v=>Math.round(v/TILE)*TILE,so=v=>Math.round((v-12)/24)*24+12;if(tool==='cp1'||tool==='cp2'){const w=tool==='cp2'?2:1,a=w===1?sx:so;return rot%2===0?[a(px),so(pz)]:[so(px),a(pz)]}if(tool==='wide')return[so(px),so(pz)];if(tool==='narrowL'||tool==='narrowR')return rot%2?[sx(px),so(pz)]:[so(px),sx(pz)];return[sx(px),sx(pz)]};
 cv.addEventListener('pointermove',e=>{if(mode==='build'&&aim(e)){[gx,gz]=snapP(pt.x,pt.z)}});
 cv.addEventListener('pointerdown',e=>{
   if(mode!=='build'||e.button!==0||!aim(e))return;
   [gx,gz]=snapP(pt.x,pt.z);
-  race={route:null};closeBots();tool==='erase'?erase(pt.x,pt.z):place(gx,gz);
+  race={route:null};clearRG();closeBots();tool==='erase'?erase(pt.x,pt.z):place(gx,gz);
 });
-cv.addEventListener('contextmenu',e=>{e.preventDefault();if(mode==='build'&&aim(e)){race={route:null};closeBots();erase(pt.x,pt.z)}});
+cv.addEventListener('contextmenu',e=>{e.preventDefault();if(mode==='build'&&aim(e)){race={route:null};clearRG();closeBots();erase(pt.x,pt.z)}});
 
 // Driving
 function drive(dt){
@@ -877,6 +942,12 @@ function drive(dt){
   vf-=vf*(AD?.85/(1+AD*.9):.85)*dt;if(vf<-10)vf=-10;
   if(WA>0&&Math.abs(c.s)>.55&&vf>22)vf-=vf*.45*WA*dt;
   if(race.route&&!blocks.some(b=>inFoot(b,c.x,c.z)))vf-=vf*.9*dt;
+  // Online: landing off the track (for example after jumping a wall) restarts your run.
+  if(MP&&MP.ready&&race.route&&race.state==='run'){
+    const off=!(c.y>1)&&!blocks.some(b=>inFoot(b,c.x,c.z,2));
+    c.off=off?(c.off||0)+dt:0;
+    if(c.off>.6){toast('You left the track: restarting');resetCar();return}
+  }
   let zb=0,zs=0,zg=0,zi=0,zr=0,zu=0,zd=0;
   for(const b of blocks){
     if(!ZK[b.k])continue;
@@ -971,7 +1042,7 @@ function lapDone(closed){
   if(closed)R.laps++;
   if(!closed||R.laps>=OPT.laps){R.state='done';finishRace();return}
   toast('Lap '+R.laps+'/'+OPT.laps+'   '+fmt(t)+(pb?'   PB!':'')+(mm?'   '+mm:'')+(R.laps>1?'   (only lap 1 counts)':''));
-  R.lapT=0;R.next=1;R.splits=[];R.delta=null;R.rec=[];R.rt=0;
+  R.lapT=0;R.next=1;R.splits=[];R.delta=null;R.rec=[];R.rt=0;cpReset();
 }
 function setLamps(on,green){const L=sl&&sl.userData.lamps;if(L)L.forEach((m,i)=>m.color.setHex(green?0x25e06a:i<on?0xff2a2a:0x2a1010))}
 function raceTick(dt){
@@ -987,9 +1058,15 @@ function raceTick(dt){
   }else if(R.state==='run'){
     R.lapT+=dt;R.t+=dt;R.rt+=dt;
     while(R.rt>=.05){R.rt-=.05;R.rec.push(c.x,c.z,c.h)}
+    if(R.cps&&R.cps.length){
+      const q=R.pp||{x:c.x,z:c.z};
+      R.cps.forEach((g,i)=>{if(!R.cpSet.has(i)&&cpCross(g,q.x,q.z,c.x,c.z)){R.cpSet.add(i);setGateCol(g.mesh,1);toast('Checkpoint '+R.cpSet.size+'/'+R.cps.length)}});
+      R.pp={x:c.x,z:c.z};R.cpW=Math.max(0,(R.cpW||0)-dt);
+    }
     const idx=R.map[Math.round(c.x/TILE)+','+Math.round(c.z/TILE)];
     if(idx!==undefined&&idx===(R.next<n?R.next:(R.closed?0:n))){
       if(R.next<n){R.splits[idx]=R.lapT;if(R.bestS&&R.bestS[idx]!=null)R.delta=R.lapT-R.bestS[idx];R.next++}
+      else if(R.cps&&R.cps.length&&R.cpSet.size<R.cps.length){if(!R.cpW){toast('Missing checkpoints: '+(R.cps.length-R.cpSet.size)+' to go');R.cpW=2}}
       else lapDone(R.closed);
     }
   }
@@ -997,7 +1074,7 @@ function raceTick(dt){
   let pos='';
   if(bots.length){const rk=R.state==='done'?R.rank:1+bots.filter(b=>b.fin||progOf(b)>pProg()).length;pos='\nPos  '+rk+'/'+(bots.length+1)+'\n'+[{n:'You',p:R.state==='done'?1e9:pProg()},...bots.map(b=>({n:b.name,p:b.fin?1e9-b.ft:progOf(b)}))].sort((a,b)=>b.p-a.p).map((o,i)=>(i+1)+' '+o.n).join(' \u00b7 ')}
   const d=R.delta;
-  $('#tm').textContent=(GP?'GP '+(GP.r+1)+'/'+GPCAL.length+'  ':'')+(R.closed?'Lap '+Math.min(R.laps+1,OPT.laps)+'/'+OPT.laps:'Run')+'  '+(R.state==='count'?'0:00.00':fmt(R.lapT))+pos+'\nLast  '+(R.last!=null?fmt(R.last):'--')+'\nBest  '+(isFinite(R.best)?fmt(R.best):'--')+(d!=null?'\nΔ  '+(d>=0?'+':'')+d.toFixed(2):'');
+  $('#tm').textContent=(GP?'GP '+(GP.r+1)+'/'+GPCAL.length+'  ':'')+(R.closed?'Lap '+Math.min(R.laps+1,OPT.laps)+'/'+OPT.laps:'Run')+'  '+(R.state==='count'?'0:00.00':fmt(R.lapT))+pos+'\nLast  '+(R.last!=null?fmt(R.last):'--')+'\nBest  '+(isFinite(R.best)?fmt(R.best):'--')+(R.cps&&R.cps.length?'\nCP    '+R.cpSet.size+'/'+R.cps.length:'')+(d!=null?'\nΔ  '+(d>=0?'+':'')+d.toFixed(2):'');
 }
 const gx2=$('#gauge').getContext('2d'),INK=dark?'#e8edf3':'#1b2430',ACC='#ff5a2a',PAN=dark?'rgba(30,38,48,.92)':'rgba(255,255,255,.92)';
 function drawGauge(){
@@ -1082,6 +1159,11 @@ const COURSES=[
   {name:'Free Drive',str:'free',desc:'Empty field · no timer'},
   {name:'Track Builder',str:'build',desc:'Design your own course'}
 ];
+// Season 1 checkpoints: the gate sits on the join after the tile at each listed position, spaced about evenly.
+const S1CP={'Midnight Circuit':[5,12,18],'Speedway':[5,13],'Long Haul':[6,12],'Harbor Loop':[7,16],'Coastline':[6,12,19],'Dragon Tail':[7,16],'Serpent Run':[6,12],'Switchbacks':[5,10],'Staircase':[3]};
+COURSES.forEach(c=>{if(S1CP[c.name])c.cpi=S1CP[c.name]});
+function jointsOf(str){let cx=0,cz=0,h=[0,1];const o=[];for(const ch of str){const h2=ch==='L'?[h[1],-h[0]]:ch==='R'?[-h[1],h[0]]:h;o.push({x:(cx+h2[0]*.5)*TILE,z:(cz+h2[1]*.5)*TILE,o:h2[0]?1:0,w:1});cx+=h2[0];cz+=h2[1];h=h2}return o}
+const courseCps=cc=>{if(!cc)return[];if(cc.cps)return cc.cps;if(cc.cpi&&isRoute(cc.str)){const j=jointsOf(cc.str);return cc.cpi.map(i=>j[i]).filter(Boolean)}return[]};
 const OPTS=[['bots','Bots',[[0,'None'],[1,'1'],[2,'2'],[3,'3']]],['diff','Bot difficulty',[[0,'Easy'],[1,'Normal'],[2,'Hard']]],['laps','Laps',[[1,'1'],[3,'3'],[5,'5']]],['zoom','Camera',[[.75,'Close'],[1,'Normal'],[1.35,'Far']]],['shadow','Shadows',[[1,'On'],[0,'Off']]],['sound','Sound',[[1,'On'],[0,'Off']]],['assist','Assist',[[1,'On'],[0,'Off']]],['ghost','PB ghost',[[1,'On'],[0,'Off']]],['pix','Pixels',[[1,'Off'],[.6,'Slight'],[.4,'Chunky']]],['admin','Admin car',[[0,'Off'],[1,'Boosted'],[2,'Insane']],true]];
 const saveOpt=()=>{try{localStorage.setItem('dbx:opt',JSON.stringify(OPT))}catch(e){}};
 function applyOpt(){snd=!!OPT.sound;assist=!!OPT.assist;sun.castShadow=!!OPT.shadow;resize();if(snd)initAudio()}
@@ -1137,11 +1219,11 @@ function startGame(){
   if(cc.gp){GP={r:0,pts:{}};cc=COURSES.find(x=>x.name===GPCAL[0])}
   if(cc.str==='donut')loadDonut();
   else if(cc.str==='free'||cc.str==='build'){clearAll();race={route:null}}
-  else loadCourse(cc.str==='random'?randomCourse():cc.str);
+  else loadCourse(cc.str==='random'?randomCourse():cc.str,cc.str==='random'?[]:courseCps(cc));
   applyOpt();if(race.route){race.course=cc;spawnBots(GP?3:OPT.bots)}
   resetCar();closeMenu();setMode(COURSES[selC].str==='build'?'build':'drive');
 }
-function nextRace(){GP.r++;const cc=COURSES.find(x=>x.name===GPCAL[GP.r]);closeBots();loadCourse(cc.str);race.course=cc;spawnBots(3);resetCar()}
+function nextRace(){GP.r++;const cc=COURSES.find(x=>x.name===GPCAL[GP.r]);closeBots();loadCourse(cc.str,courseCps(cc));race.course=cc;spawnBots(3);resetCar()}
 function finishRace(){
   const R=race,fin=bots.filter(b=>b.fin),rank=fin.length+1,nb=bots.length;R.rank=rank;
   const rows=[{n:'You',t:R.t,me:1},...fin.map(b=>({n:b.name,t:b.ft}))].sort((a,b)=>a.t-b.t).concat(bots.filter(b=>!b.fin).sort((a,b)=>progOf(b)-progOf(a)).map(b=>({n:b.name,t:null})));
@@ -1274,8 +1356,8 @@ function finishRaceOld(){
 function confetti(){
   const cf2=$('#conf'),x=cf2.getContext('2d'),W=cf2.width=innerWidth,H=cf2.height=innerHeight;
   cf2.classList.remove('hide');confOn=true;
-  const cols=['#ff5a2a','#e9eaec','#c9ccd1','#8b9098'];
-  const ps=Array.from({length:150},()=>({x:Math.random()*W,y:-20-Math.random()*H*.6,vx:(Math.random()-.5)*2.2,vy:2+Math.random()*3.5,r:Math.random()*6,s:5+Math.random()*7,c:cols[Math.floor(Math.random()*6)]}));
+  const th=themeCols(),cols=th?[th[0],th[1],th[2],th[3],'#e9eaec']:['#ff5a2a','#e9eaec','#c9ccd1','#8b9098'];
+  const ps=Array.from({length:150},()=>({x:Math.random()*W,y:-20-Math.random()*H*.6,vx:(Math.random()-.5)*2.2,vy:2+Math.random()*3.5,r:Math.random()*6,s:5+Math.random()*7,c:cols[Math.floor(Math.random()*cols.length)]}));
   (function step(){
     if(!confOn)return;x.clearRect(0,0,W,H);let alive=0;
     for(const p of ps){p.x+=p.vx;p.y+=p.vy;p.r+=.12;if(p.y<H+20)alive++;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()}
@@ -1354,14 +1436,14 @@ function clientData(d){
 }
 function startOnline(d){
   closeBots();GP=null;started=true;OPT.laps=d.laps;
-  loadCourse(d.str);applyOpt();
+  loadCourse(d.str,d.cps);applyOpt();
   d.players.forEach(p=>{if(p.idx!==MP.idx)addRemote(p)});
   MP.ready=true;resetCar();closeMenu();setMode('drive');
 }
 function hostStart(){
   if(!MP||!MP.host)return;const cc=COURSES[selC];
   if(!(isRoute(cc.str)||cc.str==='random')){mpSay('Pick a race course on the left first.');return}
-  mpSend({t:'start',str:cc.str==='random'?randomCourse():cc.str,laps:OPT.laps});
+  mpSend({t:'start',str:cc.str==='random'?randomCourse():cc.str,cps:cc.str==='random'?[]:courseCps(cc),laps:OPT.laps});
 }
 function mpTick(dt){
   if(!MP||!MP.ready||!ws)return;
@@ -1373,6 +1455,9 @@ $('#tSolo').onclick=()=>setTab('solo');$('#tOnline').onclick=()=>setTab('online'
 try{$('#mpname').value=localStorage.getItem('dbx:name')||''}catch(e){}
 // ---------- menu (v3): restrained, motorsport-style ----------
 let routeAnim=0,lastSel=-1;
+const themeCols=()=>{try{if(shopOn()){const t=eqv('theme');if(t&&t[0]!=='#ff8a3d')return t}}catch(e){}return null};
+function routeStroke(x,W,H){const t=themeCols();if(!t)return '#e9eaec';const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,t[0]);g.addColorStop(.5,t[1]);g.addColorStop(1,t[2]);return g}
+const routeStart=()=>{const t=themeCols();return t?t[3]:'#ff5a2a'};
 function drawRoute(cv,str,lab,anim){
   const x=cv.getContext('2d'),W=cv.width,H=cv.height;cancelAnimationFrame(routeAnim);
   const grid=()=>{x.clearRect(0,0,W,H);x.strokeStyle='#ffffff0d';x.lineWidth=1;x.beginPath();for(let i=20;i<W;i+=20){x.moveTo(i+.5,0);x.lineTo(i+.5,H)}for(let j=20;j<H;j+=20){x.moveTo(0,j+.5);x.lineTo(W,j+.5)}x.stroke()};
@@ -1385,9 +1470,9 @@ function drawRoute(cv,str,lab,anim){
   const draw=p=>{
     grid();x.lineJoin='round';x.lineCap='butt';
     x.setLineDash([]);x.strokeStyle='#1f2227';x.lineWidth=u*.62;path();x.stroke();
-    x.strokeStyle='#e9eaec';x.lineWidth=2.5;x.setLineDash([L,L]);x.lineDashOffset=L*(1-p);path();x.stroke();x.setLineDash([]);
+    x.strokeStyle=routeStroke(x,W,H);x.lineWidth=2.5;x.setLineDash([L,L]);x.lineDashOffset=L*(1-p);path();x.stroke();x.setLineDash([]);
     cs.forEach((c,i)=>{if(HAZ[c.k]&&cum[i]<=p*L+.1){x.fillStyle=HAZ[c.k][1];x.fillRect(pts[i][0]-4,pts[i][1]-4,8,8)}});
-    x.fillStyle='#ff5a2a';x.fillRect(pts[0][0]-u*.22,pts[0][1]-1.5,u*.44,3);
+    x.fillStyle=routeStart();x.fillRect(pts[0][0]-u*.22,pts[0][1]-1.5,u*.44,3);
   };
   if(!anim){draw(1);return}
   const t0=performance.now(),step=t=>{const p=Math.min(1,((t||performance.now())-t0)/750);draw(1-Math.pow(1-p,3));if(p<1)routeAnim=requestAnimationFrame(step)};
@@ -1458,17 +1543,17 @@ async function doAuth(){
       else if(!us[lc]||us[lc].hash!==hash)throw new Error('Wrong name or password');
       r={token:'local',name:us[lc].name,owner:false};
     }else r=await api('/api/'+(auMode==='up'?'register':'login'),{name,hash});
-    SESS={name:r.name,token:r.token,owner:!!r.owner};localStorage.setItem('dbx:sess',JSON.stringify(SESS));
+    SESS={name:r.name,token:r.token,owner:!!r.owner,admin:!!r.admin};localStorage.setItem('dbx:sess',JSON.stringify(SESS));
     afterLogin();
   }catch(e){authErr(e.message)}
   $('#auGo').disabled=false;
 }
 function acctUI(){
-  $('#acct').innerHTML=SESS?'<span>'+esc(SESS.name)+(SESS.owner?' \u00b7 Owner':'')+' \u00b7 '+OWN.coins+' coins'+'</span><button id="outBtn">Sign out</button>':'';
+  $('#acct').innerHTML=SESS?'<span>'+esc(SESS.name)+(SESS.owner?' \u00b7 Owner':SESS.admin?' \u00b7 Admin':'')+' \u00b7 '+OWN.coins+' coins'+'</span><button id="outBtn">Sign out</button>':'';
   if(SESS)$('#outBtn').onclick=logout;
-  $('#tAdmin').classList.toggle('hide',!(SESS&&SESS.owner&&API_URL));$('#tShop').classList.toggle('hide',!SESS);$('#tCar').classList.toggle('hide',!SESS);
+  $('#tAdmin').classList.toggle('hide',!(staffOn()&&API_URL));$('#tShop').classList.toggle('hide',!SESS);$('#tCar').classList.toggle('hide',!SESS);
 }
-function logout(){SESS=null;try{localStorage.removeItem('dbx:sess')}catch(e){}loadOwn();acctUI();setTab('solo');showAuth()}
+function logout(){SESS=null;try{localStorage.removeItem('dbx:sess')}catch(e){}HATS_SRV=[];SHOP.hat=HAT_BASE.slice();loadOwn();acctUI();setTab('solo');showAuth()}
 // ---------- account settings: change username or password ----------
 const acMsg=(id,t,ok)=>{const e=$(id);e.textContent=t||'';e.classList.toggle('ok',!!ok)};
 function moveLocal(oldLc,newLc){
@@ -1523,10 +1608,10 @@ $('#acNameGo').onclick=acName;$('#acPwGo').onclick=acPw;
 $('#acNamePw').onkeydown=e=>{if(e.key==='Enter')acName()};$('#acPw2').onkeydown=e=>{if(e.key==='Enter')acPw()};
 async function afterLogin(){
   $('#auth').classList.add('hide');$('#auPw').value='';loadOwn();acctUI();
-  await fetchSeasons();await syncPBs();buildMenu();
+  await fetchSeasons();await loadHats();await syncPBs();buildMenu();
 }
 async function boot(){
-  if(SESS&&API_URL){try{const j=await api('/api/me');SESS.owner=!!j.owner;SESS.name=j.name}catch(e){SESS=null;try{localStorage.removeItem('dbx:sess')}catch(e2){}}}
+  if(SESS&&API_URL){try{const j=await api('/api/me');SESS.owner=!!j.owner;SESS.admin=!!j.admin;SESS.name=j.name}catch(e){SESS=null;try{localStorage.removeItem('dbx:sess')}catch(e2){}}}
   if(!SESS){showAuth();return}
   afterLogin();
 }
@@ -1535,11 +1620,12 @@ function setCustom(list){
   for(let i=COURSES.length-1;i>=0;i--)if(COURSES[i].custom)COURSES.splice(i,1);
   COURSES.push(...list);selC=Math.max(0,COURSES.indexOf(keep));
 }
+const parseCps=v=>{try{const a=JSON.parse(v||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}};
 async function fetchSeasons(){
   if(!API_URL){SEASONS=[{id:1,name:'Season 1'}];setCustom([]);return}
   try{
     const j=await api('/api/seasons'),tr=[];SEASONS=j.seasons;AUTH_SRV=j.authors||{};
-    j.seasons.forEach(s=>s.tracks.filter(t=>t.str).forEach(t=>tr.push({name:t.name,str:t.str,desc:t.desc||s.name+' track',custom:1,season:s.id,tid:'t'+t.id})));
+    j.seasons.forEach(s=>s.tracks.filter(t=>t.str).forEach(t=>tr.push({name:t.name,str:t.str,desc:t.desc||s.name+' track',custom:1,season:s.id,tid:'t'+t.id,cps:parseCps(t.cps)})));
     setCustom(tr);
   }catch(e){}
 }
@@ -1598,10 +1684,28 @@ setInterval(()=>{if(mOpen&&menuTab==='solo'&&!document.hidden&&SESS)fetchLB()},2
 function routeFromBlocks(){
   if(!blocks.length)return{err:'Place some track in the builder first.'};
   const at=(cx,cz)=>blocks.find(b=>b.x===cx*TILE&&b.z===cz*TILE),KC={straight:'S',boost:'B',chicane:'C',slick:'O',jump:'J',gravel:'G',slalom:'M',gate:'T',open:'N',ice:'I',refill:'P',rumble:'U',squeeze:'Q',drift:'D'};
-  let cx=0,cz=0,h=[0,1],s='';const seen=new Set();
+  let cx=0,cz=0,h=[0,1],s='';const seen=new Set(),joints=[];
+  // Attach the checkpoints, making sure each one sits on a join between two tiles of the route.
+  const done=r=>{
+    joints.pop();
+    const out=[];
+    for(const g of CPB){
+      const al=g.o?g.x:g.z,ac=g.o?g.z:g.x;
+      const ok=joints.some(j=>j.o===g.o&&Math.abs(al-j.along)<.5&&(g.w===2?Math.abs(ac-j.across)<12.5&&Math.abs(ac-j.across)>11.5:Math.abs(ac-j.across)<.5));
+      if(!ok)return{err:'A checkpoint is not on the join between two track tiles. Move it or erase it.'};
+      out.push({x:g.x,z:g.z,o:g.o,w:g.w});
+    }
+    r.cps=out;return r;
+  };
   for(let i=0;i<60;i++){
     const b=at(cx,cz);
-    if(!b)return i===0?{err:'The track must start on the tile at the car start (the middle of the map), heading south.'}:(s.length>=3?{str:s,closed:false}:{err:'The track is too short.'});
+    if(!b){
+      if(i===0)return{err:'The track must start on the tile at the car start (the middle of the map), heading south.'};
+      const off=blocks.find(q=>inFoot(q,cx*TILE,cz*TILE,1)&&(Math.abs(q.x-cx*TILE)>1||Math.abs(q.z-cz*TILE)>1));
+      if(off)return{err:'The route stops after tile '+i+': the next piece ('+off.k+') sits between the grid lines, like wide corners and narrowing pieces do. Race routes only follow single tiles for now.'};
+      if(s.length>=3)return done({str:s,closed:false});
+      return{err:'The route stops after '+s.length+' tile'+(s.length===1?'':'s')+' because the next tile is empty. A track needs at least 3 connected tiles.'};
+    }
     const key=cx+','+cz;if(seen.has(key))return{err:'The track crosses itself.'};seen.add(key);
     if(b.k==='corner'){
       const [p,q]=sides(b.rot),back=[-h[0],-h[1]],has=v=>(p[0]===v[0]&&p[1]===v[1])||(q[0]===v[0]&&q[1]===v[1]);
@@ -1616,8 +1720,9 @@ function routeFromBlocks(){
       if((h[0]?1:0)!==(b.rot%2))return{err:'The straight piece at '+cx+','+cz+' is rotated the wrong way.'};
       s+=KC[b.k];
     }else return{err:'Wide corners and narrowing pieces cannot be used in a race track.'};
+    const go=h[0]?1:0;joints.push({o:go,along:go?(cx+h[0]*.5)*TILE:(cz+h[1]*.5)*TILE,across:go?cz*TILE:cx*TILE});
     cx+=h[0];cz+=h[1];
-    if(cx===0&&cz===0)return{str:s,closed:true};
+    if(cx===0&&cz===0)return done({str:s,closed:true});
   }
   return{err:'The track is too long.'};
 }
@@ -1625,13 +1730,14 @@ const adSay=t=>{$('#adSt').textContent=t};
 const allTracks=()=>COURSES.map(cc=>({cc,k:lbKey(cc)})).filter(x=>x.k);
 const tstat=t=>t.status||(t.str?'built':'todo'),ST={built:['\u25cf','Built','ok'],building:['\u25d0','Building','wip'],todo:['\u25cb','To be built','todo']};
 function adminUI(){
+  const own=ownOn();document.querySelectorAll('#admin .ownOnly').forEach(e=>e.classList.toggle('hide',!own));hatListUI();
   const ss=SEASONS.filter(x=>x.id>1);
   $('#adSeasons').innerHTML=ss.length?ss.map(x=>{
     const tr=x.tracks||[],live=x.live!==false;
     return '<div class="sblk"><div class="shead"><b>'+esc(x.name)+'</b><span class="chip2 '+(live?'':'dr')+'">'+(live?'Live':'Draft \u00b7 not published')+'</span>'
-      +'<button data-act="live" data-id="'+x.id+'" data-live="'+(live?0:1)+'">'+(live?'Unpublish':'Publish')+'</button><button data-act="delseason" data-id="'+x.id+'">Delete</button></div>'
-      +(tr.length?tr.map(t=>{const s=tstat(t),z=ST[s];return '<div class="adrow sub2"><span class="st '+z[2]+'">'+z[0]+'</span><span class="tn">'+esc(t.name)+'<small>'+(authorOf(x.id+'/t'+t.id)?'Author '+authorOf(x.id+'/t'+t.id).toFixed(2)+'s':'No author time yet')+'</small></span><em class="stl '+z[2]+'">'+z[1]+'</em><button data-act="build" data-id="'+t.id+'" data-season="'+x.id+'">'+(s==='todo'?'Build':'Edit')+'</button><button data-act="deltrack" data-id="'+t.id+'">Delete</button></div>'}).join(''):'<div class="lbn">No tracks yet.</div>')
-      +'<div class="orow2"><input class="adTn" data-s="'+x.id+'" maxlength="30" placeholder="New track name"><button data-act="addtrack" data-id="'+x.id+'">Add track</button></div></div>'}).join(''):'<div class="lbn">No seasons yet. Create one below.</div>';
+      +(own?'<button data-act="live" data-id="'+x.id+'" data-live="'+(live?0:1)+'">'+(live?'Unpublish':'Publish')+'</button><button data-act="delseason" data-id="'+x.id+'">Delete</button>':'')+'</div>'
+      +(tr.length?tr.map(t=>{const s=tstat(t),z=ST[s];return '<div class="adrow sub2"><span class="st '+z[2]+'">'+z[0]+'</span><span class="tn">'+esc(t.name)+'<small>'+(authorOf(x.id+'/t'+t.id)?'Author '+authorOf(x.id+'/t'+t.id).toFixed(2)+'s':'No author time yet')+'</small></span><em class="stl '+z[2]+'">'+z[1]+'</em><button data-act="build" data-id="'+t.id+'" data-season="'+x.id+'">'+(s==='todo'?'Build':'Edit')+'</button>'+(own?'<button data-act="deltrack" data-id="'+t.id+'">Delete</button>':'')+'</div>'}).join(''):'<div class="lbn">No tracks yet.</div>')
+      +'<div class="orow2"><input class="adTn" data-s="'+x.id+'" maxlength="30" placeholder="New track name"><button data-act="addtrack" data-id="'+x.id+'">Add track</button></div></div>'}).join(''):own?'<div class="lbn">No seasons yet. Create one below.</div>':'<div class="lbn">No seasons yet. An owner needs to create one.</div>';
   const mr=[];
   allTracks().filter(x=>x.k.season===1).forEach(x=>mr.push({key:'1/'+x.k.track,name:x.cc.name,sub:'Season 1'}));
   SEASONS.filter(s=>s.id>1).forEach(s=>(s.tracks||[]).forEach(t=>mr.push({key:s.id+'/t'+t.id,name:t.name,sub:s.name+(t.str?'':' \u00b7 not built yet')})));
@@ -1651,6 +1757,9 @@ async function adAct(a,d){
     else if(a==='deltrack'){if(!confirm('Delete this track and all its times?'))return;await api('/api/track/delete',{id:+d.id});adSay('Track deleted.')}
     else if(a==='reset'){const ph='reset '+d.what,t=prompt('This cannot be undone. Type "'+ph+'" to confirm.');if(t===null)return;if(t.trim().toLowerCase()!==ph){adSay('Nothing was reset: the phrase did not match.');return}await api('/api/admin/reset',{what:d.what});adSay('Done: '+ph+'.');if(d.what==='accounts'||d.what==='everything'){const ul=$('#adUl');if(ul)ul.innerHTML=''}}
     else if(a==='delpb'){await api('/api/pb/delete',{season:+d.season,track:d.track,name:d.name});adSay('Time removed.');return adLb()}
+    else if(a==='role'){await api('/api/admin/role',{name:d.name,admin:d.admin==='1'});adSay(d.admin==='1'?'Made '+d.name+' an admin. They can build and add tracks, but only owners can publish.':'Removed admin from '+d.name+'.');return adUsers()}
+    else if(a==='edithat'){const h=HATS_SRV.find(q=>String(q.id)===d.id);if(!h)return;HAT_ED={id:h.id,png:''};$('#hatFT').textContent='Edit: '+h.name;$('#hatName').value=h.name;$('#hatSpin').value=h.spin?'1':'0';$('#hatSpeed').value=h.speed;$('#hatSize').value=h.size;$('#hatPrice').value=h.price;$('#hatPub').checked=!!h.pub;$('#hatPrev').src=h.png;$('#hatPrev').classList.remove('hide');hatMsg('Editing. Choose a new PNG only if you want to replace the picture.');return}
+    else if(a==='delhat'){if(!confirm('Delete this hat? Players who own it lose it.'))return;await api('/api/hat/delete',{id:+d.id});await loadHats();adSay('Hat deleted.');return}
     else if(a==='ban'){await api('/api/ban',{name:d.name,banned:d.banned==='1'});adSay(d.banned==='1'?'Player banned.':'Player unbanned.');return adUsers()}
     await fetchSeasons();adminUI();buildMenu();
   }catch(e){adSay(apiMsg(e))}
@@ -1662,8 +1771,36 @@ async function adLb(){
 }
 async function adUsers(){
   try{const j=await api('/api/admin/users?q='+encodeURIComponent(($('#adQ').value||'').trim()));
-    $('#adUl').innerHTML=j.users.map(u=>'<div class="adrow"><b>'+esc(u.name)+'</b>'+(u.banned?'<span class="chip2 dr">Banned</span>':'')+(u.owner?'<span class="chip2">Owner</span>':'<button data-act="ban" data-name="'+esc(u.name)+'" data-banned="'+(u.banned?0:1)+'">'+(u.banned?'Unban':'Ban')+'</button>')+'</div>').join('')}catch(e){adSay(e.message)}
+    $('#adUl').innerHTML=j.users.map(u=>'<div class="adrow"><b>'+esc(u.name)+'</b>'+(u.banned?'<span class="chip2 dr">Banned</span>':'')+(u.admin?'<span class="chip2">Admin</span>':'')+(u.owner?'<span class="chip2">Owner</span>':'<button data-act="role" data-name="'+esc(u.name)+'" data-admin="'+(u.admin?0:1)+'">'+(u.admin?'Remove admin':'Make admin')+'</button><button data-act="ban" data-name="'+esc(u.name)+'" data-banned="'+(u.banned?0:1)+'">'+(u.banned?'Unban':'Ban')+'</button>')+'</div>').join('')}catch(e){adSay(e.message)}
 }
+var HAT_ED={id:0,png:''};
+const hatMsg=t=>{const e=$('#hatMsg');if(e)e.textContent=t||''};
+function hatListUI(){
+  const el=$('#adHats');if(!el)return;
+  el.innerHTML=HATS_SRV.length?HATS_SRV.map(h=>'<div class="adrow"><img src="'+h.png+'" alt="" style="height:36px;width:36px;object-fit:contain;image-rendering:pixelated"><span class="tn">'+esc(h.name)+'<small>'+(h.spin?'Spins '+h.speed+' deg/s':'Stands still')+' \u00b7 size '+h.size+' \u00b7 '+h.price+' coins \u00b7 '+(h.pub?'public':'owner only')+'</small></span><button data-act="edithat" data-id="'+h.id+'">Edit</button><button data-act="delhat" data-id="'+h.id+'">Delete</button></div>').join(''):'<div class="lbn">No custom hats yet. The Rubber Duck and Black Box are built in.</div>';
+}
+function hatClear(){HAT_ED={id:0,png:''};$('#hatName').value='';$('#hatFile').value='';$('#hatPrev').classList.add('hide');$('#hatFT').textContent='New hat';$('#hatSpin').value='1';$('#hatSpeed').value=45;$('#hatSize').value=2;$('#hatPrice').value=400;$('#hatPub').checked=false}
+async function hatSave(){
+  const name=$('#hatName').value.trim();
+  if(name.length<2){hatMsg('Give the hat a name.');return}
+  if(!HAT_ED.id&&!HAT_ED.png){hatMsg('Choose a PNG first.');return}
+  const b={name,png:HAT_ED.png,spin:$('#hatSpin').value==='1',speed:+$('#hatSpeed').value||45,size:+$('#hatSize').value||2,price:+$('#hatPrice').value||0,pub:$('#hatPub').checked};
+  try{if(HAT_ED.id)await api('/api/hat/save',{id:HAT_ED.id,...b});else await api('/api/hat',b);hatClear();await loadHats();hatMsg('Hat saved.')}catch(e){hatMsg(apiMsg(e))}
+}
+$('#hatFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  if(f.type!=='image/png'){hatMsg('Please choose a PNG file.');return}
+  const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{
+    const m=Math.max(im.width,im.height),k=m>128?128/m:1,sz=Math.max(1,Math.round(m*k)),cv=document.createElement('canvas');cv.width=cv.height=sz;
+    const x=cv.getContext('2d'),w=Math.round(im.width*k),h=Math.round(im.height*k);x.drawImage(im,Math.round((sz-w)/2),Math.round((sz-h)/2),w,h);
+    const u=cv.toDataURL('image/png');
+    if(u.length>90000){hatMsg('That picture is too detailed. Try a smaller or simpler PNG.');return}
+    HAT_ED.png=u;$('#hatPrev').src=u;$('#hatPrev').classList.remove('hide');hatMsg('');
+  };im.src=r.result};
+  r.readAsDataURL(f);
+};
+$('#hatSave').onclick=hatSave;$('#hatNew').onclick=()=>{hatClear();hatMsg('')};
 async function adMk(){
   const name=$('#adSeason').value.trim();if(name.length<2){adSay('Give the season a name.');return}
   try{await api('/api/season',{name});$('#adSeason').value='';adSay('Season created as a draft.');await fetchSeasons();adminUI();buildMenu()}catch(e){adSay(apiMsg(e))}
@@ -1682,7 +1819,7 @@ function enterBuilder(t,seasonName,sid){
   if(MP)mpClose();
   BLD=null;closeBots();clearAll();race={route:null};started=false;
   let saved=[];try{saved=JSON.parse(t.blocks||'[]')}catch(e){}
-  saved.forEach(b=>{if(K[b.k])placeTile(b.k,b.x,b.z,b.rot|0)});
+  saved.forEach(b=>{if(b.k==='cp')addCp({x:b.x,z:b.z,o:b.o|0,w:b.w===2?2:1});else if(K[b.k])placeTile(b.k,b.x,b.z,b.rot|0)});
   BLD={id:t.id,name:t.name,season:seasonName,sid,dirty:false};$('#bldA').value=authorOf(sid+'/t'+t.id)||'';
   resetCar();closeMenu();setMode('build');
   document.body.classList.add('bldg');$('#bld').classList.remove('hide');bldInfo();
@@ -1692,15 +1829,15 @@ function bldInfo(){
   $('#bldN').textContent=BLD.name+' \u00b7 '+BLD.season;
   const s=$('#bldS');
   if(!blocks.length){s.textContent='Empty. Start on the middle tile, heading south.';s.className='bad'}
-  else{const r=routeFromBlocks();if(r.err){s.textContent=r.err;s.className='bad'}else{s.textContent=(r.closed?'Valid circuit':'Valid point-to-point')+' \u00b7 '+r.str.length+' tiles';s.className='ok'}}
+  else{const r=routeFromBlocks();if(r.err){s.textContent=r.err;s.className='bad'}else{s.textContent=(r.closed?'Valid circuit':'Valid point-to-point')+' \u00b7 '+r.str.length+' tiles'+(r.cps&&r.cps.length?' \u00b7 '+r.cps.length+' checkpoint'+(r.cps.length>1?'s':''):'');s.className='ok'}}
   $('#bldD').textContent=BLD.dirty?'Unsaved changes':'';
 }
 async function bldSave(){
   if(!BLD)return;
   const raw=($('#bldA').value||'').trim(),av=raw===''?null:parseFloat(raw);
   if(av!==null&&!(av>=1&&av<=900)){toast('Author time must be between 1 and 900 seconds');return}
-  const r=routeFromBlocks(),bl=blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot})),body={id:BLD.id,blocks:bl.length?JSON.stringify(bl):''};
-  if(!r.err)body.str=r.str;
+  const r=routeFromBlocks(),bl=[...blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot})),...CPB.map(g=>({k:'cp',x:g.x,z:g.z,o:g.o,w:g.w}))],body={id:BLD.id,blocks:bl.length?JSON.stringify(bl):''};
+  if(!r.err){body.str=r.str;body.cps=JSON.stringify(r.cps||[])}
   try{
     await api('/api/track/save',body);if(av!==null)await api('/api/author',{key:BLD.sid+'/t'+BLD.id,author:av});BLD.dirty=false;
     toast(!bl.length?'Saved (empty)':r.err?'Saved as work in progress. '+r.err:'Saved. This track is built.');
@@ -1720,9 +1857,9 @@ function testDrive(){
   if(TD||mode!=='build')return;
   const r=routeFromBlocks();
   if(r.err){toast(r.err);return}
-  TD={layout:blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot})),dirty:!!(BLD&&BLD.dirty),laps:OPT.laps,best:Infinity,sug:null,use:false};
+  TD={layout:blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot})),cpl:CPB.map(g=>({x:g.x,z:g.z,o:g.o,w:g.w})),dirty:!!(BLD&&BLD.dirty),laps:OPT.laps,best:Infinity,sug:null,use:false};
   OPT.laps=1;closeBots();
-  loadCourse(r.str);
+  loadCourse(r.str,r.cps);
   Object.assign(race,{test:true,best:Infinity,bestS:null,gh:null,course:null});
   resetCar();setMode('drive');
   $('#rUse').classList.add('hide');$('#tdInfo').textContent='Drive start to finish. Your best run sets the suggested author time.';
@@ -1745,7 +1882,7 @@ function tdExit(){
   if(!TD)return;
   const T=TD;TD=null;
   OPT.laps=T.laps;closeBots();clearAll();race={route:null};
-  T.layout.forEach(b=>placeTile(b.k,b.x,b.z,b.rot));
+  T.layout.forEach(b=>placeTile(b.k,b.x,b.z,b.rot));(T.cpl||[]).forEach(g=>addCp(g));
   if(BLD)BLD.dirty=T.dirty;
   if(T.use&&T.sug&&BLD){$('#bldA').value=T.sug.toFixed(2);BLD.dirty=true}
   hideRes();$('#tdBar').classList.add('hide');$('#rUse').classList.add('hide');
@@ -1768,6 +1905,14 @@ const hexs=n=>'#'+(n>>>0).toString(16).padStart(6,'0');
 const rgba=(n,a)=>'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')';
 const T=(cols,mode,o,sm)=>({cols,mode:mode||'one',o:o||.8,sm});
 // Items: [id, name, description, price, data]. The first item in each list is the free default.
+const DUCK_PNG='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACxklEQVR4AeyYMY4UMRBFuxGELCTEhHAAEhIuhDgNNyIh4QCkxCQMkCHRu0+aWrVq2nbZU+XZ7fFKX267yr9+fddqpX0yXfnPMODKB2AaEzAm4ModGL8Clx6Aw8eb5ZIaLjoB0ryslzCiuwHL93kBumn2nPc2oZsBNAdo8Pfn5ywn4JwccBIMOgg3gGaA6KdJ+d5aJc4dsJXjeRZqgG5Amis1sM7THKW7tfEwAzyFe3Jpg0IMSAm++fRnskILTXHqvNp9iAG1Inrm61ruBkS9FMIjuN0NQGgK89tlAtOb/ycpnIOt2Emy44GrAdYXmuc52cI8p2NcstYg1wJXAywFH1qOmwG/vj1bSs3dvd4k0LlyzqpjkXsXAyzNezbhWc/FAM/menM1G7D8+LAIeoumHlMg9Vk5a0GTAbrgi1fvW2qfdUfX1Jqs5NUGpAppQVYBLXmpWiltuRrVBuTIDn+f5sIuMe8aVQaUHE69jEvnR5JSjZLGI839UmXA/a3Mh/cLrUtFcLsbsBb8GL7NBlhHixGNeCk44baYatUKl9kAkmuA4Jr8XO45XDleYmEGQO4h3IMDLSmEGkBRGgB814A7oOZOS264ASKKZoDsUys5IBX3Pu9mgAinuRwkr9fa3YBejVnrDAOsTu01b0zAXl/W2pd5AubXX/L/rz5WPPz8evzyX6zcVq0oNBtA8h4xDKh51dJoWUe0pqbOLdUoadR8YwK0I6V9yuHSy5R4PeIpbTnupgnQhS7RvNYg+1yzW7EmAyCioODlu3+mP5Hc8wB14WEVsG9BswG6WC8TvOu4GYAh3uLgXCOC39UAxEaIjOR1N0DEehkBD4A3AiEGiFCEA9nXrNwDNXdackMNEEE0IpCzrVVyWLfiEWddDFgLp7kU1nm9vrsb0Ksxa51hgNWpveaNCdjry1r7GhNgdWqveY9+As59mFsAAAD//+Qrq/QAAAAGSURBVAMAnJIfkII2xDYAAAAASUVORK5CYII=';
+// Built-in hats. Kinds: 'box' (3D block) or 'img' (a flat picture lying on the roof, optionally spinning). Hats with pub:true can be bought by everyone.
+const HAT_BASE=[
+  ['none','No hat','',0,null],
+  ['duck','Rubber Duck','Sits on the roof and spins slowly.',500,{kind:'img',png:DUCK_PNG,spin:1,speed:40,size:2.2,pub:false}],
+  ['box','Black Box','Prototype hat. Owner only for now.',400,{kind:'box'}]
+];
+var HATS_SRV=[];
 const SHOP={
   paint:[
     ['cobalt','Cobalt','The standard blue.',0,0x2b7be0],['red','Signal Red','',0,0xd23a2e],['white','Arctic White','',0,0xe6eaf0],['graphite','Graphite','',0,0x3a3f47],
@@ -1823,16 +1968,13 @@ const SHOP={
     ['lime','Lime','Yellow-green menu.',250,['#a6e22e','#e6ff8a','#19c9f5','#8fc21a']],
     ['sunset','Sunset','Orange and pink menu.',250,['#ff7a45','#ff4da6','#8f4dff','#e0592a']]
   ],
-  hat:[
-    ['none','No hat','',0,null],
-    ['box','Black Box','Prototype hat. Owner only for now.',400,{kind:'box'}]
-  ]
+  hat:HAT_BASE.slice()
 };
 const CATS=[['paint','Paint'],['accent','Accent'],['lights','Lights'],['trail','Drift pattern'],['flame','Flame'],['theme','Menu colour'],['hat','Hat']];
 const catName=Object.fromEntries(CATS);
 var OWN={coins:0,items:[],paint:'cobalt',accent:'ember',lights:'warm',trail:'classic',flame:'fire',theme:'ember',hat:'none',medals:{}},nitOn=false;
 const tmpC=new THREE.Color(),tmpC2=new THREE.Color(),WHITE=new THREE.Color(0xffffff);
-const ownOn=()=>!!(SESS&&SESS.owner),shopOn=()=>!!SESS;
+const ownOn=()=>!!(SESS&&SESS.owner),staffOn=()=>!!(SESS&&(SESS.owner||SESS.admin)),shopOn=()=>!!SESS;
 const item=(cat,id)=>SHOP[cat].find(x=>x[0]===id);
 const owned=(cat,it)=>it[3]===0||OWN.items.includes(cat+':'+it[0]);
 const usable=(cat,it)=>owned(cat,it)||ownOn();
@@ -1847,14 +1989,30 @@ function loadOwn(){
 function saveOwn(){try{localStorage.setItem(pk('shop'),JSON.stringify(OWN))}catch(e){}}
 function applyTheme(){
   const r=document.documentElement.style,t=eqv('theme');
-  if(!shopOn()||t[0]==='#ff8a3d'){['--m1','--m2','--m3','--acc'].forEach(p=>r.removeProperty(p));return}
-  r.setProperty('--m1',t[0]);r.setProperty('--m2',t[1]);r.setProperty('--m3',t[2]);r.setProperty('--acc',t[3]);
+  const root=document.documentElement.classList;
+  if(!shopOn()||t[0]==='#ff8a3d'){['--m1','--m2','--m3','--acc'].forEach(p=>r.removeProperty(p));root.remove('themed');return}
+  r.setProperty('--m1',t[0]);r.setProperty('--m2',t[1]);r.setProperty('--m3',t[2]);r.setProperty('--acc',t[3]);root.add('themed');
 }
 // Paint, accent and headlight colours on the real car
+var hatSpin=0;
 function applyHat(){
-  while(hatG.children.length){const o=hatG.children.pop();if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()}
+  while(hatG.children.length){const o=hatG.children.pop();if(o.geometry)o.geometry.dispose();if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose()}}
+  hatSpin=0;hatG.rotation.y=0;
   const hd=eqv('hat');
   if(hd&&hd.kind==='box'){const m=new THREE.Mesh(new THREE.BoxGeometry(1,.7,1),new THREE.MeshLambertMaterial({color:0x0b0b0d}));m.position.y=.35;m.castShadow=true;hatG.add(m)}
+  else if(hd&&hd.kind==='img'){
+    const tx=new THREE.TextureLoader().load(hd.png);tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;
+    const z=hd.size||2,m=new THREE.Mesh(new THREE.PlaneGeometry(z,z).rotateX(-Math.PI/2).rotateY(Math.PI),new THREE.MeshBasicMaterial({map:tx,transparent:true,alphaTest:.4,side:THREE.DoubleSide}));
+    m.position.y=.1;hatG.add(m);hatSpin=hd.spin?(hd.speed||45)*Math.PI/180:0;
+  }
+}
+const hatImgs={};
+const hatImg=u=>{let i=hatImgs[u];if(!i){i=new Image();i.src=u;hatImgs[u]=i}return i};
+async function loadHats(){
+  if(!API_URL||!SESS||SESS.token==='local')HATS_SRV=[];
+  else{try{HATS_SRV=(await api('/api/hats')).hats||[]}catch(e){HATS_SRV=[]}}
+  SHOP.hat=[...HAT_BASE,...HATS_SRV.map(h=>['h'+h.id,h.name,h.spin?'Sits on the roof and spins.':'Sits on the roof.',h.price,{kind:'img',png:h.png,spin:h.spin?1:0,speed:h.speed,size:h.size,pub:!!h.pub}])];
+  applyCar();if(mOpen&&menuTab==='car')carUI();if(mOpen&&menuTab==='shop')shopUI();hatListUI();
 }
 function applyCar(){
   applyHat();
@@ -1902,7 +2060,13 @@ function carParts(o){
   +'<rect x="-18" y="23" width="36" height="11" fill="'+h(o.accent)+'"/>'
   +'<rect x="-14" y="-29" width="8" height="4" fill="'+h(o.lights)+'"/><rect x="6" y="-29" width="8" height="4" fill="'+h(o.lights)+'"/>'
   +'<rect x="-14" y="26" width="8" height="3" fill="#9a3030"/><rect x="6" y="26" width="8" height="3" fill="#9a3030"/>'
-  +(o.hat?'<rect x="-9" y="-5" width="18" height="18" fill="#0b0b0d" stroke="#fff" stroke-opacity=".18"/>':'');
+  +hatSvg(o.hat);
+}
+function hatSvg(h){
+  if(!h)return '';
+  if(h.kind==='box')return '<rect x="-9" y="-5" width="18" height="18" fill="#0b0b0d" stroke="#fff" stroke-opacity=".18"/>';
+  if(h.kind==='img'){const z=(h.size||2)*20;return '<g transform="translate(0 4)"><image href="'+h.png+'" x="'+(-z/2)+'" y="'+(-z/2)+'" width="'+z+'" height="'+z+'" preserveAspectRatio="none" style="image-rendering:pixelated"/>'+(h.spin?'<animateTransform attributeName="transform" type="rotate" additive="sum" from="0" to="360" dur="'+Math.max(1.5,360/(h.speed||45))+'s" repeatCount="indefinite"/>':'')+'</g>'}
+  return '';
 }
 function themeArt(v){
   let s='<rect x="46" y="20" width="148" height="110" fill="#101215" stroke="#fff" stroke-opacity=".12"/>'
@@ -1916,7 +2080,7 @@ function themeArt(v){
   return s;
 }
 function stageSvg(cat,it){
-  const v=it[4],hv=cat==='hat'?v:eqv('hat'),o={paint:eqv('paint'),accent:eqv('accent'),lights:eqv('lights'),hat:!!(hv&&hv.kind==='box')};
+  const v=it[4],hv=cat==='hat'?v:eqv('hat'),o={paint:eqv('paint'),accent:eqv('accent'),lights:eqv('lights'),hat:(hv&&hv.kind)?hv:null};
   let defs='',body='';
   if(cat==='paint')o.paint=v;else if(cat==='accent')o.accent=v;else if(cat==='lights')o.lights=v;
   const base='<rect width="240" height="150" fill="#181b20"/><path d="M0 50H240M0 100H240M60 0V150M120 0V150M180 0V150" stroke="#fff" stroke-opacity=".035"/>';
@@ -1944,7 +2108,7 @@ function stageSvg(cat,it){
 }
 function swatch(cat,it){
   const v=it[4];
-  if(cat==='hat')return v?'#0b0b0d':'transparent';
+  if(cat==='hat')return v?(v.kind==='img'?'url('+v.png+') center/contain no-repeat':'#0b0b0d'):'transparent';
   if(cat==='paint'||cat==='accent'||cat==='lights')return hexs(v);
   if(cat==='trail'){const c=v.cols.map(q=>q===0x0b0b0d?'#59606b':hexs(q));return c.length===1?c[0]:'linear-gradient(90deg,'+c.join(',')+')'}
   if(cat==='flame')return 'linear-gradient(0deg,'+v[3]+','+v[2]+','+v[1]+','+v[0]+')';
@@ -1957,12 +2121,12 @@ var shopTab='daily',shopFilter='all',dayShown=0;
 const dk=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()};
 const featPrice=p=>Math.round(p*.7/10)*10;
 function leftStr(){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.max(0,Math.floor((m-n)/1000)),p=v=>String(v).padStart(2,'0');return p(Math.floor(s/3600))+':'+p(Math.floor(s/60)%60)+':'+p(s%60)}
-const HATS_PUBLIC=false; // hats are owner-only until this is true
+// Hats are owner-only until a hat is marked public (pub:true for built-in hats, or the Public tick in Admin > Hats).
 const strH=s=>{let q=7;for(let i=0;i<s.length;i++)q=Math.imul(q^s.charCodeAt(i),16777619);return q|0};
 const disc=(cat,id)=>10+5*Math.floor(hsh(dk(),strH(cat+':'+id),9)*13); // 10..70 percent, same for everyone all day
 const saleOf=(cat,it)=>it[3]?Math.max(10,Math.round(it[3]*(100-disc(cat,it[0]))/100/5)*5):0;
 function dailyList(){
-  const all=[];CATS.forEach(([c])=>SHOP[c].forEach(it=>{if(it[3]>0&&(c!=='hat'||HATS_PUBLIC))all.push({c,it})}));
+  const all=[];CATS.forEach(([c])=>SHOP[c].forEach(it=>{if(it[3]>0&&(c!=='hat'||(it[4]&&it[4].pub)))all.push({c,it})}));
   let a=Math.imul(dk(),2654435761)>>>0;
   const rnd=()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
   for(let i=all.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[all[i],all[j]]=[all[j],all[i]]}
@@ -2009,7 +2173,7 @@ function shopUI(){
 $('#shop').addEventListener('change',e=>{if(e.target&&e.target.id==='shopSort'){shopSort=e.target.value;shopUI()}});
 function equipItem(cat,id){
   const it=item(cat,id);if(!it||!usable(cat,it))return;
-  OWN[cat]=id;if(cat==='theme')applyTheme();applyCar();
+  OWN[cat]=id;if(cat==='theme'){applyTheme();buildMenu()}applyCar();
 }
 $('#shop').onclick=e=>{
   const b=e.target.closest&&e.target.closest('button[data-shop]');if(!b||!shopOn())return;
@@ -2039,7 +2203,7 @@ setInterval(()=>{
 function carUI(){
   if(!shopOn())return;
   $('#carNote').textContent=ownOn()?'Owner: every item is unlocked here so you can try it.':'You can only pick items you own. Find more in the shop.';
-  $('#carSlots').innerHTML=CATS.filter(([c])=>c!=='hat'||HATS_PUBLIC||ownOn()).map(([cat,label])=>{
+  $('#carSlots').innerHTML=CATS.filter(([c])=>c!=='hat'||ownOn()||SHOP.hat.some(it=>it[4]&&it[4].pub)).map(([cat,label])=>{
     const cur=eqOf(cat),list=SHOP[cat].filter(it=>usable(cat,it)),lock=SHOP[cat].length-list.length;
     return '<div class="cslot"><h4><span>'+label+'</span><em>'+esc(cur[1])+'</em></h4><div class="cchips">'
       +list.map(it=>'<button class="cchip'+(cat==='lights'?' rd':'')+(it[0]===cur[0]?' on':'')+'" data-car="equip" data-cat="'+cat+'" data-id="'+it[0]+'"><i style="background:'+swatch(cat,it)+'"></i>'+esc(it[1])+'</button>').join('')
@@ -2097,7 +2261,8 @@ function cpvDraw(){
   cpvRR(-19,-28,38,56,5);x.fillStyle=paint;x.fill();x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=1;x.stroke();
   x.fillStyle=acc;x.fillRect(-4,-28,8,56);
   x.fillStyle='#0f1a2b';x.fillRect(-15,-10,30,28);
-  {const hh=eqv('hat');if(hh&&hh.kind==='box'){x.fillStyle='#0b0b0d';x.fillRect(-9,-5,18,18);x.strokeStyle='rgba(255,255,255,.18)';x.strokeRect(-9,-5,18,18)}}
+  {const hh=eqv('hat');if(hh&&hh.kind==='box'){x.fillStyle='#0b0b0d';x.fillRect(-9,-5,18,18);x.strokeStyle='rgba(255,255,255,.18)';x.strokeRect(-9,-5,18,18)}
+    else if(hh&&hh.kind==='img'){const im=hatImg(hh.png);if(im.complete&&im.naturalWidth){const z=(hh.size||2)*20;x.save();x.translate(0,4);if(hh.spin)x.rotate(p.t*(hh.speed||45)*Math.PI/180);x.imageSmoothingEnabled=false;x.drawImage(im,-z/2,-z/2,z,z);x.restore()}}}
   x.fillStyle=acc;x.fillRect(-18,23,36,11);
   x.fillStyle=hexs(lc);x.fillRect(-14,-29,8,4);x.fillRect(6,-29,8,4);
   x.fillStyle='#ff3030';x.fillRect(-14,26,8,3);x.fillRect(6,26,8,3);
@@ -2204,7 +2369,7 @@ let last=performance.now();
   if(paused)idleCam();else if(mode==='drive'){drive(dt);raceTick(dt);botsTick(dt);mpTick(dt)}else buildCam(dt);
   drawGauge();nbarTick();flameTick(dt);audioTick();skidTick();
   {const fx=Math.round((mode==='drive'?cf.x:pan.x)/4)*4,fz=Math.round((mode==='drive'?cf.z:pan.z)/4)*4;sun.position.set(fx-70,45,fz-45);sun.target.position.set(fx,0,fz)}
-  updPuffs(dt);
+  updPuffs(dt);if(hatSpin)hatG.rotation.y+=hatSpin*dt;
   car.position.set(c.x,c.y||0,c.z);car.scale.setScalar(1+(c.y||0)*.05);car.rotation.y=c.h;car.rotation.z=c.rl||0;car.rotation.x=c.pt||0;sh.position.set(c.x,.16,c.z);sh.rotation.y=c.h;fw.forEach(p=>p.rotation.y=c.s*.5);
   R.render(S,cam);
 })(last);
