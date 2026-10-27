@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-27 (b)
+Last updated: 2026-10-27 (c)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - This block exists so a fresh AI that is given only index.html knows the whole project.
@@ -82,7 +82,7 @@ If you need the exact source of worker.js or any other server file and it is not
 - Skid marks: pooled meshes (900). They fade from 7 s and vanish by 11 s, and are cleared whenever a new map is loaded (clearAll).
 - Nitro bar and flame, Tune panel (closes when you click elsewhere), settings rows, resize, main frame loop (the last lines).
 
-Controls: W/A/S/D or arrows drive, Shift nitro, S while turning flicks the rear out, C restart, B build mode, Esc menu, R rotate piece, number keys pick pieces in build mode. Touch pad appears on touch devices.
+Controls: W/A/S/D or arrows drive, Shift nitro, S while turning flicks the rear out, R or C restart (in build mode R rotates the piece), B build mode, Esc menu, number keys pick pieces in build mode. Touch pad appears on touch devices.
 
 Season 1 tracks (slug = lowercase name with dashes) and default author times in seconds:
  Midnight Circuit SBSLOLGLRRJSLMSBLCSTLSLRRL 13.2 | Speedway SSLSBSLSOSLSCSLS 6.95 | Long Haul SSOLSBSLSSCSSLSCSLBS 9 | Harbor Loop SBSLMSLLRORRLLTLRLBSLS 11.6 | Coastline SBRCLRLLOLRRLJSGLSMSBLRLLRSL 14.4 | Dragon Tail SBRLJLCLRRLLRLGTLLRLRRBR 11.8 | Serpent Run SBSJRRLRLRLRRMCLOTLL 10.5 | Switchbacks SBSLLSCSRRSOSLLSBS 9.7 | Staircase SLCRBLOR 3.24
@@ -106,14 +106,15 @@ localStorage keys (all start with dbx:): tune3 (tuning), opt (settings), api (se
 6. MEDALS, COINS, SHOP, CAR TAB (cosmetics only)
 ======================================================================
 - Everyone who is signed in gets medals, coins, the Shop tab and the Car tab. (Owner just also sees more.)
-- Medals per track from the author time A: bronze at A x 1.6, silver A x 1.3, gold A x 1.1, author at A. Paying coins only when you reach a higher tier than before: PAY = 10, 25, 50, 100 (placeholders the owner likes). Not awarded in online races.
+- Medals per track from the author time A: bronze at A x 1.6, silver A x 1.3, gold A x 1.1, author at A. Paying coins only when you reach a higher tier than before: PAY = 10, 25, 50, 100 (placeholders the owner likes). Not awarded in online races. Only the FIRST lap of a race counts for leaderboard times, personal bests and medals (lapDone checks R.laps===0); later laps are practice because they start with speed.
 - Coins and purchases are saved in the browser (localStorage, per account name), NOT on the server. Cosmetic only, so editing them is low stakes. Moving them server side would need new tables and endpoints.
 - Shop layout (online-store style): store header with coins, tabs (Today's offers; owner also Catalogue), left sidebar with category filters and a sort menu (catalogue only), product cards (.pc) with a studio-plate picture (stageSvg), name, description, price and a Buy / Equip button. The featured daily item is a wide "hero" card.
 - SHOP object: categories paint, accent, lights, trail (drift patterns), flame, theme (menu colours). Each item is [id, name, description, price, data]. The FIRST item in each category is the free default. Free items have price 0. Data: paint/accent/lights = colour number; trail = {cols, mode one|alt|cycle, o opacity, sm optional smoke colour}; flame = 4 colours [tip, mid, hot, core]; theme = 4 colours [m1, m2, m3, acc].
 - To add an item: add a tuple to the right SHOP list. Item ids saved in players' browsers must not be renamed or removed.
 - What each does on the real car: paint sets the body colour, accent the roof stripe and rear wing, lights the headlight colour and beam, trail the colour of drift marks and smoke, flame the nitro flame sprite colours, theme the menu accent colours. Bots and online cars always use the standard look (botMesh swaps those materials back).
-- Daily shop: dailyList() picks 8 paid items using a seed made from the local date (same for everyone on the same day, at most 2 per category). The first is 30% off. It resets at local midnight, with a countdown. Non-owners can only buy daily items. The owner has an extra "Everything" tab with all items and category filters, and in the Car tab every item is unlocked for the owner to try.
+- Daily shop: dailyList() picks 8 paid items using a seed made from the local date (same for everyone on the same day, at most 2 per category). Every paid item gets a daily discount of 10 to 70 percent in steps of 5 (disc and saleOf: seeded by the local date and item id, same for everyone that day); the first item is the wide hero card. It resets at local midnight, with a countdown. Non-owners can only buy daily items. The owner has an extra "Everything" tab with all items and category filters, and in the Car tab every item is unlocked for the owner to try.
 - Buying an item equips it. The Car tab lists owned items per slot as chips. It shows an automatic preview canvas (cpvStep / cpvDraw): the car goes straight, drifts left, straight, drifts right on a loop, with the equipped marks, smoke, flame and headlight beam.
+- Hats: SHOP.hat (category "Hat"). Item data {kind:'box'} or null for none. A hat is a THREE group (hatG) on the car roof, rebuilt by applyHat() from applyCar(); bots and ghosts hide it (botMesh). Currently one placeholder item, Black Box, and hats are owner only: HATS_PUBLIC=false (not in the daily shop, hidden in the Car tab for players). To add a hat: add an item and a branch in applyHat plus the picture branch in carParts/cpvDraw. Rubber duck and others are to come from the owner.
 - "+500 test coins": owner only (hidden for others and blocked in the click handler).
 
 ======================================================================
@@ -164,6 +165,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-27  Only lap 1 counts for leaderboard, PBs and medals. R restarts (rotates in build mode). Every shop item is 10-70% off daily. Hats prototyped (Black Box, owner only).
 2026-10-27  Added second owner account Oliver (oliver.sql, run once on the database). Confirmed names are case-insensitive via name_lc.
 2026-10-27  Shop redesigned as an online store (sidebar, sort, product cards, hero deal) with one consistent studio-plate picture per item. Muted the brightest cosmetic colours (nothing neon). Compact icon toolbar for the builder. Test drive in the builder with a suggested author time. Settings: change username and password. worker.js: /api/account/rename, /api/account/password, and register now guards against duplicate names (name_lc is the primary key). Deploy worker.js with npx wrangler deploy.
 2026-10-26  Added this handover block.
@@ -535,7 +537,7 @@ span.pbtn.eqd{display:inline-block;border:0;color:var(--mut);padding:9px 0}
 </div>
 <div class="info"><div id="hud"></div><div id="hint"></div></div>
 <div id="big"></div>
-<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tCar" class="hide">Car</button><button id="tShop" class="hide">Shop</button><button id="tSet">Settings</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><div id="setAcct" class="hide"><h3>Account</h3><div class="acctGrid"><div class="acBox"><h5>Change username</h5><label>New username<input id="acNewName" maxlength="16" autocomplete="off"></label><label>Current password<input id="acNamePw" type="password" autocomplete="current-password"></label><button id="acNameGo">Change username</button><div class="aerr" id="acNameMsg"></div></div><div class="acBox"><h5>Change password</h5><label>Old password<input id="acOld" type="password" autocomplete="current-password"></label><label>New password<input id="acPw1" type="password" autocomplete="new-password"></label><label>New password again<input id="acPw2" type="password" autocomplete="new-password"></label><button id="acPwGo">Change password</button><div class="aerr" id="acPwMsg"></div></div></div></div><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl"><div><span><kbd>W A S D</kbd><kbd>Arrows</kbd></span>Drive</div><div><span><kbd>Shift</kbd></span>Nitro</div><div><span><kbd>S</kbd></span>While turning, flicks the rear out</div><div><span><kbd>C</kbd></span>Restart</div><div><span><kbd>B</kbd></span>Build mode</div><div><span><kbd>Esc</kbd></span>Menu</div></div></div>
+<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tCar" class="hide">Car</button><button id="tShop" class="hide">Shop</button><button id="tSet">Settings</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><div id="setAcct" class="hide"><h3>Account</h3><div class="acctGrid"><div class="acBox"><h5>Change username</h5><label>New username<input id="acNewName" maxlength="16" autocomplete="off"></label><label>Current password<input id="acNamePw" type="password" autocomplete="current-password"></label><button id="acNameGo">Change username</button><div class="aerr" id="acNameMsg"></div></div><div class="acBox"><h5>Change password</h5><label>Old password<input id="acOld" type="password" autocomplete="current-password"></label><label>New password<input id="acPw1" type="password" autocomplete="new-password"></label><label>New password again<input id="acPw2" type="password" autocomplete="new-password"></label><button id="acPwGo">Change password</button><div class="aerr" id="acPwMsg"></div></div></div></div><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl"><div><span><kbd>W A S D</kbd><kbd>Arrows</kbd></span>Drive</div><div><span><kbd>Shift</kbd></span>Nitro</div><div><span><kbd>S</kbd></span>While turning, flicks the rear out</div><div><span><kbd>R</kbd><kbd>C</kbd></span>Restart (R rotates a piece in build mode)</div><div><span><kbd>B</kbd></span>Build mode</div><div><span><kbd>Esc</kbd></span>Menu</div></div></div>
 <div id="shop" class="hide"><div class="shopBar"><div class="shopTitle"><b>Garage shop</b><span>Cosmetics only</span></div><div class="coinBox"><i class="coin"></i><b id="coinN">0</b><small>coins</small></div><div class="pay" id="payN"></div><button data-shop="test" class="tst hide">+500 test coins</button></div><div class="shopNav" id="shopTabs"></div><div class="shopBody" id="shopBody"><aside id="shopSide"></aside><div class="shopMain"><div id="shopHead"></div><div class="pgrid" id="shopL"></div></div></div></div><div id="car" class="hide"><div><canvas id="cpv" width="800" height="450"></canvas><div class="lbn" id="carNote"></div></div><div id="carSlots"></div></div>
 <div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft that only you can see. Add tracks, build each one, then press Publish. Track marks: ○ to be built, ◐ building (saved but not finished), ● built.</div><h3>Medal times</h3><div class="pd">Author time in seconds for each track. Gold (+10%), silver (+30%) and bronze (+60%) are worked out from it.</div><div id="adMed"></div><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Reset</h3><div class="pd">Each button asks you to type a confirmation phrase, like "reset times". This cannot be undone. Your owner account and Season 1 always stay.</div><div class="orow2"><button data-act="reset" data-what="times">Reset times</button><button data-act="reset" data-what="accounts">Reset accounts</button><button data-act="reset" data-what="seasons">Reset seasons</button><button data-act="reset" data-what="everything">Reset everything</button></div><h3>Players</h3><div class="orow2"><input id="adQ" placeholder="Search players by name"><button id="adUsers">Search</button></div><div id="adUl"></div><div class="pd" id="adSt"></div></div>
 <div id="setup" class="hide"><h3>Race setup</h3><div class="opts" id="setupO"></div></div>
@@ -629,6 +631,7 @@ add(new THREE.BoxGeometry(.4,.02,2.8),nose,0,1.01,0);
 add(new THREE.BoxGeometry(1.8,.1,.55),nose,0,1.35,-1.45);
 for(const sx of[-1,1]){add(new THREE.BoxGeometry(.1,.4,.1),body,sx*.6,1.15,-1.4);add(new THREE.BoxGeometry(.4,.2,.08),mLamp,sx*.6,.75,1.41);add(new THREE.BoxGeometry(.4,.15,.08),mTail,sx*.6,.8,-1.41)}
 car.traverse(o=>{if(o.isMesh)o.castShadow=true});
+const hatG=new THREE.Group();hatG.position.set(0,1.55,-.2);hatG.userData.hat=1;car.add(hatG);
 for(const sx of[-1,1]){const hl=new THREE.SpotLight(0xfff1c9,5,85,.6,.7,1.2);hl.position.set(sx*.6,.9,1.3);hl.target.position.set(sx*.6,0,16);car.add(hl,hl.target);hls.push(hl)}
 {const q=document.createElement('canvas');q.width=64;q.height=128;const x=q.getContext('2d'),gr=x.createLinearGradient(0,0,0,128);
   gr.addColorStop(0,'rgba(255,244,205,.9)');gr.addColorStop(1,'rgba(255,244,205,0)');x.fillStyle=gr;
@@ -800,7 +803,7 @@ addEventListener('keydown',e=>{
   if(e.repeat)return;
   if(e.code==='KeyB'){if(TD)tdExit();else setMode(mode==='drive'?'build':'drive')}
   if(e.code==='KeyC'&&!MP)resetCar();
-  if(e.code==='KeyR'){rot=(rot+1)%4;syncGhost()}
+  if(e.code==='KeyR'){if(mode==='build'){rot=(rot+1)%4;syncGhost()}else if(!MP)resetCar()}
   if(mOpen&&menuTab==='solo'&&!(e.target&&e.target.tagName==='INPUT')){
     if(e.code==='ArrowDown'||e.code==='ArrowUp'){const p=Math.max(0,Math.min(MENU_ORDER.length-1,MENU_ORDER.indexOf(selC)+(e.code==='ArrowDown'?1:-1)));selC=MENU_ORDER[p]??selC;buildMenu();return}
     if(e.code==='Enter'){startGame();return}
@@ -842,7 +845,7 @@ function setMode(m){
   if(m==='build'){cam.fov=45;cam.updateProjectionMatrix();pan.x=c.x;pan.z=c.z;cam.up.set(0,0,-1)}else cam.up.set(0,0,-1);
   $('#hint').textContent=m==='build'
     ?'Click to place a piece · right-click to erase · WASD to pan · R to rotate · 1-9 pick piece, 0 erase · B to drive'
-    :'W/↑ gas · S/↓ brake · A D steer · brake while turning to flick into a drift · Shift nitro · B build · C restart · Esc menu';
+    :'W/↑ gas · S/↓ brake · A D steer · brake while turning to flick into a drift · Shift nitro · B build · R restart · Esc menu';
   syncGhost();
 }
 const ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),pt=new THREE.Vector3(),ndc=new THREE.Vector2();
@@ -958,16 +961,16 @@ const fmt=t=>{const m=Math.floor(t/60);return m+':'+(t-m*60).toFixed(2).padStart
 function big(t,s){race.bigT=s;$('#big').textContent=t}
 function lapDone(closed){
   const R=race,t=R.lapT;R.last=t;let pb=false;
-  if(t<R.best){
+  if(t<R.best&&R.laps===0){
     pb=true;R.anyPB=true;R.best=t;R.bestS=R.splits.slice();
     R.gh=R.rec.map((v,i)=>i%3===2?Math.round(v*100)/100:Math.round(v*10)/10);
     if(!R.test)try{localStorage.setItem(pk(R.key),JSON.stringify({t,s:R.bestS}));localStorage.setItem(pk('g:'+R.key),JSON.stringify(R.gh))}catch(e){}
     if(!R.test)submitPB(R.course,t);
   }
-  const mm=awardMedal(R.course,t);if(mm)R.medalMsg=mm;
+  const mm=R.laps===0?awardMedal(R.course,t):'';if(mm)R.medalMsg=mm;
   if(closed)R.laps++;
   if(!closed||R.laps>=OPT.laps){R.state='done';finishRace();return}
-  toast('Lap '+R.laps+'/'+OPT.laps+'   '+fmt(t)+(pb?'   PB!':'')+(mm?'   '+mm:''));
+  toast('Lap '+R.laps+'/'+OPT.laps+'   '+fmt(t)+(pb?'   PB!':'')+(mm?'   '+mm:'')+(R.laps>1?'   (only lap 1 counts)':''));
   R.lapT=0;R.next=1;R.splits=[];R.delta=null;R.rec=[];R.rt=0;
 }
 function setLamps(on,green){const L=sl&&sl.userData.lamps;if(L)L.forEach((m,i)=>m.color.setHex(green?0x25e06a:i<on?0xff2a2a:0x2a1010))}
@@ -1182,7 +1185,7 @@ function makeFinish(){
 // Bots
 function botMesh(col){
   const g=car.clone(true),mb=new THREE.MeshLambertMaterial({color:col});
-  g.traverse(o=>{if(o.isMesh&&o.material===mBody)o.material=mb;if(o.isMesh&&o.material===nose)o.material=noseDef;if(o.isMesh&&o.material===beamMat)o.material=beamDef;if(o.isLight)o.visible=false});
+  g.traverse(o=>{if(o.isMesh&&o.material===mBody)o.material=mb;if(o.isMesh&&o.material===nose)o.material=noseDef;if(o.isMesh&&o.material===beamMat)o.material=beamDef;if(o.isLight)o.visible=false;if(o.userData&&o.userData.hat)o.visible=false});
   return g;
 }
 const BC=[0xe03e3e,0xf2c230,0xa55cf2],BN=['Rex','Vega','Nyx'],GRID=[[-7,0],[7,0],[0,-7]];
@@ -1819,11 +1822,15 @@ const SHOP={
     ['gold','Gold','Warm gold menu.',300,['#ffc021','#fff0a8','#ff8a3d','#e8a800']],
     ['lime','Lime','Yellow-green menu.',250,['#a6e22e','#e6ff8a','#19c9f5','#8fc21a']],
     ['sunset','Sunset','Orange and pink menu.',250,['#ff7a45','#ff4da6','#8f4dff','#e0592a']]
+  ],
+  hat:[
+    ['none','No hat','',0,null],
+    ['box','Black Box','Prototype hat. Owner only for now.',400,{kind:'box'}]
   ]
 };
-const CATS=[['paint','Paint'],['accent','Accent'],['lights','Lights'],['trail','Drift pattern'],['flame','Flame'],['theme','Menu colour']];
+const CATS=[['paint','Paint'],['accent','Accent'],['lights','Lights'],['trail','Drift pattern'],['flame','Flame'],['theme','Menu colour'],['hat','Hat']];
 const catName=Object.fromEntries(CATS);
-var OWN={coins:0,items:[],paint:'cobalt',accent:'ember',lights:'warm',trail:'classic',flame:'fire',theme:'ember',medals:{}},nitOn=false;
+var OWN={coins:0,items:[],paint:'cobalt',accent:'ember',lights:'warm',trail:'classic',flame:'fire',theme:'ember',hat:'none',medals:{}},nitOn=false;
 const tmpC=new THREE.Color(),tmpC2=new THREE.Color(),WHITE=new THREE.Color(0xffffff);
 const ownOn=()=>!!(SESS&&SESS.owner),shopOn=()=>!!SESS;
 const item=(cat,id)=>SHOP[cat].find(x=>x[0]===id);
@@ -1832,7 +1839,7 @@ const usable=(cat,it)=>owned(cat,it)||ownOn();
 const eqOf=cat=>{const it=item(cat,OWN[cat]);return it&&usable(cat,it)?it:SHOP[cat][0]};
 const eqv=cat=>(shopOn()?eqOf(cat):SHOP[cat][0])[4];
 function loadOwn(){
-  OWN={coins:0,items:[],paint:'cobalt',accent:'ember',lights:'warm',trail:'classic',flame:'fire',theme:'ember',medals:{}};
+  OWN={coins:0,items:[],paint:'cobalt',accent:'ember',lights:'warm',trail:'classic',flame:'fire',theme:'ember',hat:'none',medals:{}};
   if(shopOn()){try{Object.assign(OWN,JSON.parse(localStorage.getItem(pk('shop'))||'{}'))}catch(e){}}
   OWN.items=(OWN.items||[]).filter(i=>!i.startsWith('boost:'));OWN.medals=OWN.medals||{};
   applyTheme();applyCar();
@@ -1844,7 +1851,13 @@ function applyTheme(){
   r.setProperty('--m1',t[0]);r.setProperty('--m2',t[1]);r.setProperty('--m3',t[2]);r.setProperty('--acc',t[3]);
 }
 // Paint, accent and headlight colours on the real car
+function applyHat(){
+  while(hatG.children.length){const o=hatG.children.pop();if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose()}
+  const hd=eqv('hat');
+  if(hd&&hd.kind==='box'){const m=new THREE.Mesh(new THREE.BoxGeometry(1,.7,1),new THREE.MeshLambertMaterial({color:0x0b0b0d}));m.position.y=.35;m.castShadow=true;hatG.add(m)}
+}
 function applyCar(){
+  applyHat();
   mBody.color.setHex(eqv('paint'));nose.color.setHex(eqv('accent'));
   const lc=eqv('lights');hls.forEach(h=>h.color.setHex(lc));if(beamMat)beamMat.color.setHex(lc===0xfff1c9?0xffffff:lc);
 }
@@ -1888,7 +1901,8 @@ function carParts(o){
   +'<rect x="-15" y="-10" width="30" height="28" fill="#0f1a2b"/>'
   +'<rect x="-18" y="23" width="36" height="11" fill="'+h(o.accent)+'"/>'
   +'<rect x="-14" y="-29" width="8" height="4" fill="'+h(o.lights)+'"/><rect x="6" y="-29" width="8" height="4" fill="'+h(o.lights)+'"/>'
-  +'<rect x="-14" y="26" width="8" height="3" fill="#9a3030"/><rect x="6" y="26" width="8" height="3" fill="#9a3030"/>';
+  +'<rect x="-14" y="26" width="8" height="3" fill="#9a3030"/><rect x="6" y="26" width="8" height="3" fill="#9a3030"/>'
+  +(o.hat?'<rect x="-9" y="-5" width="18" height="18" fill="#0b0b0d" stroke="#fff" stroke-opacity=".18"/>':'');
 }
 function themeArt(v){
   let s='<rect x="46" y="20" width="148" height="110" fill="#101215" stroke="#fff" stroke-opacity=".12"/>'
@@ -1902,7 +1916,7 @@ function themeArt(v){
   return s;
 }
 function stageSvg(cat,it){
-  const v=it[4],o={paint:eqv('paint'),accent:eqv('accent'),lights:eqv('lights')};
+  const v=it[4],hv=cat==='hat'?v:eqv('hat'),o={paint:eqv('paint'),accent:eqv('accent'),lights:eqv('lights'),hat:!!(hv&&hv.kind==='box')};
   let defs='',body='';
   if(cat==='paint')o.paint=v;else if(cat==='accent')o.accent=v;else if(cat==='lights')o.lights=v;
   const base='<rect width="240" height="150" fill="#181b20"/><path d="M0 50H240M0 100H240M60 0V150M120 0V150M180 0V150" stroke="#fff" stroke-opacity=".035"/>';
@@ -1930,6 +1944,7 @@ function stageSvg(cat,it){
 }
 function swatch(cat,it){
   const v=it[4];
+  if(cat==='hat')return v?'#0b0b0d':'transparent';
   if(cat==='paint'||cat==='accent'||cat==='lights')return hexs(v);
   if(cat==='trail'){const c=v.cols.map(q=>q===0x0b0b0d?'#59606b':hexs(q));return c.length===1?c[0]:'linear-gradient(90deg,'+c.join(',')+')'}
   if(cat==='flame')return 'linear-gradient(0deg,'+v[3]+','+v[2]+','+v[1]+','+v[0]+')';
@@ -1942,8 +1957,12 @@ var shopTab='daily',shopFilter='all',dayShown=0;
 const dk=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()};
 const featPrice=p=>Math.round(p*.7/10)*10;
 function leftStr(){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.max(0,Math.floor((m-n)/1000)),p=v=>String(v).padStart(2,'0');return p(Math.floor(s/3600))+':'+p(Math.floor(s/60)%60)+':'+p(s%60)}
+const HATS_PUBLIC=false; // hats are owner-only until this is true
+const strH=s=>{let q=7;for(let i=0;i<s.length;i++)q=Math.imul(q^s.charCodeAt(i),16777619);return q|0};
+const disc=(cat,id)=>10+5*Math.floor(hsh(dk(),strH(cat+':'+id),9)*13); // 10..70 percent, same for everyone all day
+const saleOf=(cat,it)=>it[3]?Math.max(10,Math.round(it[3]*(100-disc(cat,it[0]))/100/5)*5):0;
 function dailyList(){
-  const all=[];CATS.forEach(([c])=>SHOP[c].forEach(it=>{if(it[3]>0)all.push({c,it})}));
+  const all=[];CATS.forEach(([c])=>SHOP[c].forEach(it=>{if(it[3]>0&&(c!=='hat'||HATS_PUBLIC))all.push({c,it})}));
   let a=Math.imul(dk(),2654435761)>>>0;
   const rnd=()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
   for(let i=all.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[all[i],all[j]]=[all[j],all[i]]}
@@ -1953,11 +1972,11 @@ function dailyList(){
 }
 var shopSort='feat';
 function shopCard(cat,it,o){
-  o=o||{};const id=it[0],price=o.feat?featPrice(it[3]):it[3],have=owned(cat,it),eq=eqOf(cat)[0]===id,need=OWN.coins<price,at='data-cat="'+cat+'" data-id="'+id+'"'+(o.daily?' data-d="1"':'');
+  o=o||{};const id=it[0],price=saleOf(cat,it),have=owned(cat,it),eq=eqOf(cat)[0]===id,need=OWN.coins<price,at='data-cat="'+cat+'" data-id="'+id+'"'+(o.daily?' data-d="1"':'');
   let pr,act;
   if(have){pr='<span class="pp own">'+(price===0?'Free':'Owned')+'</span>';act=eq?'<span class="pbtn eqd">Equipped</span>':'<button class="pbtn" data-shop="equip" '+at+'>Equip</button>'}
-  else{pr='<span class="pp"><i class="coin sm"></i>'+price+(o.feat?'<s>'+it[3]+'</s>':'')+'</span>'+(need?'<span class="need">'+(price-OWN.coins)+' more coins</span>':'');act='<button class="pbtn buy" data-shop="buy" '+at+(need?' disabled':'')+'>Buy now</button>'}
-  return '<article class="pc'+(eq?' eq':'')+(o.hero?' hero':'')+'"><div class="pimg">'+itemArt(cat,it)+(o.feat?'<span class="pbadge">-30%</span>':'')+(eq?'<span class="pbadge r">In use</span>':'')+'</div>'
+  else{pr='<span class="pp"><i class="coin sm"></i>'+price+(price<it[3]?'<s>'+it[3]+'</s>':'')+'</span>'+(need?'<span class="need">'+(price-OWN.coins)+' more coins</span>':'');act='<button class="pbtn buy" data-shop="buy" '+at+(need?' disabled':'')+'>Buy now</button>'}
+  return '<article class="pc'+(eq?' eq':'')+(o.hero?' hero':'')+'"><div class="pimg">'+itemArt(cat,it)+(!have&&price<it[3]?'<span class="pbadge">-'+disc(cat,id)+'%</span>':'')+(eq?'<span class="pbadge r">In use</span>':'')+'</div>'
     +'<div class="pinfo"><small>'+catName[cat]+'</small><h4>'+esc(it[1])+'</h4>'+(it[2]?'<p>'+esc(it[2])+'</p>':'')+'</div>'
     +'<div class="pbuy"><div class="pw">'+pr+'</div>'+act+'</div></article>';
 }
@@ -1972,7 +1991,7 @@ function shopUI(){
   let head='',cards='',side='';
   if(shopTab==='daily'){
     dayShown=dk();
-    head='<div class="dHead"><b>Today’s offers</b><span>New items in <em id="dLeft">'+leftStr()+'</em></span></div>';
+    head='<div class="dHead"><b>Today’s offers</b><span>Everything is 10-70% off · new prices in <em id="dLeft">'+leftStr()+'</em></span></div>';
     cards=dailyList().map(x=>shopCard(x.c,x.it,{daily:1,feat:x.feat,hero:x.feat})).join('');
   }else{
     const has=c=>SHOP[c].filter(it=>owned(c,it)).length,tot=CATS.reduce((a,[c])=>a+SHOP[c].length,0),own=CATS.reduce((a,[c])=>a+has(c),0);
@@ -2004,7 +2023,7 @@ $('#shop').onclick=e=>{
       const dl=dailyList().find(x=>x.c===cat&&x.it[0]===id);
       if(b.dataset.d==='1'&&!dl)return;
       if(b.dataset.d!=='1'&&!ownOn())return;
-      const price=b.dataset.d==='1'&&dl.feat?featPrice(it[3]):it[3];
+      const price=saleOf(cat,it);
       if(OWN.coins<price||owned(cat,it))return;
       OWN.coins-=price;OWN.items.push(cat+':'+id);equipItem(cat,id);
     }else if(a==='equip')equipItem(cat,id);
@@ -2020,7 +2039,7 @@ setInterval(()=>{
 function carUI(){
   if(!shopOn())return;
   $('#carNote').textContent=ownOn()?'Owner: every item is unlocked here so you can try it.':'You can only pick items you own. Find more in the shop.';
-  $('#carSlots').innerHTML=CATS.map(([cat,label])=>{
+  $('#carSlots').innerHTML=CATS.filter(([c])=>c!=='hat'||HATS_PUBLIC||ownOn()).map(([cat,label])=>{
     const cur=eqOf(cat),list=SHOP[cat].filter(it=>usable(cat,it)),lock=SHOP[cat].length-list.length;
     return '<div class="cslot"><h4><span>'+label+'</span><em>'+esc(cur[1])+'</em></h4><div class="cchips">'
       +list.map(it=>'<button class="cchip'+(cat==='lights'?' rd':'')+(it[0]===cur[0]?' on':'')+'" data-car="equip" data-cat="'+cat+'" data-id="'+it[0]+'"><i style="background:'+swatch(cat,it)+'"></i>'+esc(it[1])+'</button>').join('')
@@ -2078,6 +2097,7 @@ function cpvDraw(){
   cpvRR(-19,-28,38,56,5);x.fillStyle=paint;x.fill();x.strokeStyle='rgba(0,0,0,.35)';x.lineWidth=1;x.stroke();
   x.fillStyle=acc;x.fillRect(-4,-28,8,56);
   x.fillStyle='#0f1a2b';x.fillRect(-15,-10,30,28);
+  {const hh=eqv('hat');if(hh&&hh.kind==='box'){x.fillStyle='#0b0b0d';x.fillRect(-9,-5,18,18);x.strokeStyle='rgba(255,255,255,.18)';x.strokeRect(-9,-5,18,18)}}
   x.fillStyle=acc;x.fillRect(-18,23,36,11);
   x.fillStyle=hexs(lc);x.fillRect(-14,-29,8,4);x.fillRect(6,-29,8,4);
   x.fillStyle='#ff3030';x.fillRect(-14,26,8,3);x.fillRect(6,26,8,3);
