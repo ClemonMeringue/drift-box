@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-27 (d)
+Last updated: 2026-10-28 (e)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - This block exists so a fresh AI that is given only index.html knows the whole project.
@@ -65,7 +65,7 @@ If you need the exact source of worker.js or any other server file and it is not
 - CSS: theme variables (bg, panel, ink, mut, acc, line, ui, hd) plus menu colour variables m1, m2, m3 that the shop's menu colour setting overrides. Later rules intentionally override earlier ones (the file was restyled in layers), so check the LAST matching rule when editing styles.
 - HTML: top bar (Menu, Drive, Build, tools, Tune, Reset car), HUD, big text, #menu (tabs Solo, Online, Car, Shop, Settings, Admin; course list on the left, preview panel on the right; the Car, Shop, Settings and Admin panels live inside the right-hand .prev panel and the menu gets class "adm" to hide the course list), #res (results card), #auth (sign in), #tune panel, #timer, #mini map, #gauge, #nbar (nitro bar), #bld (season track builder bar), touch pad.
 - Scene: Three.js scene, night look, island (grass, sand beach, sea) that grows as pieces are placed, instanced trees (hidden under track pieces), toy cube car with headlights and a headlight beam plane.
-- Track pieces (object K): each has collision "parts" (boxes and arc posts). TILE = 24 units. Pieces: straight, corner, wide corner (48), boost, chicane, oil (slick), jump, gravel, slalom, gate, open road, half border (edge), narrow left/right (free build only), ice, nitro pad (refill), rumble, squeeze, drift zone.
+- Track pieces (object K): each has collision "parts" (boxes and arc posts). TILE = 24 units. Pieces: straight, corner, wide corner (48), boost, chicane, oil (slick), jump, gravel, slalom, gate, open road, half border (edge), wide straight, narrow left/right (join 1-wide and 2-wide road), ice, nitro pad (refill), rumble, squeeze, drift zone.
 - Course strings: one letter per tile, starting at the origin heading south (+z). S straight, L/R corner left/right, B boost, C chicane, O oil, J jump, G gravel, M slalom, T gate, N open road, I ice, P nitro pad, U rumble, Q squeeze, D drift zone, E/F half border (left/right side). Route validity is checked by loadCourse and, for the owner builder, routeFromBlocks.
 - Driving: drive(dt) is the physics (grip, slide, steering with momentum, drift detection, nitro, zones such as boost/oil/gravel/ice/rumble/drift, jump, wall collisions, chase camera). Tuning object P, presets Drifty/Balanced/Grippy, saved in localStorage.
 - Race logic: countdown, tile index checkpoints (race.map), laps, splits, delta, PB saving, ghost recording and playback, results card, confetti.
@@ -120,6 +120,7 @@ localStorage keys (all start with dbx:): tune3 (tuning), opt (settings), api (se
 - "+500 test coins": owner only (hidden for others and blocked in the click handler).
 
 - Checkpoints: gates on the join between two route tiles, 1 or 2 tiles wide. Data {x,z,o,w}: x,z centre in world units, o 0 = gate runs along x (track runs along z), o 1 = the other way, w = 1 or 2. They can be driven through in any order and ALL are needed before a lap or finish counts (race.cps, race.cpSet, cpCross, cpReset). Bots ignore them. Season 1 gates are listed in S1CP (route index of the tile the gate sits after; jointsOf converts to positions). Season tracks keep them in tracks.cps (JSON) and inside the saved blocks as {k:'cp'} entries for the editor. Builder tools: Checkpoint (cp1) and Wide checkpoint (cp2), R turns them; routeFromBlocks checks every gate sits on a join. Online: the host sends cps in the start message and the Room relays them.
+- Route strings (the track format): one token per road piece, walking from the start tile heading south. 1 tile wide: S B C O J G M T N I P U Q D (straight-type), E F (half border, wall right/left), L R (corner). Width changes: W/X widen 1 to 2 tiles (new lane on the left/right), Y/Z narrow 2 to 1 (keep the left/right lane). 2 tiles wide: V wide straight, H/K wide corner (left/right), A + two letters (two 1-wide pieces side by side, left lane then right lane). routeStep(state,token) is the single source of truth for which pieces a token places and where the road goes next; loadCourse (string to pieces) and routeFromBlocks (pieces to string) both use it, parseRoute caches the result. Old strings (letters S..F only) parse exactly as before. The server only checks the letters and length (3 to 200); the game checks the structure. Race progress uses race.map (every tile a piece covers maps to its route index), bots aim at each piece's target (tx,tz plus bo times the turn), the mini map draws every covered tile. Wide pieces sit half a tile off the normal grid (builder snaps them), which is why the old single-tile route check stopped at them.
 - Online: if you are off every track tile for 0.6 s (for example after jumping a wall) your run restarts (resetCar).
 - Hats: kinds 'box' and 'img'. 'img' hats are a flat picture on the roof with spin (degrees per second) and size. Built in: Rubber Duck (DUCK_PNG, from the owner's Piskel file) and Black Box. Owner-made hats are stored on the server (hats table, /api/hat*), loaded by loadHats() into SHOP.hat as ids "h<id>". Hats are owner-only unless pub is set (Admin > Hats "Players can buy").
 - Menu colour themes: class "themed" on <html> when a non-Ember theme is equipped; the v5 CSS block at the end of the style uses --m1, --m2, --m3 and --acc in different places (title gradient, tab underline, Go button, selected row, prices, badges, route preview, confetti). The default Ember theme is unchanged.
@@ -176,6 +177,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-28  Race tracks can now widen and narrow: narrow left/right pieces work in both directions, plus a new Wide straight piece, wide corners and rows of two pieces side by side. New route letters W X Y Z V H K A (worker.js regex updated, redeploy it). Clearer builder error messages. No database change.
 2026-10-27  Checkpoint gates (builder tools, racing rules, HUD, online relay, test drive) and gates on all Season 1 tracks. Rubber Duck hat and owner-uploaded PNG hats (spin or still, speed, size, price, public). Admin role, made in Admin > Players. Menu colour themes now use all their colours. Online: leaving the track restarts you. Route check gives clearer messages instead of "too short". Server: migrate-3.sql, worker.js redeploy.
 2026-10-27  Only lap 1 counts for leaderboard, PBs and medals. R restarts (rotates in build mode). Every shop item is 10-70% off daily. Hats prototyped (Black Box, owner only).
 2026-10-27  Added second owner account Oliver (oliver.sql, run once on the database). Confirmed names are case-insensitive via name_lc.
@@ -699,7 +701,9 @@ const K={
   drift:{line:true,parts:SP},
   squeeze:{line:true,parts:[[-6.5,0,.5,6],[6.5,0,.5,6],...wallChain(-11.5,-12,-6.5,-6),...wallChain(-11.5,12,-6.5,6),...wallChain(11.5,-12,6.5,-6),...wallChain(11.5,12,6.5,6)]},
   narrowR:narrowK(1),
-  narrowL:narrowK(-1)
+  narrowL:narrowK(-1),
+  // Two tiles wide, one tile long, walls on both outer sides. Joins to a normal road with the narrow pieces.
+  widestraight:{shape:[[-24,-12],[24,-12],[24,12],[-24,12]],line:true,parts:[[-23.5,0,.5,12],[23.5,0,.5,12]],hw:24,hl:12,half:24}
 };
 function wallChain(x0,z0,x1,z1){const o=[],L=Math.hypot(x1-x0,z1-z0),n=Math.max(1,Math.ceil(L/1.4)),a=-Math.atan2(z1-z0,x1-x0);for(let i=0;i<=n;i++)o.push([x0+(x1-x0)*i/n,z0+(z1-z0)*i/n,.8,.8,a]);return o}
 // Narrowing piece for the wide corner: 48 wide at one end, one normal road wide at the other. m=1 keeps the right wall straight.
@@ -787,21 +791,75 @@ function placeTile(kd,x,z,r){
 function place(x,z){if(tool==='cp1'||tool==='cp2'){addCp({x,z,o:rot%2,w:tool==='cp2'?2:1});return}placeTile(tool,x,z,rot)}
 function clearAll(){clearSkids();if(BLD&&(blocks.length||CPB.length))BLD.dirty=true;blocks.forEach(b=>S.remove(b.m));blocks=[];CPB.forEach(g=>S.remove(g.m));CPB.length=0;clearRG();if(sl){S.remove(sl);sl=null}rebuildBoxes()}
 function sides(r){let a=[0,1],b=[1,0];for(let i=0;i<r;i++){a=[a[1],-a[0]];b=[b[1],-b[0]]}return[a,b]}
-// Courses: one letter per tile (S straight, L/R corner), starting at the origin heading south
-function loadCourse(str,cps){
-  clearAll();let cx=0,cz=0,h=[0,1];const route=[];
-  for(const ch of str){
-    const h2=ch==='L'?[h[1],-h[0]]:ch==='R'?[-h[1],h[0]]:h;let r=0;
-    if('SBCOJGMTNIPUQD'.includes(ch))r=h[0]?1:0;
-    else if(ch==='E'||ch==='F')r=edgeRot(h,ch);
-    else{const a=[-h[0],-h[1]];for(r=0;r<4;r++){const s=sides(r);if(s.some(v=>v[0]===a[0]&&v[1]===a[1])&&s.some(v=>v[0]===h2[0]&&v[1]===h2[1]))break}}
-    route.push({x:cx,z:cz,k:ch,h1:h,h2});placeTile(({S:'straight',B:'boost',C:'chicane',O:'slick',J:'jump',G:'gravel',M:'slalom',T:'gate',N:'open',I:'ice',P:'refill',U:'rumble',Q:'squeeze',D:'drift',E:'edge',F:'edge'})[ch]||'corner',cx*TILE,cz*TILE,r);cx+=h2[0];cz+=h2[1];h=h2;
+// ---------- Route strings ----------
+// One token per road piece, walking from the start tile (the middle of the map, heading south).
+//  1 tile wide: S B C O J G M T N I P U Q D (straight-type pieces), E F (half border, wall on the right / left), L R (corner left / right).
+//  Width changes: W / X widen 1 to 2 tiles (the new lane is on the left / right). Y / Z narrow 2 to 1 (keep the left / right lane).
+//  2 tiles wide: V wide straight, H / K wide corner (left / right), A + two letters = two 1-wide pieces side by side (left lane, right lane).
+// routeStep() is the single source of truth: it says which pieces a token places and where the road goes next.
+// Both loadCourse (string to pieces) and routeFromBlocks (pieces to string) use it, so they always agree.
+const KIND1={S:'straight',B:'boost',C:'chicane',O:'slick',J:'jump',G:'gravel',M:'slalom',T:'gate',N:'open',I:'ice',P:'refill',U:'rumble',Q:'squeeze',D:'drift',E:'edge',F:'edge'};
+const LANES='SBCOJGMTNIPUQDEF',ROUTE_RX=/^[SLRBCOJGMTNIPUQDEFWXYZHKVA]+$/;
+const vL=h=>[h[1],-h[0]],vR=h=>[-h[1],h[0]],rotZ=v=>v[0]===0?(v[1]>0?0:2):(v[0]>0?1:3),axX=r=>[[1,0],[0,-1],[-1,0],[0,1]][r];
+const dot2=(a,b)=>a[0]*b[0]+a[1]*b[1];
+const cornerRot=(h,h2)=>{const a=[-h[0],-h[1]];for(let r=0;r<4;r++){const q=sides(r);if(q.some(v=>v[0]===a[0]&&v[1]===a[1])&&q.some(v=>v[0]===h2[0]&&v[1]===h2[1]))return r}return 0};
+// st = {ex,ez,h,w}: ex,ez is the middle of the edge the road enters through (in tiles), h the heading, w the width (1 or 2 tiles).
+function routeStep(st,tok,lanes){
+  const h=st.h,Lh=vL(h),Rh=vR(h),cx=st.ex+h[0]/2,cz=st.ez+h[1]/2,pcs=[];
+  const put=(kind,x,z,rot,sym)=>pcs.push({kind,x:x*TILE,z:z*TILE,rot,sym:!!sym});
+  const two=(x,z)=>[[x+Lh[0]/2,z+Lh[1]/2],[x-Lh[0]/2,z-Lh[1]/2]];
+  const lane=(ch,x,z)=>{if(typeof ch!=='string'||ch.length!==1||LANES.indexOf(ch)<0)return false;const e=ch==='E'||ch==='F';put(KIND1[ch],x,z,e?edgeRot(h,ch):(h[0]?1:0),!e);return true};
+  let el=null;
+  if(st.w===1){
+    if(tok==='L'||tok==='R'){const h2=tok==='L'?Lh:Rh;put('corner',cx,cz,cornerRot(h,h2),false);el={x:cx,z:cz,cells:[[cx,cz]],h2,ex:cx+h2[0]/2,ez:cz+h2[1]/2,w2:1}}
+    else if(tok==='W'||tok==='X'){
+      const s=tok==='W'?Lh:Rh,px=cx+s[0]/2,pz=cz+s[1]/2,r=rotZ([-h[0],-h[1]]),n=[-s[0],-s[1]];
+      put(dot2(n,axX(r))>0?'narrowR':'narrowL',px,pz,r,false);
+      el={x:px,z:pz,tx:px+n[0]*.25,tz:pz+n[1]*.25,bo:0,cells:[[cx,cz],[cx+s[0],cz+s[1]]],h2:h,ex:st.ex+h[0]+s[0]/2,ez:st.ez+h[1]+s[1]/2,w2:2};
+    }else{if(!lane(tok,cx,cz))return null;el={x:cx,z:cz,cells:[[cx,cz]],h2:h,ex:st.ex+h[0],ez:st.ez+h[1],w2:1}}
+  }else{
+    if(tok==='V'){put('widestraight',cx,cz,h[0]?1:0,true);el={x:cx,z:cz,cells:two(cx,cz),h2:h,ex:st.ex+h[0],ez:st.ez+h[1],w2:2}}
+    else if(tok==='A'){const q=two(cx,cz);if(!lanes||!lane(lanes[0],q[0][0],q[0][1])||!lane(lanes[1],q[1][0],q[1][1]))return null;el={x:cx,z:cz,cells:q,h2:h,ex:st.ex+h[0],ez:st.ez+h[1],w2:2}}
+    else if(tok==='H'||tok==='K'){
+      const h2=tok==='H'?Lh:Rh,wx=st.ex+h[0],wz=st.ez+h[1];put('wide',wx,wz,cornerRot(h,h2),false);
+      el={x:wx,z:wz,bo:8,cells:[[wx-.5,wz-.5],[wx+.5,wz-.5],[wx-.5,wz+.5],[wx+.5,wz+.5]],h2,ex:wx+h2[0],ez:wz+h2[1],w2:2};
+    }else if(tok==='Y'||tok==='Z'){
+      const s=tok==='Y'?Lh:Rh,r=rotZ(h);put(dot2(s,axX(r))>0?'narrowR':'narrowL',cx,cz,r,false);
+      el={x:cx,z:cz,tx:cx+s[0]*.25,tz:cz+s[1]*.25,bo:0,cells:two(cx,cz),h2:h,ex:st.ex+h[0]+s[0]/2,ez:st.ez+h[1]+s[1]/2,w2:1};
+    }else return null;
   }
-  const map={};route.forEach((p,i)=>map[p.x+','+p.z]=i);if(!(cx===0&&cz===0))map[cx+','+cz]=route.length;
+  el.k=tok;el.h1=h;el.pieces=pcs;if(el.tx===undefined){el.tx=el.x;el.tz=el.z}if(el.bo===undefined)el.bo=3.5;
+  el.st2={ex:el.ex,ez:el.ez,h:el.h2,w:el.w2};return el;
+}
+const _rc=new Map();
+function parseRoute(str){
+  if(typeof str!=='string'||!ROUTE_RX.test(str))return null;
+  if(_rc.has(str))return _rc.get(str);
+  let st={ex:0,ez:-.5,h:[0,1],w:1},ok=true;const els=[];
+  for(let i=0;i<str.length;i++){
+    const t=str[i];let lanes=null;
+    if(t==='A'){lanes=str.slice(i+1,i+3);if(lanes.length<2){ok=false;break}i+=2}
+    const el=routeStep(st,t,lanes);if(!el){ok=false;break}
+    els.push(el);st=el.st2;
+  }
+  let res=null;
+  if(ok&&els.length){
+    const nx=st.ex+st.h[0]/2,nz=st.ez+st.h[1]/2,closed=st.w===1&&nx===0&&nz===0,map={},Lh=vL(st.h);
+    els.forEach((e,i)=>e.cells.forEach(q=>{map[q[0]+','+q[1]]=i}));
+    if(!closed)(st.w===1?[[nx,nz]]:[[nx+Lh[0]/2,nz+Lh[1]/2],[nx-Lh[0]/2,nz-Lh[1]/2]]).forEach(q=>{map[q[0]+','+q[1]]=els.length});
+    res={els,closed,map,end:{x:nx*TILE,z:nz*TILE},fin:{x:st.ex*TILE,z:st.ez*TILE,h:st.h,w:st.w},n:els.length};
+  }
+  _rc.set(str,res);return res;
+}
+function loadCourse(str,cps){
+  clearAll();const P=parseRoute(str);
+  if(!P){race={route:null};toast('That track layout is not valid');return}
+  const route=P.els.map(e=>({...e}));
+  P.els.forEach(e=>e.pieces.forEach(p=>placeTile(p.kind,p.x,p.z,p.rot)));
   let sv=null;try{sv=JSON.parse(localStorage.getItem(pk(str)))}catch(e){}
-  race={route,map,end:{x:cx*TILE,z:cz*TILE},closed:cx===0&&cz===0,key:str,best:sv?sv.t:Infinity,bestS:sv?sv.s:null,gh:ghLoad(str),last:null,delta:null,laps:0,lapT:0,next:1,splits:[],state:'count',cd:3.5,bigT:0,t:0,rec:[],rt:0,anyPB:false};
+  race={route,map:P.map,end:P.end,closed:P.closed,key:str,best:sv?sv.t:Infinity,bestS:sv?sv.s:null,gh:ghLoad(str),last:null,delta:null,laps:0,lapT:0,next:1,splits:[],state:'count',cd:3.5,bigT:0,t:0,rec:[],rt:0,anyPB:false};
   sl=new THREE.Group();const g0=makeFinish();g0.position.set(0,0,-11.5);sl.add(g0);sl.userData.lamps=g0.userData.lamps;
-  if(!race.closed){const lt=route[route.length-1],g1=makeFinish();g1.position.set(lt.x*TILE+h[0]*12,0,lt.z*TILE+h[1]*12);g1.rotation.y=h[0]?Math.PI/2:0;sl.add(g1)}
+  if(!race.closed){const g1=makeFinish();g1.position.set(P.fin.x,0,P.fin.z);g1.rotation.y=P.fin.h[0]?Math.PI/2:0;if(P.fin.w===2)g1.scale.x=2;sl.add(g1)}
   S.add(sl);
   race.cps=(cps||[]).filter(g=>g&&isFinite(g.x)&&isFinite(g.z)&&(g.o===0||g.o===1)&&(g.w===1||g.w===2)).map(g=>({x:+g.x,z:+g.z,o:g.o,w:g.w}));
   race.cps.forEach(g=>{g.mesh=gateMesh(g);S.add(g.mesh);RG.push(g.mesh)});
@@ -889,7 +947,7 @@ $('#bClr').onclick=()=>{clearAll();race={route:null};closeBots()};
 // ---------- compact build toolbar: small icons in groups ----------
 const ICO=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
 const PIECES=[
- [['straight','Straight','<path d="M7 3v18M17 3v18"/>'],['corner','Corner','<path d="M4 21V11a7 7 0 0 1 7-7h10M13 21v-5a3 3 0 0 1 3-3h5"/>'],['wide','Wide corner','<path d="M3 21C3 11 11 3 21 3M3 13C3 8 8 3 13 3"/>'],['open','Open road','No walls','<path d="M7 3v18M17 3v18" stroke-dasharray="2 3"/>'],['edge','Half border','Wall on one side. Rotate to pick the side.','<path d="M7 3v18" stroke-dasharray="2 3"/><path d="M17 3v18"/>'],['squeeze','Squeeze','Road narrows to about half width','<path d="M5 3v6l3 3-3 3v6M19 3v6l-3 3 3 3v6"/>'],['narrowL','Narrow left','Free build only','<path d="M3 3l7 18M21 3v18"/>'],['narrowR','Narrow right','Free build only','<path d="M3 3v18M21 3l-7 18"/>']],
+ [['straight','Straight','<path d="M7 3v18M17 3v18"/>'],['corner','Corner','<path d="M4 21V11a7 7 0 0 1 7-7h10M13 21v-5a3 3 0 0 1 3-3h5"/>'],['wide','Wide corner','<path d="M3 21C3 11 11 3 21 3M3 13C3 8 8 3 13 3"/>'],['open','Open road','No walls','<path d="M7 3v18M17 3v18" stroke-dasharray="2 3"/>'],['edge','Half border','Wall on one side. Rotate to pick the side.','<path d="M7 3v18" stroke-dasharray="2 3"/><path d="M17 3v18"/>'],['squeeze','Squeeze','Road narrows to about half width','<path d="M5 3v6l3 3-3 3v6M19 3v6l-3 3 3 3v6"/>'],['widestraight','Wide straight','Two tiles wide. Join it to a normal road with the narrow pieces.','<path d="M3 3v18M21 3v18M12 3v18" stroke-dasharray="2 3"/>'],['narrowL','Narrow left','Joins a 2-wide road to a 1-wide road (or the other way round). R turns it.','<path d="M3 3l7 18M21 3v18"/>'],['narrowR','Narrow right','Joins a 2-wide road to a 1-wide road (or the other way round). R turns it.','<path d="M3 3v18M21 3l-7 18"/>']],
  [['chicane','Chicane','<path d="M9 3c0 6 6 6 6 9s-6 3-6 9"/>'],['slalom','Slalom','<circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>'],['gate','Gate','<path d="M4 6v14M20 6v14M4 9h16"/>'],['jump','Jump','<path d="M3 19h18M3 19l12-9v9"/>'],['rumble','Rumble strips','Bumpy strips that slow you a little','<path d="M5 6h14M5 10h14M5 14h14M5 18h14"/>']],
  [['boost','Boost','<path d="M6 10l6-5 6 5M6 18l6-5 6 5"/>'],['refill','Nitro pad','Refills nitro','<circle cx="12" cy="12" r="7"/><path d="M12 8.5v7M8.5 12h7"/>'],['drift','Drift zone','Low grip. Sliding here charges nitro.','<path d="M5 20c0-8 6-8 9-11s3-5 5-5M9 21c0-6 4-6 7-8"/>'],['slick','Oil','<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>'],['gravel','Gravel','<circle cx="7" cy="8" r="1.3"/><circle cx="14" cy="6" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="10" cy="13" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>'],['ice','Ice','Very slippery','<path d="M12 3v18M4.5 7.5l15 9M4.5 16.5l15-9"/>']],
  [['cp1','Checkpoint','One tile wide. Click on the join between two track tiles. R turns it.','<path d="M6 21V4M6 5h12l-3 4 3 4H6"/>'],['cp2','Wide checkpoint','Two tiles wide, for wide parts of a track.','<path d="M4 21V4M20 21V4M4 5h16"/><path d="M8 12h8" stroke-dasharray="2 2"/>']],
@@ -918,7 +976,7 @@ function aim(e){
   ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);cam.updateMatrixWorld();
   ray.setFromCamera(ndc,cam);return ray.ray.intersectPlane(plane,pt);
 }
-const snapP=(px,pz)=>{const sx=v=>Math.round(v/TILE)*TILE,so=v=>Math.round((v-12)/24)*24+12;if(tool==='cp1'||tool==='cp2'){const w=tool==='cp2'?2:1,a=w===1?sx:so;return rot%2===0?[a(px),so(pz)]:[so(px),a(pz)]}if(tool==='wide')return[so(px),so(pz)];if(tool==='narrowL'||tool==='narrowR')return rot%2?[sx(px),so(pz)]:[so(px),sx(pz)];return[sx(px),sx(pz)]};
+const snapP=(px,pz)=>{const sx=v=>Math.round(v/TILE)*TILE,so=v=>Math.round((v-12)/24)*24+12;if(tool==='cp1'||tool==='cp2'){const w=tool==='cp2'?2:1,a=w===1?sx:so;return rot%2===0?[a(px),so(pz)]:[so(px),a(pz)]}if(tool==='wide')return[so(px),so(pz)];if(tool==='narrowL'||tool==='narrowR'||tool==='widestraight')return rot%2?[sx(px),so(pz)]:[so(px),sx(pz)];return[sx(px),sx(pz)]};
 cv.addEventListener('pointermove',e=>{if(mode==='build'&&aim(e)){[gx,gz]=snapP(pt.x,pt.z)}});
 cv.addEventListener('pointerdown',e=>{
   if(mode!=='build'||e.button!==0||!aim(e))return;
@@ -1092,7 +1150,7 @@ const mx2=$('#mini').getContext('2d');
 function drawMini(){
   const R=race,x=mx2,u=13,o=60,n=R.route.length;
   x.setTransform(2,0,0,2,0,0);x.clearRect(0,0,120,120);
-  R.route.forEach((p,i)=>{x.fillStyle=i===0?ACC:i===R.next%n?'#e9eaec':(dark?'#5a6b80':'#8b97a6');x.fillRect(o+p.x*u-u/2+1,o+p.z*u-u/2+1,u-2,u-2)});
+  R.route.forEach((p,i)=>{x.fillStyle=i===0?ACC:i===R.next%n?'#e9eaec':(dark?'#5a6b80':'#8b97a6');p.cells.forEach(q=>x.fillRect(o+q[0]*u-u/2+1,o+q[1]*u-u/2+1,u-2,u-2))});
   x.fillStyle=INK;x.beginPath();x.arc(o+c.x/TILE*u,o+c.z/TILE*u,3.5,0,7);x.fill();
 }
 // Sound: engine tone follows speed, tyre screech follows slide
@@ -1162,7 +1220,7 @@ const COURSES=[
 // Season 1 checkpoints: the gate sits on the join after the tile at each listed position, spaced about evenly.
 const S1CP={'Midnight Circuit':[5,12,18],'Speedway':[5,13],'Long Haul':[6,12],'Harbor Loop':[7,16],'Coastline':[6,12,19],'Dragon Tail':[7,16],'Serpent Run':[6,12],'Switchbacks':[5,10],'Staircase':[3]};
 COURSES.forEach(c=>{if(S1CP[c.name])c.cpi=S1CP[c.name]});
-function jointsOf(str){let cx=0,cz=0,h=[0,1];const o=[];for(const ch of str){const h2=ch==='L'?[h[1],-h[0]]:ch==='R'?[-h[1],h[0]]:h;o.push({x:(cx+h2[0]*.5)*TILE,z:(cz+h2[1]*.5)*TILE,o:h2[0]?1:0,w:1});cx+=h2[0];cz+=h2[1];h=h2}return o}
+function jointsOf(str){const p=parseRoute(str);return p?p.els.map(e=>({x:e.ex*TILE,z:e.ez*TILE,o:e.h2[0]?1:0,w:1})):[]}
 const courseCps=cc=>{if(!cc)return[];if(cc.cps)return cc.cps;if(cc.cpi&&isRoute(cc.str)){const j=jointsOf(cc.str);return cc.cpi.map(i=>j[i]).filter(Boolean)}return[]};
 const OPTS=[['bots','Bots',[[0,'None'],[1,'1'],[2,'2'],[3,'3']]],['diff','Bot difficulty',[[0,'Easy'],[1,'Normal'],[2,'Hard']]],['laps','Laps',[[1,'1'],[3,'3'],[5,'5']]],['zoom','Camera',[[.75,'Close'],[1,'Normal'],[1.35,'Far']]],['shadow','Shadows',[[1,'On'],[0,'Off']]],['sound','Sound',[[1,'On'],[0,'Off']]],['assist','Assist',[[1,'On'],[0,'Off']]],['ghost','PB ghost',[[1,'On'],[0,'Off']]],['pix','Pixels',[[1,'Off'],[.6,'Slight'],[.4,'Chunky']]],['admin','Admin car',[[0,'Off'],[1,'Boosted'],[2,'Insane']],true]];
 const saveOpt=()=>{try{localStorage.setItem('dbx:opt',JSON.stringify(OPT))}catch(e){}};
@@ -1170,8 +1228,8 @@ function applyOpt(){snd=!!OPT.sound;assist=!!OPT.assist;sun.castShadow=!!OPT.sha
 let selC=Math.max(0,COURSES.findIndex(c=>c.name==='Speedway'));
 function pbOf(s){try{const v=JSON.parse(localStorage.getItem(pk(s)));return v&&v.t?fmt(v.t):null}catch(e){return null}}
 const HAZ={B:['Boost','#7fb8d6'],O:['Oil','#9a8fc2'],J:['Jump','#d6b85a'],G:['Gravel','#a88b64'],C:['Chicane','#c98a63'],M:['Slalom','#c98a63'],T:['Gate','#c98a63'],I:['Ice','#9fdcff'],P:['Nitro pad','#3be07a'],U:['Rumble','#c98a63'],Q:['Squeeze','#c98a63'],D:['Drift zone','#b9a6ff']};
-const isRoute=s=>/^[SLRBCOJGMTNIPUQDEF]+$/.test(s);
-function cellsOf(str){let cx=0,cz=0,h=[0,1];const o=[];for(const ch of str){o.push({x:cx,z:cz,k:ch});const h2=ch==='L'?[h[1],-h[0]]:ch==='R'?[-h[1],h[0]]:h;cx+=h2[0];cz+=h2[1];h=h2}o.closed=cx===0&&cz===0;return o}
+const isRoute=s=>!!parseRoute(s);
+function cellsOf(str){const p=parseRoute(str),o=p?p.els.map(e=>({x:e.x,z:e.z,k:e.k})):[];o.closed=!!(p&&p.closed);return o}
 function drawRouteOld(cv,str,lab){
   const x=cv.getContext('2d'),W=cv.width,H=cv.height;x.clearRect(0,0,W,H);
   if(!isRoute(str)){x.fillStyle='#9db0d8';x.textAlign='center';x.textBaseline='middle';x.font='700 '+Math.round(H*.45)+'px system-ui,sans-serif';x.fillText(lab||'?',W/2,H/2);return}
@@ -1274,7 +1332,7 @@ const BC=[0xe03e3e,0xf2c230,0xa55cf2],BN=['Rex','Vega','Nyx'],GRID=[[-7,0],[7,0]
 function closeBots(){bots.forEach(b=>S.remove(b.g));bots=[]}
 function spawnBots(n){closeBots();for(let i=0;i<(n==null?OPT.bots:n);i++){const g=botMesh(BC[i]);S.add(g);bots.push({g,name:BN[i],i})}}
 function resetBots(){bots.forEach((b,i)=>{Object.assign(b,{x:(b.remote?SLOT[b.i]:GRID[i])[0],z:(b.remote?SLOT[b.i]:GRID[i])[1],h:0,d:0,v:0,reached:0,fin:false,ft:0,stuck:0});b.g.position.set(b.x,0,b.z);b.g.rotation.y=0})}
-const tgtOf=(R,ti)=>{if(ti>=R.route.length)return R.end;const r=R.route[ti];return{x:r.x*TILE+3.5*(r.h2[0]-r.h1[0]),z:r.z*TILE+3.5*(r.h2[1]-r.h1[1])}};
+const tgtOf=(R,ti)=>{if(ti>=R.route.length)return R.end;const r=R.route[ti];return{x:r.tx*TILE+r.bo*(r.h2[0]-r.h1[0]),z:r.tz*TILE+r.bo*(r.h2[1]-r.h1[1])}};
 const angD=(a,b)=>((a-b+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
 function botTi(b){const n=race.route.length;return race.closed?(b.reached+1)%n:b.reached+1}
 function progOf(b){if(b.remote)return b.prog||0;const t=tgtOf(race,botTi(b));return b.reached+1-Math.min(1,Math.hypot(t.x-b.x,t.z-b.z)/24)}
@@ -1292,8 +1350,8 @@ function botsTick(dt){
       b.d+=Math.max(-3.6*dt,Math.min(3.6*dt,diff*8*dt));b.df=diff;
       const ci=R.map[Math.round(b.x/TILE)+','+Math.round(b.z/TILE)],kk=ci!==undefined&&ci<n?R.route[ci].k:'';
       let vt=31*sk*(1-Math.min(.45,Math.abs(diff)*.55));
-      const nx0=R.route[Math.min(ti,n-1)],inC=kk==='L'||kk==='R',appr=(nx0.k==='L'||nx0.k==='R')&&d<16;
-      b.ck=inC||appr;b.cs=inC?(kk==='L'?1:-1):appr?(nx0.k==='L'?1:-1):0;if(kk==='O')vt*=.5;if(kk==='G')vt*=.7;if(kk==='B')vt=45*sk;if('MTCLR'.includes(kk)&&kk)vt*=.85;
+      const nx0=R.route[Math.min(ti,n-1)],inC=kk==='L'||kk==='R'||kk==='H'||kk==='K',appr=(nx0.k==='L'||nx0.k==='R'||nx0.k==='H'||nx0.k==='K')&&d<16;
+      b.ck=inC||appr;b.cs=inC?(kk==='L'||kk==='H'?1:-1):appr?(nx0.k==='L'||nx0.k==='H'?1:-1):0;if(kk==='O')vt*=.5;if(kk==='G')vt*=.7;if(kk==='B')vt=45*sk;if('MTCLRHK'.includes(kk)&&kk)vt*=.85;
       b.v+=(vt-b.v)*Math.min(1,dt*(vt>b.v?1.3:2.5));
       if(b.v<3){b.stuck+=dt;if(b.stuck>1.8){const pr=R.route[(ti-1+n)%n];b.x=pr.x*TILE;b.z=pr.z*TILE;b.d=b.h=Math.atan2(dx,dz);b.v=6;b.stuck=0}}else b.stuck=0;
     }else if(b.fin)b.v*=Math.exp(-1.5*dt);else b.v=0;
@@ -1683,48 +1741,60 @@ setInterval(()=>{if(mOpen&&menuTab==='solo'&&!document.hidden&&SESS)fetchLB()},2
 // Owner tools: turn the editor layout into a race track and publish it to a season
 function routeFromBlocks(){
   if(!blocks.length)return{err:'Place some track in the builder first.'};
-  const at=(cx,cz)=>blocks.find(b=>b.x===cx*TILE&&b.z===cz*TILE),KC={straight:'S',boost:'B',chicane:'C',slick:'O',jump:'J',gravel:'G',slalom:'M',gate:'T',open:'N',ice:'I',refill:'P',rumble:'U',squeeze:'Q',drift:'D'};
-  let cx=0,cz=0,h=[0,1],s='';const seen=new Set(),joints=[];
-  // Attach the checkpoints, making sure each one sits on a join between two tiles of the route.
-  const done=r=>{
-    joints.pop();
-    const out=[];
-    for(const g of CPB){
-      const al=g.o?g.x:g.z,ac=g.o?g.z:g.x;
-      const ok=joints.some(j=>j.o===g.o&&Math.abs(al-j.along)<.5&&(g.w===2?Math.abs(ac-j.across)<12.5&&Math.abs(ac-j.across)>11.5:Math.abs(ac-j.across)<.5));
-      if(!ok)return{err:'A checkpoint is not on the join between two track tiles. Move it or erase it.'};
-      out.push({x:g.x,z:g.z,o:g.o,w:g.w});
+  const has=p=>blocks.some(b=>b.k===p.kind&&Math.abs(b.x-p.x)<.01&&Math.abs(b.z-p.z)<.01&&(p.sym?b.rot%2===p.rot%2:b.rot===p.rot));
+  const NM={straight:'Straight',corner:'Corner',wide:'Wide corner',edge:'Half border',narrowL:'Narrow left',narrowR:'Narrow right',widestraight:'Wide straight',boost:'Boost',chicane:'Chicane',slick:'Oil',jump:'Jump',gravel:'Gravel',slalom:'Slalom',gate:'Gate',open:'Open road',ice:'Ice',refill:'Nitro pad',rumble:'Rumble strips',squeeze:'Squeeze',drift:'Drift zone'};
+  let st={ex:0,ez:-.5,h:[0,1],w:1},str='',n=0,closed=false,end=false;const seen=new Set(),used=new Set(),joints=[];
+  while(n<60&&!closed&&!end){
+    let hit=null,tk='';
+    for(const t of st.w===1?'SBCOJGMTNIPUQDEFLRWX':'VHKYZ'){const el=routeStep(st,t);if(el&&el.pieces.every(has)){hit=el;tk=t;break}}
+    if(!hit&&st.w===2){for(const a of LANES){for(const b2 of LANES){const el=routeStep(st,'A',a+b2);if(el&&el.pieces.every(has)){hit=el;tk='A'+a+b2;break}}if(hit)break}}
+    if(!hit){
+      const h=st.h,Lh=vL(h),cx=st.ex+h[0]/2,cz=st.ez+h[1]/2,spots=st.w===1?[[cx,cz]]:[[cx+Lh[0]/2,cz+Lh[1]/2],[cx-Lh[0]/2,cz-Lh[1]/2]];
+      const cover=blocks.filter(b=>spots.some(q=>inFoot(b,q[0]*TILE,q[1]*TILE,1)));
+      if(!cover.length){
+        if(n>=3){end=true;break}
+        return{err:n?'The route stops after '+n+' piece'+(n===1?'':'s')+' because the next tile is empty. A track needs at least 3 connected pieces.':'The track must start on the tile at the car start (the middle of the map), heading south.'};
+      }
+      if(cover.some(b=>used.has(b.k+'|'+b.x+'|'+b.z)))return{err:'The track runs into another part of itself after piece '+n+'.'};
+      const b=cover[0],at=n?'after piece '+n:'at the start',nm=NM[b.k]||b.k;let why;
+      if(st.w===1){
+        if(b.k==='corner')why='does not connect to the road before it (turn it with R)';
+        else if(b.k==='narrowL'||b.k==='narrowR')why='is the wrong way round. To widen the road, its narrow end must face the road before it (turn it with R, or use the other narrow piece)';
+        else if(b.k==='wide'||b.k==='widestraight')why='is 2 tiles wide, but the road is 1 tile wide here. Put a narrow piece before it';
+        else if(b.rot%2!==(h[0]?1:0))why='is turned the wrong way (press R)';
+        else why='is not lined up with the road before it';
+      }else{
+        if(b.k==='narrowL'||b.k==='narrowR')why='is the wrong way round, or on the wrong lane. To narrow the road, its wide end must face the road before it, and the narrow end must sit on the lane you want to keep (turn it with R, or use the other narrow piece)';
+        else if(b.k==='wide')why='does not connect to the road before it (turn it with R)';
+        else if(b.k==='widestraight')why='is turned the wrong way (press R)';
+        else if(LANES.length&&cover.length<2&&b.k!=='corner')why='is only one half of the next row. The road is 2 tiles wide here, so build both halves, or use a Wide straight';
+        else why='is not lined up with the road before it';
+      }
+      return{err:'The '+nm+' piece '+at+' '+why+'.'};
     }
-    r.cps=out;return r;
-  };
-  for(let i=0;i<60;i++){
-    const b=at(cx,cz);
-    if(!b){
-      if(i===0)return{err:'The track must start on the tile at the car start (the middle of the map), heading south.'};
-      const off=blocks.find(q=>inFoot(q,cx*TILE,cz*TILE,1)&&(Math.abs(q.x-cx*TILE)>1||Math.abs(q.z-cz*TILE)>1));
-      if(off)return{err:'The route stops after tile '+i+': the next piece ('+off.k+') sits between the grid lines, like wide corners and narrowing pieces do. Race routes only follow single tiles for now.'};
-      if(s.length>=3)return done({str:s,closed:false});
-      return{err:'The route stops after '+s.length+' tile'+(s.length===1?'':'s')+' because the next tile is empty. A track needs at least 3 connected tiles.'};
-    }
-    const key=cx+','+cz;if(seen.has(key))return{err:'The track crosses itself.'};seen.add(key);
-    if(b.k==='corner'){
-      const [p,q]=sides(b.rot),back=[-h[0],-h[1]],has=v=>(p[0]===v[0]&&p[1]===v[1])||(q[0]===v[0]&&q[1]===v[1]);
-      if(!has(back))return{err:'The corner at '+cx+','+cz+' does not connect to the tile before it.'};
-      const h2=(p[0]===back[0]&&p[1]===back[1])?q:p;
-      s+=(h2[0]===h[1]&&h2[1]===-h[0])?'L':'R';h=h2;
-    }else if(b.k==='edge'){
-      if((h[0]?1:0)!==(b.rot%2))return{err:'The half-border piece at '+cx+','+cz+' is rotated the wrong way.'};
-      let w=[1,0];for(let i=0;i<b.rot;i++)w=[w[1],-w[0]];
-      s+=(h[0]*w[1]-h[1]*w[0])>0?'E':'F';
-    }else if(KC[b.k]){
-      if((h[0]?1:0)!==(b.rot%2))return{err:'The straight piece at '+cx+','+cz+' is rotated the wrong way.'};
-      s+=KC[b.k];
-    }else return{err:'Wide corners and narrowing pieces cannot be used in a race track.'};
-    const go=h[0]?1:0;joints.push({o:go,along:go?(cx+h[0]*.5)*TILE:(cz+h[1]*.5)*TILE,across:go?cz*TILE:cx*TILE});
-    cx+=h[0];cz+=h[1];
-    if(cx===0&&cz===0)return done({str:s,closed:true});
+    if(hit.cells.some(q=>seen.has(q[0]+','+q[1])))return{err:'The track crosses itself.'};
+    hit.cells.forEach(q=>seen.add(q[0]+','+q[1]));hit.pieces.forEach(p=>used.add(p.kind+'|'+p.x+'|'+p.z));
+    str+=tk;n++;
+    joints.push({o:hit.h2[0]?1:0,along:hit.h2[0]?hit.ex*TILE:hit.ez*TILE,across:hit.h2[0]?hit.ez*TILE:hit.ex*TILE,w:hit.w2});
+    st=hit.st2;
+    if(st.w===1&&st.ex+st.h[0]/2===0&&st.ez+st.h[1]/2===0)closed=true;
   }
-  return{err:'The track is too long.'};
+  if(!closed&&!end)return{err:'The track is too long (60 pieces at most).'};
+  if(!parseRoute(str))return{err:'That layout could not be turned into a route.'};
+  // Checkpoints must sit on a join between two pieces, lined up with the tile edges of the road there.
+  joints.pop();
+  const out=[];
+  for(const g of CPB){
+    const al=g.o?g.x:g.z,ac=g.o?g.z:g.x,lo=ac-g.w*12,hi=ac+g.w*12;
+    const ok=joints.some(j=>{
+      if(j.o!==g.o||Math.abs(al-j.along)>=.5)return false;
+      const jl=j.across-j.w*12,jh=j.across+j.w*12,d=(lo-jl)/24;
+      return lo<=jl+.5&&hi>=jh-.5&&Math.abs(d-Math.round(d))*24<.5;
+    });
+    if(!ok)return{err:'A checkpoint is not on a join between two track pieces, or it does not cover the whole road there (use a Wide checkpoint on a 2-wide road). Move it or erase it.'};
+    out.push({x:g.x,z:g.z,o:g.o,w:g.w});
+  }
+  return{str,closed,cps:out,n};
 }
 const adSay=t=>{$('#adSt').textContent=t};
 const allTracks=()=>COURSES.map(cc=>({cc,k:lbKey(cc)})).filter(x=>x.k);
@@ -1829,7 +1899,7 @@ function bldInfo(){
   $('#bldN').textContent=BLD.name+' \u00b7 '+BLD.season;
   const s=$('#bldS');
   if(!blocks.length){s.textContent='Empty. Start on the middle tile, heading south.';s.className='bad'}
-  else{const r=routeFromBlocks();if(r.err){s.textContent=r.err;s.className='bad'}else{s.textContent=(r.closed?'Valid circuit':'Valid point-to-point')+' \u00b7 '+r.str.length+' tiles'+(r.cps&&r.cps.length?' \u00b7 '+r.cps.length+' checkpoint'+(r.cps.length>1?'s':''):'');s.className='ok'}}
+  else{const r=routeFromBlocks();if(r.err){s.textContent=r.err;s.className='bad'}else{s.textContent=(r.closed?'Valid circuit':'Valid point-to-point')+' \u00b7 '+r.n+' pieces'+(r.cps&&r.cps.length?' \u00b7 '+r.cps.length+' checkpoint'+(r.cps.length>1?'s':''):'');s.className='ok'}}
   $('#bldD').textContent=BLD.dirty?'Unsaved changes':'';
 }
 async function bldSave(){
