@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-29 (k)
+Last updated: 2026-10-29 (l)
 
 NOTE TO ANY AI WORKING ON THIS FILE
+- ONLINE MULTIPLAYER WAS REMOVED on 2026-10-29 (client and server: no Online tab, no WebSocket, no Room Durable Object). Any older text below that mentions online rooms, /ws, ROOMS or the Room class is out of date. Do not bring it back unless asked. The leaderboard refresh is 40 seconds.
 - This block exists so a fresh AI that is given only index.html knows the whole project.
 - KEEP IT UP TO DATE. Every time you change index.html (or learn something new about the server files), update the relevant section below and add a line to the CHANGELOG at the bottom, then bump the "Last updated" date. Do this in the same response as the change, without being asked.
-- UPDATE LOG: the in game Updates tab is driven by the UPDATES array in the script (search for "update log"). Whenever the owner asks for something new, add an entry at the TOP of UPDATES (id, date, title, art, text in plain player friendly words, no apostrophes) in the same response. art selects a small picture drawn by updArt(); add a new case there if none of the existing ones (log nitro surf comm wide keys jump gate hat admin shop test acct) fits. The tab shows a dot until the newest entry is read (localStorage dbx:updSeen).
+- UPDATE LOG: the in game Updates tab is driven by the UPDATES array in the script (search for "update log"). Whenever the owner asks for something new, add an entry at the TOP of UPDATES (id, date, title, art, text in plain player friendly words, no apostrophes) in the same response. art selects a small picture drawn by updArt(); add a new case there if none of the existing ones (log lb solo nitro surf comm wide keys jump gate hat admin shop test acct) fits. The tab shows a dot until the newest entry is read (localStorage dbx:updSeen).
 - Never put secrets in this file. index.html is public on GitHub Pages. (No passwords, hashes, tokens.)
 - It is a plain text script tag, so it does nothing at runtime. Do not use the closing script tag text anywhere inside it.
 - Always give the owner the COMPLETE updated index.html (they paste whole files into the GitHub web editor). Syntax-check the script before sending (extract the main script and run it through new Function in node).
@@ -43,7 +44,7 @@ Drift Box: a top-down 3D drift racing game that runs in the browser.
 ======================================================================
 index.html        The whole game and UI. This file. Deploy by committing to the GitHub Pages repo.
 worker.js         Cloudflare Worker: HTTP API (accounts, leaderboard, seasons, tracks, author times, admin tools) plus the Room Durable Object for online races. Deploy with: npx wrangler deploy
-wrangler.toml     Worker config: name driftbox-api, main worker.js, D1 binding DB (database name driftbox), Durable Object binding ROOMS -> class Room, migration tag v1 with new_sqlite_classes Room. The D1 database_id is filled in by the owner.
+wrangler.toml     Worker config: name driftbox-api, main worker.js, D1 binding DB (database name driftbox). (Online rooms and the Room Durable Object were removed; migration v2 deletes the class.)
 schema.sql        Creates the tables (see section 7). Run once on a new database.
 migrate.sql       Run ONCE on an old database: adds users.banned and seasons.live columns.
 migrate-3.sql     Run ONCE (before deploying the new worker.js): adds users.is_admin, tracks.cps (checkpoints) and the hats table.
@@ -75,7 +76,6 @@ If you need the exact source of worker.js or any other server file and it is not
 - Bots: up to 3 (Rex, Vega, Nyx), follow tile targets, drift visually, collide with the player.
 - Updates tab (tUpd, panel #upd, list #updL): in game update log. UPDATES array, updArt(kind) SVG pictures, updUI(), updBadge(). Add an entry for every change.
 - Menu: courses list, route preview canvas, settings rows (OPTS), leaderboard panel.
-- Online: WebSocket to the Worker (/ws/CODE). Host creates a 4-letter room, others join, host picks the course and starts. State is sent about every 50 ms. Remote cars are drawn like bots.
 - Accounts: sign in / create account overlay. Password is hashed in the browser (PBKDF2) before sending. Session token saved in localStorage. Owner flag comes from the server.
 - Seasons and leaderboards: Season 1 is the built in track list. Owner can create seasons (draft), add tracks, build them in the in-game builder, publish. fetchSeasons, fetchLB, submitPB, syncPBs.
 - Admin tab (owner only): seasons and tracks (status marks: circle = to be built, half = building, filled = built), medal author times, leaderboard viewer with remove, reset buttons (type a phrase to confirm), player search and ban.
@@ -127,7 +127,6 @@ localStorage keys (all start with dbx:): tune3 (tuning), opt (settings), api (se
 
 - Checkpoints: gates on the join between two route tiles, 1 or 2 tiles wide. Data {x,z,o,w}: x,z centre in world units, o 0 = gate runs along x (track runs along z), o 1 = the other way, w = 1 or 2. They can be driven through in any order and ALL are needed before a lap or finish counts (race.cps, race.cpSet, cpCross, cpReset). Bots ignore them. Season 1 gates are listed in S1CP (route index of the tile the gate sits after; jointsOf converts to positions). Season tracks keep them in tracks.cps (JSON) and inside the saved blocks as {k:'cp'} entries for the editor. Builder tools: Checkpoint (cp1) and Wide checkpoint (cp2), R turns them; routeFromBlocks checks every gate sits on a join. Online: the host sends cps in the start message and the Room relays them.
 - Route strings (the track format): one token per road piece, walking from the start tile heading south. 1 tile wide: S B C O J G M T N I P U Q D (straight-type), E F (half border, wall right/left), L R (corner). Width changes: W/X widen 1 to 2 tiles (new lane on the left/right), Y/Z narrow 2 to 1 (keep the left/right lane). 2 tiles wide: V wide straight, H/K wide corner (left/right), A + two letters (two 1-wide pieces side by side, left lane then right lane). routeStep(state,token) is the single source of truth for which pieces a token places and where the road goes next; loadCourse (string to pieces) and routeFromBlocks (pieces to string) both use it, parseRoute caches the result. Old strings (letters S..F only) parse exactly as before. The server only checks the letters and length (3 to 200); the game checks the structure. Race progress uses race.map (every tile a piece covers maps to its route index), bots aim at each piece's target (tx,tz plus bo times the turn), the mini map draws every covered tile. Wide pieces sit half a tile off the normal grid (builder snaps them), which is why the old single-tile route check stopped at them.
-- Online: if you are off every track tile for 0.6 s (for example after jumping a wall) your run restarts (resetCar).
 - Hats: kinds 'box' and 'img'. 'img' hats are a flat picture on the roof with spin (degrees per second) and size. Built in: Rubber Duck (DUCK_PNG, from the owner's Piskel file) and Black Box. Owner-made hats are stored on the server (hats table, /api/hat*), loaded by loadHats() into SHOP.hat as ids "h<id>". Hats are owner-only unless pub is set (Admin > Hats "Players can buy").
 - Menu colour themes: class "themed" on <html> when a non-Ember theme is equipped; the v5 CSS block at the end of the style uses --m1, --m2, --m3 and --acc in different places (title gradient, tab underline, Go button, selected row, prices, badges, route preview, confetti). The default Ember theme is unchanged.
 
@@ -167,7 +166,6 @@ HTTP API (all JSON, CORS open):
   Staff (owner or admin) POSTs: /api/track (add), /api/track/save (also takes cps), /api/author
   Owner only POSTs: /api/admin/role {name,admin}, /api/hat, /api/hat/save, /api/hat/delete, /api/season (create draft), /api/season/live, /api/season/delete, /api/track/delete, /api/author (set or clear author time), /api/pb/delete, /api/ban, /api/admin/reset {what: times|accounts|seasons|everything}
   GET /api/admin/users?q=               owner only, player search
-  WebSocket /ws/<4 letters or digits>   Durable Object "Room": up to 4 players, ?join=1 to join an existing room, messages hello, s (state relay), start (host only, validated course string, laps 1 to 5). Replies lobby, start, s, full, none.
 After changing worker.js the owner must run npx wrangler deploy. Changes to index.html alone only need a commit to GitHub.
 
 ======================================================================
@@ -191,6 +189,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-29  Removed online multiplayer (Online tab, WebSocket code, remote cars) from index.html and worker.js (Room class and /ws route), and wrangler.toml now deletes the Room Durable Object. Leaderboard refresh slowed from 20 to 40 seconds. Update log entries added. worker.js redeploy.
 2026-10-29  In game Updates tab: scrollable update log with a small picture and description per update, and an unread dot. Old updates back filled from this changelog. index.html only.
 2026-10-29  Community tab shows a small status line (signed-in name, game version, map counts) so a missing map can be diagnosed. Server list query uses LEFT JOIN so a map is never hidden by an account mismatch. worker.js redeploy.
 2026-10-29  Nitro overheat: emptying the bar locks nitro until it recovers to 30% (variable nitoL), so holding the key at zero no longer sputters. Bar turns red and shows HOT.
@@ -287,8 +286,6 @@ canvas{display:block;touch-action:none}
 .chips{display:flex;flex-wrap:wrap;gap:6px}.chips span{border:1px solid #ffffff33;border-radius:99px;padding:2px 10px;font-size:12px}
 #rtab tr.h td{color:#9db0d8;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border:0;padding-top:12px}
 .tabs{display:flex;gap:8px;margin:0 0 14px}.tabs button{padding:8px 24px;font-weight:700}
-#online input{font:inherit;color:#eaf0ff;background:#ffffff14;border:1px solid #ffffff30;border-radius:8px;padding:8px 10px;width:140px}
-#online #mpcode{width:84px;text-transform:uppercase;letter-spacing:.2em;text-align:center}
 .orow2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
 :root:root:root{--bg:#0d0e10;--panel:#14161af2;--ink:#e9eaec;--mut:#8b9098;--acc:#ff5a2a;--line:#ffffff1f;--ui:'Barlow','Helvetica Neue',Arial,sans-serif;--hd:'Barlow Condensed','Arial Narrow','Helvetica Neue',Arial,sans-serif}
 html,body{font-family:var(--ui)}
@@ -342,7 +339,6 @@ button{font-family:var(--ui);border-radius:3px;font-weight:500}
 #menu .seg button.on{background:#e9eaec;color:#0d0e10}
 #menu .keys{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:20px;color:var(--mut);font-size:12.5px}
 #menu .keys kbd{font:600 11px var(--hd);letter-spacing:.08em;border:1px solid #ffffff33;border-radius:3px;padding:2px 6px;color:#d7d9dc;margin-right:6px;background:#ffffff0a}
-#online input{border-radius:3px}
 #res{background:#0d0e10dd;backdrop-filter:none}
 #res .rc{background:#14161a;border:1px solid #ffffff1f;border-radius:4px;box-shadow:none}
 .rk{font:italic 700 64px/1 var(--hd);letter-spacing:.03em;text-transform:uppercase}
@@ -618,13 +614,12 @@ span.pbtn.eqd{display:inline-block;border:0;color:var(--mut);padding:9px 0}
 </div>
 <div class="info"><div id="hud"></div><div id="hint"></div></div>
 <div id="big"></div>
-<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tOnline">Online</button><button id="tComm" class="hide">Community</button><button id="tCar" class="hide">Car</button><button id="tShop" class="hide">Shop</button><button id="tSet">Settings</button><button id="tUpd">Updates</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><div id="setAcct" class="hide"><h3>Account</h3><div class="acctGrid"><div class="acBox"><h5>Change username</h5><label>New username<input id="acNewName" maxlength="16" autocomplete="off"></label><label>Current password<input id="acNamePw" type="password" autocomplete="current-password"></label><button id="acNameGo">Change username</button><div class="aerr" id="acNameMsg"></div></div><div class="acBox"><h5>Change password</h5><label>Old password<input id="acOld" type="password" autocomplete="current-password"></label><label>New password<input id="acPw1" type="password" autocomplete="new-password"></label><label>New password again<input id="acPw2" type="password" autocomplete="new-password"></label><button id="acPwGo">Change password</button><div class="aerr" id="acPwMsg"></div></div></div></div><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl" id="ctlRows"></div><div class="aerr" id="keyMsg"></div></div>
+<div id="menu"><div class="mw"><div class="mhead"><h1>DRIFT BOX</h1><div class="sub">Night circuit · top-down drift racing</div><div id="acct"></div></div><div class="tabs"><button id="tSolo" class="on">Solo</button><button id="tComm" class="hide">Community</button><button id="tCar" class="hide">Car</button><button id="tShop" class="hide">Shop</button><button id="tSet">Settings</button><button id="tUpd">Updates</button><button id="tAdmin" class="hide">Admin</button></div><div class="mcols"><div class="clist" id="cgrid"></div><div class="prev"><canvas id="pv" width="440" height="300"></canvas><div class="pn" id="pn"></div><div class="pd" id="pd"></div><div id="chips"></div><div id="lb"></div><div id="settings" class="hide"><div id="setAcct" class="hide"><h3>Account</h3><div class="acctGrid"><div class="acBox"><h5>Change username</h5><label>New username<input id="acNewName" maxlength="16" autocomplete="off"></label><label>Current password<input id="acNamePw" type="password" autocomplete="current-password"></label><button id="acNameGo">Change username</button><div class="aerr" id="acNameMsg"></div></div><div class="acBox"><h5>Change password</h5><label>Old password<input id="acOld" type="password" autocomplete="current-password"></label><label>New password<input id="acPw1" type="password" autocomplete="new-password"></label><label>New password again<input id="acPw2" type="password" autocomplete="new-password"></label><button id="acPwGo">Change password</button><div class="aerr" id="acPwMsg"></div></div></div></div><h3>Display</h3><div class="opts" id="setDisp"></div><h3>Sound and help</h3><div class="opts" id="setSnd"></div><div id="setOwn" class="hide"><h3>Owner</h3><div class="opts" id="setAdm"></div></div><h3>Handling</h3><div class="opts"><div class="orow"><span>Tuning sliders<small>Grip, drift, steering and presets. Changes apply straight away.</small></span><button id="sTune">Open</button></div></div><h3>Controls</h3><div class="keys ctl" id="ctlRows"></div><div class="aerr" id="keyMsg"></div></div>
 <div id="shop" class="hide"><div class="shopBar"><div class="shopTitle"><b>Garage shop</b><span>Cosmetics only</span></div><div class="coinBox"><i class="coin"></i><b id="coinN">0</b><small>coins</small></div><div class="pay" id="payN"></div><button data-shop="test" class="tst hide">+500 test coins</button></div><div class="shopNav" id="shopTabs"></div><div class="shopBody" id="shopBody"><aside id="shopSide"></aside><div class="shopMain"><div id="shopHead"></div><div class="pgrid" id="shopL"></div></div></div></div><div id="car" class="hide"><div><canvas id="cpv" width="800" height="450"></canvas><div class="lbn" id="carNote"></div></div><div id="carSlots"></div></div>
 <div id="upd" class="hide"><div class="shopBar"><div class="shopTitle"><b>Update log</b><span>What is new in Drift Box</span></div></div><div id="updL"></div></div>
 <div id="comm" class="hide"><div class="shopBar"><div class="shopTitle"><b>Community maps</b><span>Built by players</span></div></div><h3>Make a map</h3><div class="orow2"><input id="commName" maxlength="30" placeholder="New map name"><button id="commNew">Create and build</button></div><div class="pd">Build it on the middle tile heading south and press Save. Save only keeps it as your project, so you can work on it as long as you like. When it is ready, press Publish next to it below. Changing a published map clears its old times.</div><div class="aerr" id="commMsg"></div><h3>All maps</h3><div class="orow2"><select id="commSort"><option value="top">Top rated</option><option value="new">Newest</option></select><button id="commRef">Refresh</button></div><div id="commL"></div></div>
 <div id="admin" class="hide"><h3>Seasons</h3><div id="adSeasons"></div><div class="orow2 ownOnly"><input id="adSeason" placeholder="New season name"><button id="adMk">Create season (draft)</button></div><div class="pd">New seasons start as a draft. Admins can add and build tracks in any season; only an owner can publish, unpublish or delete. Track marks: ○ to be built, ◐ building (saved but not finished), ● built.</div><h3>Medal times</h3><div class="pd">Author time in seconds for each track. Gold (+10%), silver (+30%) and bronze (+60%) are worked out from it.</div><div id="adMed"></div><div class="ownOnly"><h3>Leaderboard times</h3><div class="orow2"><select id="adLbSel"></select><button id="adLbGo">Load</button></div><div id="adLb"></div><h3>Reset</h3><div class="pd">Each button asks you to type a confirmation phrase, like "reset times". This cannot be undone. Your owner account and Season 1 always stay.</div><div class="orow2"><button data-act="reset" data-what="times">Reset times</button><button data-act="reset" data-what="accounts">Reset accounts</button><button data-act="reset" data-what="seasons">Reset seasons</button><button data-act="reset" data-what="everything">Reset everything</button></div><h3>Players</h3><div class="orow2"><input id="adQ" placeholder="Search players by name"><button id="adUsers">Search</button></div><div id="adUl"></div></div><div class="ownOnly"><h3>Hats</h3><div class="pd">Upload a PNG (64 x 64 works well; bigger ones are shrunk to 128). The hat lies flat on the roof and the top of the picture points the way the car faces.</div><div id="adHats"></div><div class="sblk"><div class="shead"><b id="hatFT">New hat</b></div><div class="orow2"><input id="hatName" maxlength="24" placeholder="Hat name"><input id="hatFile" type="file" accept="image/png"><img id="hatPrev" class="hide" alt="" style="height:44px;image-rendering:pixelated"></div><div class="orow2"><label class="hl">Motion<select id="hatSpin"><option value="1">Spins</option><option value="0">Stands still</option></select></label><label class="hl">Speed (deg/s)<input id="hatSpeed" type="number" min="1" max="720" step="1" value="45"></label><label class="hl">Size<input id="hatSize" type="number" min="0.5" max="6" step="0.1" value="2"></label><label class="hl">Price (coins)<input id="hatPrice" type="number" min="0" max="5000" step="10" value="400"></label><label class="hl">Players can buy<input id="hatPub" type="checkbox"></label></div><div class="orow2"><button id="hatSave">Save hat</button><button id="hatNew">New / clear</button></div><div class="aerr" id="hatMsg"></div></div></div><div class="pd" id="adSt"></div></div>
 <div id="setup" class="hide"><h3>Race setup</h3><div class="opts" id="setupO"></div></div>
-<div id="online" class="hide"><div class="orow2"><input id="mpname" maxlength="12" placeholder="Your name"></div><div class="orow2"><button id="mpHost">Host a room</button><input id="mpcode" maxlength="4" placeholder="CODE"><button id="mpJoin">Join</button></div><div class="pd" id="mpst">Host a room and share the 4-letter code, or enter a friend's code. Hosts pick the course on the left.</div><div class="plist" id="mpl"></div><div class="mfoot"><button class="go hide" id="mpGo">Start race</button><button id="mpLeave" class="hide">Leave room</button></div></div>
 <div class="mfoot" id="solofoot"><button class="go" id="mPlay">Start race</button><button id="mResume" class="hide">Resume</button><button id="mTune">Handling…</button></div></div></div></div></div>
 <div id="res" class="hide"><div class="rc"><div class="rk" id="rk"></div><div class="rt" id="rtt"></div><div class="rtime" id="rtime"></div><div class="rsub" id="rsub"></div><div class="rsub" id="rmed" style="font-weight:700"></div><div class="pbb hide" id="rpb">NEW PERSONAL BEST</div><table id="rtab"></table><div class="rbtn"><button class="go" id="rRetry">Retry</button><button id="rUse" class="hide">Use as author time</button><button id="rMenu">Menu</button></div></div></div>
 <div id="auth" class="hide"><div class="ap"><h1>Drift Box</h1><div class="sub">Sign in to save your times</div><div class="atabs"><button id="auIn" class="on">Sign in</button><button id="auUp">Create account</button></div><label>Name<input id="auName" maxlength="16" autocomplete="username"></label><label>Password<input id="auPw" type="password" autocomplete="current-password"></label><div class="aerr" id="auErr"></div><button class="go" id="auGo">Sign in</button><div class="amode" id="auMode"></div><details class="hide"><summary>Server address</summary><div class="orow2"><input id="auApi" placeholder="https://driftbox-api.yourname.workers.dev"><button id="auApiSave">Save</button></div></details></div></div>
@@ -723,7 +718,7 @@ for(const sx of[-1,1]){const hl=new THREE.SpotLight(0xfff1c9,5,85,.6,.7,1.2);hl.
   bm.position.set(0,.22,12.4);bm.userData.beam=1;car.add(bm);beamDef=beamMat.clone()}
 let race={route:null},bots=[],paused=true,started=false,cf={x:0,z:0},slipI=0,skT=0,sl=null,spd=0,assist=true,nitro=100,c,pan={x:0,z:0},cH=0,cur=0,best=0,idle=0,shk=0,em=0;
 var nitoL=false; // nitro overheated: locked until the bar recovers to 30%
-function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;nitoL=false;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots();cpReset()}hideRes();if(MP&&MP.ready){c.x=SLOT[MP.idx][0];c.z=SLOT[MP.idx][1]}cur=0;idle=0}
+function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;nitoL=false;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots();cpReset()}hideRes();cur=0;idle=0}
 resetCar();
 const RAD=1.25;
 
@@ -994,8 +989,8 @@ addEventListener('keydown',e=>{
   if(/^(Space|Arrow)/.test(e.code))e.preventDefault();
   if(e.repeat)return;
   if(code==='KeyB'){if(TD)tdExit();else setMode(mode==='drive'?'build':'drive')}
-  if(code==='KeyC'&&!MP)resetCar();
-  if(code==='KeyR'){if(mode==='build'){rot=(rot+1)%4;syncGhost()}else if(!MP)resetCar()}
+  if(code==='KeyC')resetCar();
+  if(code==='KeyR'){if(mode==='build'){rot=(rot+1)%4;syncGhost()}else resetCar()}
   if(mOpen&&menuTab==='solo'&&!(e.target&&e.target.tagName==='INPUT')){
     if(e.code==='ArrowDown'||e.code==='ArrowUp'){const p=Math.max(0,Math.min(MENU_ORDER.length-1,MENU_ORDER.indexOf(selC)+(e.code==='ArrowDown'?1:-1)));selC=MENU_ORDER[p]??selC;buildMenu();return}
     if(e.code==='Enter'){startGame();return}
@@ -1027,7 +1022,7 @@ addEventListener('blur',()=>{for(const i in k)k[i]=false});
 document.querySelector('.bar').addEventListener('click',()=>document.activeElement.blur());
 $('#mDrive').onclick=()=>setMode('drive');$('#mBuild').onclick=()=>setMode('build');
 $('#bRot').onclick=()=>{rot=(rot+1)%4;syncGhost()};
-$('#bCar').onclick=()=>{if(!MP)resetCar()};
+$('#bCar').onclick=()=>resetCar();
 $('#bSnd').onclick=e=>{snd=!snd;e.target.classList.toggle('on',snd);e.target.textContent='Sound: '+(snd?'on':'off');if(snd)initAudio()};
 $('#bAssist').onclick=e=>{assist=!assist;e.target.classList.toggle('on',assist);e.target.textContent='Assist: '+(assist?'on':'off')};
 document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{(b.dataset.c==='donut'?loadDonut():loadCourse(b.dataset.c==='random'?randomCourse():b.dataset.c));setMode('drive')});
@@ -1093,12 +1088,6 @@ function drive(dt){
   vf-=vf*(AD?.85/(1+AD*.9):.85)*dt;if(vf<-10)vf=-10;
   if(WA>0&&Math.abs(c.s)>.55&&vf>22)vf-=vf*.45*WA*dt;
   if(race.route&&!blocks.some(b=>inFoot(b,c.x,c.z)))vf-=vf*.9*dt;
-  // Online: landing off the track (for example after jumping a wall) restarts your run.
-  if(MP&&MP.ready&&race.route&&race.state==='run'){
-    const off=!(c.y>1)&&!blocks.some(b=>inFoot(b,c.x,c.z,2));
-    c.off=off?(c.off||0)+dt:0;
-    if(c.off>.6){toast('You left the track: restarting');resetCar();return}
-  }
   let zb=0,zs=0,zg=0,zi=0,zr=0,zu=0,zd=0,zm=0;
   for(const b of blocks){
     if(b.mat&&inFoot(b,c.x,c.z)){if(b.mat==='i')zi=1;else if(b.mat==='s')zg=1;else if(b.mat==='m')zm=1}
@@ -1364,14 +1353,14 @@ function buildMenuOld(){
     r.append(sg);o.append(r);
   });
 }
-function openMenu(){hideTune();paused=!(MP&&MP.ready);mOpen=true;buildMenu();$('#menu').classList.remove('hide');$('#mResume').classList.toggle('hide',!started);if(menuTab==='car')cpvStart()}
+function openMenu(){hideTune();paused=true;mOpen=true;buildMenu();$('#menu').classList.remove('hide');$('#mResume').classList.toggle('hide',!started);if(menuTab==='car')cpvStart()}
 function closeMenu(){hideTune();paused=false;mOpen=false;$('#menu').classList.add('hide')}
 function toggleMenu(){if(TD){tdExit();return}mOpen?(started&&closeMenu()):openMenu()}
 var GP=null;
 const GPCAL=['Speedway','Harbor Loop','Coastline','Midnight Circuit'],PTS=[25,18,15,12];
 function startGame(ev){
   if(BLD){if(BLD.dirty&&!confirm('You have unsaved changes to this track. Leave without saving?'))return;leaveBuilderUI()}
-  let cc=(ev&&ev.comm)?ev:COURSES[selC];started=true;closeBots();GP=null;if(MP)mpClose();
+  let cc=(ev&&ev.comm)?ev:COURSES[selC];started=true;closeBots();GP=null;
   if(cc.gp){GP={r:0,pts:{}};cc=COURSES.find(x=>x.name===GPCAL[0])}
   if(cc.str==='donut')loadDonut();
   else if(cc.str==='free'||cc.str==='build'){clearAll();race={route:null}}
@@ -1396,7 +1385,7 @@ function finishRace(){
   $('#rk').textContent=top;$('#rk').className='rk r'+Math.min(cls,4);$('#rtt').textContent=title;
   $('#rtime').textContent=fmt(R.t);$('#rsub').textContent=isFinite(R.best)?'Best lap '+fmt(R.best):'';
   $('#rpb').classList.toggle('hide',!R.anyPB);$('#rmed').textContent=R.medalMsg||'';$('#rtab').innerHTML=html;
-  $('#rRetry').textContent=MP?'Menu':btn;$('#rRetry').onclick=MP?openMenu:GP?(last?openMenu:nextRace):()=>resetCar();if(R.test)tdResult(R);
+  $('#rRetry').textContent=btn;$('#rRetry').onclick=GP?(last?openMenu:nextRace):()=>resetCar();if(R.test)tdResult(R);
   $('#res').classList.remove('hide');
   if(champ||(!GP&&(rank===1||R.anyPB)))confetti();
 }
@@ -1429,17 +1418,16 @@ function botMesh(col){
 const BC=[0xe03e3e,0xf2c230,0xa55cf2],BN=['Rex','Vega','Nyx'],GRID=[[-7,0],[7,0],[0,-7]];
 function closeBots(){bots.forEach(b=>S.remove(b.g));bots=[]}
 function spawnBots(n){closeBots();for(let i=0;i<(n==null?OPT.bots:n);i++){const g=botMesh(BC[i]);S.add(g);bots.push({g,name:BN[i],i})}}
-function resetBots(){bots.forEach((b,i)=>{Object.assign(b,{x:(b.remote?SLOT[b.i]:GRID[i])[0],z:(b.remote?SLOT[b.i]:GRID[i])[1],h:0,d:0,v:0,reached:0,fin:false,ft:0,stuck:0});b.g.position.set(b.x,0,b.z);b.g.rotation.y=0})}
+function resetBots(){bots.forEach((b,i)=>{Object.assign(b,{x:GRID[i][0],z:GRID[i][1],h:0,d:0,v:0,reached:0,fin:false,ft:0,stuck:0});b.g.position.set(b.x,0,b.z);b.g.rotation.y=0})}
 const tgtOf=(R,ti)=>{if(ti>=R.route.length)return R.end;const r=R.route[ti];return{x:r.tx*TILE+r.bo*(r.h2[0]-r.h1[0]),z:r.tz*TILE+r.bo*(r.h2[1]-r.h1[1])}};
 const angD=(a,b)=>((a-b+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
 function botTi(b){const n=race.route.length;return race.closed?(b.reached+1)%n:b.reached+1}
-function progOf(b){if(b.remote)return b.prog||0;const t=tgtOf(race,botTi(b));return b.reached+1-Math.min(1,Math.hypot(t.x-b.x,t.z-b.z)/24)}
+function progOf(b){const t=tgtOf(race,botTi(b));return b.reached+1-Math.min(1,Math.hypot(t.x-b.x,t.z-b.z)/24)}
 function pProg(){const R=race,n=R.route.length,t=tgtOf(R,R.next<n?R.next:(R.closed?0:n));return R.laps*n+(R.next-1)+1-Math.min(1,Math.hypot(t.x-c.x,t.z-c.z)/24)}
 function botsTick(dt){
   const R=race;if(!R.route||!bots.length)return;
   const n=R.route.length,go=R.state==='run'||R.state==='done',tot=(R.closed?OPT.laps:1)*n;
   for(const b of bots){
-    if(b.remote){botRemote(b,dt);continue}
     const sk=[1,.96,.92][b.i]*[.72,.88,1.02][OPT.diff];
     if(go&&!b.fin){
       const ti=botTi(b),tp=tgtOf(R,ti),dx=tp.x-b.x,dz=tp.z-b.z,d=Math.hypot(dx,dz);
@@ -1473,7 +1461,7 @@ function botsTick(dt){
   }
   bots.forEach(b=>{
     // bots drift: the body swings into the turn while the car keeps travelling along its path
-    if(b.remote)b.slip=angD(b.h,b.d);else{const ds=b.ck?b.cs*.5*Math.min(1,b.v/20):0;b.h+=(b.d+ds-b.h)*Math.min(1,dt*(ds?10:13));b.slip=b.h-b.d}
+    {const ds=b.ck?b.cs*.5*Math.min(1,b.v/20):0;b.h+=(b.d+ds-b.h)*Math.min(1,dt*(ds?10:13));b.slip=b.h-b.d}
     if(go&&!b.fin&&Math.abs(b.slip)>.22&&b.v>8){
       const sn=Math.sin(b.h),cs=Math.cos(b.h);b.em=(b.em||0)+dt*30;b.sk=(b.sk||0)+dt;
       while(b.em>=1){b.em--;for(const sd of[-1,1])puff(b.x-sn*.9+sd*cs*.8,b.z-cs*.9-sd*sn*.8,Math.sin(b.d)*b.v,Math.cos(b.d)*b.v)}
@@ -1520,95 +1508,10 @@ function confetti(){
     if(alive)requestAnimationFrame(step);else{confOn=false;cf2.classList.add('hide')}
   })();
 }
-// ---------- online multiplayer: WebRTC via PeerJS, one player hosts ----------
-var MP=null,menuTab='solo',mOpen=true;
-const SLOT=[[0,0],[-7,0],[7,0],[0,-7]],RCOL=[0x2ecc71,0xe03e3e,0xf2c230,0xa55cf2];
-let ws=null,mpT=0;
-const mpSay=t=>{$('#mpst').textContent=t};
-function setTab(t){menuTab=t;$('#tSolo').classList.toggle('on',t==='solo');$('#tOnline').classList.toggle('on',t==='online');$('#online').classList.toggle('hide',t!=='online');$('#solofoot').classList.toggle('hide',t!=='solo');$('#admin').classList.toggle('hide',t!=='admin');$('#comm').classList.toggle('hide',t!=='comm');$('#tComm').classList.toggle('on',t==='comm');$('#shop').classList.toggle('hide',t!=='shop');$('#car').classList.toggle('hide',t!=='car');$('#tCar').classList.toggle('on',t==='car');$('#settings').classList.toggle('hide',t!=='settings');$('#upd').classList.toggle('hide',t!=='upd');$('#tUpd').classList.toggle('on',t==='upd');$('#tSet').classList.toggle('on',t==='settings');$('#tShop').classList.toggle('on',t==='shop');$('#tAdmin').classList.toggle('on',t==='admin');$('#lb').classList.toggle('hide',t!=='solo');$('#menu').classList.toggle('adm',t==='admin'||t==='shop'||t==='settings'||t==='car'||t==='comm'||t==='upd');if(t==='upd')updUI();if(t==='admin')adminUI();if(t==='comm')commOpen();if(t==='shop')shopUI();if(t==='car'){carUI();cpvStart()}renderSetup();if(t==='settings')renderSettings();lobbyUI()}
-function lobbyUI(){
-  const inRoom=!!MP;
-  $('#mpl').innerHTML=inRoom?MP.players.map(p=>'<span>'+p.name+(p.idx===0?' (host)':'')+(p.idx===MP.idx?' \u00b7 you':'')+'</span>').join(''):'';
-  $('#mpGo').classList.toggle('hide',!(inRoom&&MP.host));$('#mpLeave').classList.toggle('hide',!inRoom);
-  ['#mpHost','#mpJoin','#mpcode'].forEach(s=>$(s).classList.toggle('hide',inRoom));
-}
-function makeTag(txt){
-  const q=document.createElement('canvas');q.width=256;q.height=64;const x=q.getContext('2d');
-  x.font='700 36px system-ui,sans-serif';x.textAlign='center';x.fillStyle='#000a';x.fillText(txt,129,46);x.fillStyle='#fff';x.fillText(txt,128,44);
-  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(q),transparent:true,depthTest:false}));s.scale.set(8,2,1);s.position.set(0,3.4,0);return s;
-}
-function addRemote(p){
-  const g=botMesh(RCOL[p.idx%4]),s=SLOT[p.idx];g.add(makeTag(p.name));S.add(g);
-  bots.push({g,name:p.name,i:p.idx,remote:true,x:s[0],z:s[1],h:0,d:0,v:0,reached:0,fin:false,ft:0,prog:0,tx:s[0],tz:s[1],th:0,tvx:0,tvz:0});
-}
-function applyState(d){
-  const b=bots.find(b=>b.remote&&b.i===d.i);if(!b)return;
-  Object.assign(b,{tx:d.x,tz:d.z,th:d.h,tvx:d.vx,tvz:d.vz,prog:d.p});
-  if(d.f&&!b.fin){b.fin=true;b.ft=d.ft}
-}
-function botRemote(b,dt){
-  const k=Math.min(1,dt*14);
-  b.x+=(b.tx-b.x)*k;b.z+=(b.tz-b.z)*k;b.h+=angD(b.th,b.h)*k;
-  b.v=Math.hypot(b.tvx,b.tvz);b.d=b.v>1?Math.atan2(b.tvx,b.tvz):b.h;
-  const ex=c.x-b.x,ez=c.z-b.z,e=Math.hypot(ex,ez);
-  if(e<2.7&&e>1e-3){
-    const nx=ex/e,nz=ez/e;c.x+=nx*(2.7-e)*.5;c.z+=nz*(2.7-e)*.5;
-    const vr=(c.vx-b.tvx)*nx+(c.vz-b.tvz)*nz;
-    if(vr<0){const j=-vr*.9;c.vx+=j*nx;c.vz+=j*nz;shk=Math.max(shk,Math.min(.3,j*.02))}
-  }
-}
-function mpClose(){
-  try{if(ws)ws.close()}catch(e){}
-  ws=null;const was=MP;MP=null;
-  if(was&&was.oldLaps!=null)OPT.laps=was.oldLaps;
-  if(was&&was.ready){closeBots();race={route:null};resetCar()}
-  lobbyUI();
-}
-function mpName(){const n=($('#mpname').value||'').trim().slice(0,12)||'Player';try{localStorage.setItem('dbx:name',n)}catch(e){}return n}
-const mpSend=o=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))};
-function mpOpen(code,join){
-  if(!API_URL){mpSay('Online play needs the game server, which is not connected.');return}
-  mpClose();const name=mpName();mpSay('Connecting\u2026');
-  let sock;try{sock=new WebSocket(API_URL.replace(/^http/,'ws')+'/ws/'+code+(join?'?join=1':''))}catch(e){mpSay('Could not start online play.');return}
-  ws=sock;let ok=false;
-  const tm=setTimeout(()=>{if(!ok&&ws===sock){mpClose();mpSay('Could not connect. Check your internet and try again.')}},10000);
-  sock.onopen=()=>{ok=true;clearTimeout(tm);MP={host:false,code,idx:-1,oldLaps:OPT.laps,ready:false,players:[]};sock.send(JSON.stringify({t:'hello',name}))};
-  sock.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch(x){return}clientData(d)};
-  sock.onclose=()=>{clearTimeout(tm);if(ws===sock){const had=!!MP;mpClose();mpSay(had?'Disconnected from the room.':'Could not connect to the room.')}};
-}
-function mpHost(){mpOpen(Math.random().toString(36).slice(2,6).toUpperCase(),false)}
-function mpJoin(){const code=($('#mpcode').value||'').trim().toUpperCase();if(code.length!==4){mpSay('Enter the 4-letter room code.');return}mpOpen(code,true)}
-function clientData(d){
-  if(!MP)return;
-  if(d.t==='lobby'){
-    MP.players=d.players;MP.idx=d.you;MP.host=d.you===0;
-    bots=bots.filter(b=>{if(b.remote&&!d.players.some(p=>p.idx===b.i)){S.remove(b.g);return false}return true});
-    mpSay(MP.host?'Room '+MP.code+' \u00b7 share this code with up to 3 friends':'Joined room '+MP.code+' \u00b7 waiting for the host to start');lobbyUI();
-  }
-  else if(d.t==='start')startOnline(d);
-  else if(d.t==='s')applyState(d);
-  else if(d.t==='full'){mpClose();mpSay('That room is full or already racing.')}
-  else if(d.t==='none'){mpClose();mpSay('No room with that code.')}
-}
-function startOnline(d){
-  closeBots();GP=null;started=true;OPT.laps=d.laps;
-  loadCourse(d.str,d.cps);applyOpt();
-  d.players.forEach(p=>{if(p.idx!==MP.idx)addRemote(p)});
-  MP.ready=true;resetCar();closeMenu();setMode('drive');
-}
-function hostStart(){
-  if(!MP||!MP.host)return;const cc=COURSES[selC];
-  if(!(isRoute(cc.str)||cc.str==='random')){mpSay('Pick a race course on the left first.');return}
-  mpSend({t:'start',str:cc.str==='random'?randomCourse():cc.str,cps:cc.str==='random'?[]:courseCps(cc),laps:OPT.laps});
-}
-function mpTick(dt){
-  if(!MP||!MP.ready||!ws)return;
-  mpT+=dt;if(mpT<.05)return;mpT=0;
-  const R=race;mpSend({t:'s',x:+c.x.toFixed(2),z:+c.z.toFixed(2),h:+c.h.toFixed(3),vx:+c.vx.toFixed(2),vz:+c.vz.toFixed(2),p:+pProg().toFixed(2),f:R.state==='done'?1:0,ft:+(R.t||0).toFixed(2)});
-}
-$('#mpHost').onclick=mpHost;$('#mpJoin').onclick=mpJoin;$('#mpGo').onclick=hostStart;$('#mpLeave').onclick=mpClose;
-$('#tSolo').onclick=()=>setTab('solo');$('#tOnline').onclick=()=>setTab('online');$('#tSet').onclick=()=>setTab('settings');$('#tUpd').onclick=()=>setTab('upd');
-try{$('#mpname').value=localStorage.getItem('dbx:name')||''}catch(e){}
+var menuTab='solo',mOpen=true;
+function setTab(t){menuTab=t;$('#tSolo').classList.toggle('on',t==='solo');$('#solofoot').classList.toggle('hide',t!=='solo');$('#admin').classList.toggle('hide',t!=='admin');$('#comm').classList.toggle('hide',t!=='comm');$('#tComm').classList.toggle('on',t==='comm');$('#shop').classList.toggle('hide',t!=='shop');$('#car').classList.toggle('hide',t!=='car');$('#tCar').classList.toggle('on',t==='car');$('#settings').classList.toggle('hide',t!=='settings');$('#upd').classList.toggle('hide',t!=='upd');$('#tUpd').classList.toggle('on',t==='upd');$('#tSet').classList.toggle('on',t==='settings');$('#tShop').classList.toggle('on',t==='shop');$('#tAdmin').classList.toggle('on',t==='admin');$('#lb').classList.toggle('hide',t!=='solo');$('#menu').classList.toggle('adm',t==='admin'||t==='shop'||t==='settings'||t==='car'||t==='comm'||t==='upd');if(t==='upd')updUI();if(t==='admin')adminUI();if(t==='comm')commOpen();if(t==='shop')shopUI();if(t==='car'){carUI();cpvStart()}renderSetup();if(t==='settings')renderSettings()}
+
+$('#tSolo').onclick=()=>setTab('solo');$('#tSet').onclick=()=>setTab('settings');$('#tUpd').onclick=()=>setTab('upd');
 // ---------- menu (v3): restrained, motorsport-style ----------
 let routeAnim=0,lastSel=-1;
 const themeCols=()=>{try{if(shopOn()){const t=eqv('theme');if(t&&t[0]!=='#ff8a3d')return t}}catch(e){}return null};
@@ -1830,12 +1733,12 @@ function renderLB(){
     const rows=LB.rows.slice(0,10);
     h+=rows.length?'<table class="lbt">'+rows.map((r,i)=>'<tr class="'+(SESS&&r.name===SESS.name?'me':'')+'"><td>'+(i+1)+'</td><td>'+esc(r.name)+'</td><td>'+fmt(r.ms/1000)+'</td></tr>').join('')+'</table>':'<div class="lbn">No times yet. Set the first one.</div>';
     if(LB.me&&LB.me.rank>10)h+='<div class="lbn">Your best: #'+LB.me.rank+' \u00b7 '+fmt(LB.me.ms/1000)+'</div>';
-    h+='<div class="lbn">'+(API_URL?'Global \u00b7 refreshes every 20 seconds':'This device only \u00b7 connect a server for a global board')+'</div>';
+    h+='<div class="lbn">'+(API_URL?'Global \u00b7 refreshes every 40 seconds':'This device only \u00b7 connect a server for a global board')+'</div>';
   }
   el.innerHTML=h;
 }
 async function submitPB(cc,t){
-  const k=cc&&lbKey(cc);if(!k||!SESS||MP)return;if(SESS.owner){toast('Admin run: not counted on the leaderboard');return}const ms=Math.round(t*1000);
+  const k=cc&&lbKey(cc);if(!k||!SESS)return;if(SESS.owner){toast('Admin run: not counted on the leaderboard');return}const ms=Math.round(t*1000);
   try{
     if(!API_URL){
       const all=JSON.parse(localStorage.getItem('dbx:lb')||'{}'),key=k.season+'/'+k.track,arr=all[key]||(all[key]=[]),i=arr.findIndex(r=>r.name===SESS.name);
@@ -1845,7 +1748,7 @@ async function submitPB(cc,t){
     fetchLB();
   }catch(e){toast('Could not save to the leaderboard')}
 }
-setInterval(()=>{if(mOpen&&menuTab==='solo'&&!document.hidden&&SESS)fetchLB()},20000);
+setInterval(()=>{if(mOpen&&menuTab==='solo'&&!document.hidden&&SESS)fetchLB()},40000);
 // Owner tools: turn the editor layout into a race track and publish it to a season
 function routeFromBlocks(){
   if(!blocks.length)return{err:'Place some track in the builder first.'};
@@ -1996,7 +1899,6 @@ $('#tAdmin').onclick=()=>setTab('admin');$('#adMk').onclick=adMk;$('#tShop').onc
 var BLD=null;
 function leaveBuilderUI(){BLD=null;$('#bld').classList.add('hide');document.body.classList.remove('bldg')}
 function enterBuilder(t,seasonName,sid,comm){
-  if(MP)mpClose();
   BLD=null;closeBots();clearAll();race={route:null};started=false;
   let saved=[];try{saved=JSON.parse(t.blocks||'[]')}catch(e){}
   saved.forEach(b=>{if(b.k==='cp')addCp({x:b.x,z:b.z,o:b.o|0,w:b.w===2?2:1});else if(K[b.k])placeTile(b.k,b.x,b.z,b.rot|0,b.mat)});
@@ -2077,6 +1979,8 @@ $('#bTest').onclick=testDrive;$('#tdExit').onclick=tdExit;$('#tdRestart').onclic
 // {id:'unique-id', date:'YYYY-MM-DD', title:'Short title', art:'kind', text:'Plain description for players.'}
 // art picks the small picture drawn by updArt() below. Add a new case there if none fits. Do not use apostrophes in text.
 const UPDATES=[
+ {id:'no-online',date:'2026-10-29',title:'Online races removed',art:'solo',text:'Online rooms are gone to keep the game fast and free to run. Solo races with bots, the Grand Prix, the builder, community maps and the leaderboards all work as before.'},
+ {id:'lb-40',date:'2026-10-29',title:'Calmer leaderboard refresh',art:'lb',text:'The leaderboard now refreshes every 40 seconds instead of 20, which lets about twice as many people play at the same time.'},
  {id:'update-log',date:'2026-10-29',title:'Update log',art:'log',text:'This page. Every new change to Drift Box is added here with a small picture and a short description, newest at the top. A dot on the Updates tab shows when there is something you have not read yet.'},
  {id:'nitro-hot',date:'2026-10-29',title:'Nitro overheat',art:'nitro',text:'Running the nitro bar down to zero now locks it until it recovers to 30 percent, so holding the key at empty no longer sputters. The bar turns red and says HOT while it is locked.'},
  {id:'surfaces',date:'2026-10-28',title:'Surface materials',art:'surf',text:'Any track piece can now be Road, Ice, Sand or Mud. Ice is slippery, sand drags like gravel and mud drags and loses grip. Use the material buttons and the new Paint tool in the builder.'},
@@ -2097,6 +2001,8 @@ function updArt(k){
   const bar=(x,y,w,c,o)=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="6" fill="'+c+'" opacity="'+(o||1)+'"/>';
   let b='';
   if(k==='log')b=[0,1,2].map(i=>'<rect x="46" y="'+(26+i*34)+'" width="148" height="26" fill="#101215" stroke="#fff" stroke-opacity=".14"/><rect x="54" y="'+(33+i*34)+'" width="12" height="12" fill="'+(i?M:A)+'"/>'+bar(74,34+i*34,'70',T,.85)+bar(74,44+i*34,'100',M,.5)).join('');
+  else if(k==='lb')b=[0,1,2,3].map(i=>'<rect x="46" y="'+(26+i*26)+'" width="148" height="20" fill="#101215" stroke="#fff" stroke-opacity=".14"/><text x="56" y="'+(40+i*26)+'" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="13" fill="'+(i?M:A)+'">'+(i+1)+'</text>'+bar(76,33+i*26,60-i*8,T,.8)+bar(160,33+i*26,24,M,.6)).join('')+'<text x="218" y="134" text-anchor="end" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="15" letter-spacing="2" fill="'+A+'">40 S</text>';
+  else if(k==='solo')b='<path d="M40 110V50H120V90H200V40" fill="none" stroke="#1f2227" stroke-width="18"/><path d="M40 110V50H120V90H200V40" fill="none" stroke="'+T+'" stroke-width="2" stroke-dasharray="4 4"/><rect x="32" y="98" width="16" height="22" rx="3" fill="#2b7be0"/>';
   else if(k==='nitro'){b='<rect x="34" y="62" width="172" height="26" fill="#05080e" stroke="'+T+'" stroke-width="2"/>';for(let i=0;i<8;i++)b+='<rect x="38" y="66" width="'+15+'" height="18" fill="'+(i<2?'#ff4a3a':'#4f9fc4')+'" opacity="'+(i<2?1:.25)+'" transform="translate('+(i*20)+' 0)"/>';b+='<text x="120" y="112" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="18" letter-spacing="3" fill="#ff4a3a">HOT</text>'}
   else if(k==='surf')b=[['Road',R],['Ice','#a8d8ec'],['Sand','#d8c27a'],['Mud','#5b4129']].map((q,i)=>'<rect x="'+(18+i*52)+'" y="44" width="46" height="62" fill="'+q[1]+'"/><text x="'+(41+i*52)+'" y="124" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="'+M+'">'+q[0]+'</text>').join('');
   else if(k==='comm'){b='<path d="M40 100 L40 50 L110 50 L110 80 L170 80 L170 40 L200 40" fill="none" stroke="#1f2227" stroke-width="16"/><path d="M40 100 L40 50 L110 50 L110 80 L170 80 L170 40 L200 40" fill="none" stroke="'+T+'" stroke-width="2" stroke-dasharray="4 4"/>';for(let i=0;i<5;i++)b+='<text x="'+(62+i*24)+'" y="130" text-anchor="middle" font-size="18" fill="'+(i<4?'#d6b85a':'#5b6068')+'">★</text>'}
@@ -2158,7 +2064,7 @@ function commUI(){
   let h='<div class="sech">Your maps</div>'+(mine.length?mine.map(commRow).join(''):'<div class="lbn">You have no maps yet. Save keeps a map as your project; press Publish here when it is ready.</div>');
   if(picks.length)h+='<div class="sech">Admin picks</div>'+picks.map(commRow).join('');
   h+='<div class="sech">'+(COMM.sort==='new'?'Newest':'Top rated')+'</div>'+(rest.length?rest.map(commRow).join(''):'<div class="lbn">No maps from other players yet.</div>');
-  h+='<div class="lbn" style="opacity:.6;font-size:12px">Signed in as '+esc(SESS?SESS.name:'?')+' \u00b7 game version 2026-10-29 (k) \u00b7 '+COMM.maps.length+' map'+(COMM.maps.length===1?'':'s')+' from the server, '+mine.length+' yours</div>';
+  h+='<div class="lbn" style="opacity:.6;font-size:12px">Signed in as '+esc(SESS?SESS.name:'?')+' \u00b7 game version 2026-10-29 (l) \u00b7 '+COMM.maps.length+' map'+(COMM.maps.length===1?'':'s')+' from the server, '+mine.length+' yours</div>';
   el.innerHTML=h;
 }
 $('#comm').onclick=async e=>{
@@ -2323,7 +2229,7 @@ function trailSmoke(){const d=eqv('trail');if(d.sm!=null)return d.sm;return trai
 // ---- medals ----
 const medalKey=cc=>{const k=cc&&lbKey(cc);return k?k.season+'/'+k.track:null};
 function awardMedal(cc,t){
-  if(!shopOn()||MP||(ownOn()&&(OPT.admin||0)>0))return '';
+  if(!shopOn()||(ownOn()&&(OPT.admin||0)>0))return '';
   const key=medalKey(cc),mt=key&&medalTimes(key);if(!mt)return '';
   let tier=0;mt.forEach((s,i)=>{if(s!=null&&t<=s)tier=i+1});
   if(!tier)return '';
@@ -2632,8 +2538,7 @@ function optRows(el,keys){
 function renderSetup(){
   const box=$('#setup');if(!box)return;
   const cc=COURSES[selC],keys=[];
-  if(menuTab==='online'){if(!MP||MP.host)keys.push('laps')}
-  else if(menuTab==='solo'&&cc){
+  if(menuTab==='solo'&&cc){
     const rt=isRoute(cc.str),cs=rt?cellsOf(cc.str):null;
     if(rt||cc.gp||cc.str==='random'){
       if(!cc.gp)keys.push('bots');
@@ -2657,7 +2562,7 @@ let last=performance.now();
 (function frame(t){
   requestAnimationFrame(frame);
   const dt=Math.min(.033,(t-last)/1000);last=t;
-  if(paused)idleCam();else if(mode==='drive'){drive(dt);raceTick(dt);botsTick(dt);mpTick(dt)}else buildCam(dt);
+  if(paused)idleCam();else if(mode==='drive'){drive(dt);raceTick(dt);botsTick(dt)}else buildCam(dt);
   drawGauge();nbarTick();flameTick(dt);audioTick();skidTick();
   {const fx=Math.round((mode==='drive'?cf.x:pan.x)/4)*4,fz=Math.round((mode==='drive'?cf.z:pan.z)/4)*4;sun.position.set(fx-70,45,fz-45);sun.target.position.set(fx,0,fz)}
   updPuffs(dt);if(hatSpin)hatG.rotation.y+=hatSpin*dt;
