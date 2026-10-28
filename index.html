@@ -1773,6 +1773,16 @@ async function syncPBs(){
       let cur=null;try{cur=JSON.parse(localStorage.getItem(pk(cc.str)))}catch(e){}
       if(!cur||cur.t*1000>p.ms+1)localStorage.setItem(pk(cc.str),JSON.stringify({t:p.ms/1000,s:null}));
     });
+    // Upload any personal best saved on this device that the server does not have yet, or that beats the server's time
+    // (for example times set before the leaderboard accepted very fast runs).
+    if(!SESS.owner)for(const cc of COURSES){
+      const k=lbKey(cc);if(!k||cc.comm)continue;
+      let cur=null;try{cur=JSON.parse(localStorage.getItem(pk(cc.str)))}catch(e){}
+      if(!cur||!(cur.t>=.5))continue;
+      const ms=Math.round(cur.t*1000),p=j.pbs.find(q=>q.season===k.season&&q.track===k.track);
+      if(!p||ms<p.ms)try{await api('/api/pb',{season:k.season,track:k.track,ms})}catch(e){}
+    }
+    if(mOpen&&menuTab==='solo')fetchLB();
   }catch(e){}
 }
 async function fetchLB(){
