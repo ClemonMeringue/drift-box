@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-28 (h)
+Last updated: 2026-10-29 (j)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - This block exists so a fresh AI that is given only index.html knows the whole project.
@@ -189,6 +189,8 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-29  Community tab shows a small status line (signed-in name, game version, map counts) so a missing map can be diagnosed. Server list query uses LEFT JOIN so a map is never hidden by an account mismatch. worker.js redeploy.
+2026-10-29  Nitro overheat: emptying the bar locks nitro until it recovers to 30% (variable nitoL), so holding the key at zero no longer sputters. Bar turns red and shows HOT.
 2026-10-28  Surface materials (ice, sand, mud) on any piece, with a Paint tool in the builder. worker.js redeploy only (regex).
 2026-10-28  Community maps: Save now only keeps a project; Publish/Unpublish is a separate button. New 'Your maps' list always shows a player's own maps. Server: migrate-5.sql, worker.js redeploy.
 2026-10-28  Fixed laps not finishing on tracks with jumps or 2-wide roads (see section 4, race progress). Players can rebind keys in Settings. Community maps: Community tab, player builder and save, 1-5 star ratings, Admin picks, per-map leaderboards. Server: migrate-4.sql, worker.js redeploy.
@@ -704,7 +706,8 @@ for(const sx of[-1,1]){const hl=new THREE.SpotLight(0xfff1c9,5,85,.6,.7,1.2);hl.
   const bm=new THREE.Mesh(new THREE.PlaneGeometry(11,22).rotateX(-Math.PI/2),(beamMat=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(q),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.55})));
   bm.position.set(0,.22,12.4);bm.userData.beam=1;car.add(bm);beamDef=beamMat.clone()}
 let race={route:null},bots=[],paused=true,started=false,cf={x:0,z:0},slipI=0,skT=0,sl=null,spd=0,assist=true,nitro=100,c,pan={x:0,z:0},cH=0,cur=0,best=0,idle=0,shk=0,em=0;
-function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots();cpReset()}hideRes();if(MP&&MP.ready){c.x=SLOT[MP.idx][0];c.z=SLOT[MP.idx][1]}cur=0;idle=0}
+var nitoL=false; // nitro overheated: locked until the bar recovers to 30%
+function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;nitoL=false;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots();cpReset()}hideRes();if(MP&&MP.ready){c.x=SLOT[MP.idx][0];c.z=SLOT[MP.idx][1]}cur=0;idle=0}
 resetCar();
 const RAD=1.25;
 
@@ -1065,8 +1068,10 @@ function drive(dt){
   const WA=[1,.5,0][OPT.drive||0],ER=[.1,.25,.4][OPT.drive||0];let hitN=null;
   const fr=race.state==='count',up=!fr&&(k.ArrowUp||k.KeyW),dn=!fr&&(k.ArrowDown||k.KeyS);
   const st=fr?0:(k.ArrowLeft||k.KeyA?1:0)-(k.ArrowRight||k.KeyD?1:0);
-  const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up;nitOn=nit;
+  if(nitoL&&nitro>=30)nitoL=false;
+  const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up&&!nitoL;nitOn=nit;
   nitro=nit&&!AD?Math.max(0,nitro-35*dt):Math.min(100,nitro+(AD?100:10)*dt);
+  if(nit&&nitro<=1&&!AD){nitoL=true;toast('Nitro overheated: wait for it to recover')}
   if(up)vf+=(P.power*(AD?1+AD*1.2:1)+(nit?30:0)*(AD?2:1))*dt;
   if(dn)vf-=(vf>0?20*(1-.6*Math.min(1,Math.abs(vl)/Math.max(Math.abs(vf),6))):16)*dt;
   vf-=vf*(AD?.85/(1+AD*.9):.85)*dt;if(vf<-10)vf=-10;
@@ -2087,6 +2092,7 @@ function commUI(){
   let h='<div class="sech">Your maps</div>'+(mine.length?mine.map(commRow).join(''):'<div class="lbn">You have no maps yet. Save keeps a map as your project; press Publish here when it is ready.</div>');
   if(picks.length)h+='<div class="sech">Admin picks</div>'+picks.map(commRow).join('');
   h+='<div class="sech">'+(COMM.sort==='new'?'Newest':'Top rated')+'</div>'+(rest.length?rest.map(commRow).join(''):'<div class="lbn">No maps from other players yet.</div>');
+  h+='<div class="lbn" style="opacity:.6;font-size:12px">Signed in as '+esc(SESS?SESS.name:'?')+' \u00b7 game version 2026-10-29 (j) \u00b7 '+COMM.maps.length+' map'+(COMM.maps.length===1?'':'s')+' from the server, '+mine.length+' yours</div>';
   el.innerHTML=h;
 }
 $('#comm').onclick=async e=>{
@@ -2526,13 +2532,13 @@ function flameTick(dt){
 }
 
 // ---------- nitro bar ----------
-const nbEl=$('#nbar'),nfEl=$('#nf'),npEl=$('#np');let nbShow=null,nbN=-1,nbAct=null;
+const nbEl=$('#nbar'),nfEl=$('#nf'),npEl=$('#np');let nbShow=null,nbN=-1,nbAct=null,nbL=0;
 function nbarTick(){
   const show=!paused&&mode==='drive';
   if(show!==nbShow){nbShow=show;nbEl.style.display=show?'':'none'}
   if(!show)return;
-  const v=Math.round(nitro);
-  if(v!==nbN){nbN=v;nfEl.style.width=v+'%';npEl.textContent=v;nbEl.classList.toggle('low',v<20)}
+  const v=Math.round(nitro),L=nitoL?1:0;
+  if(v!==nbN||L!==nbL){nbN=v;nbL=L;nfEl.style.width=v+'%';npEl.textContent=L?'HOT':v;nbEl.classList.toggle('low',v<20||!!L)}
   if(nitOn!==nbAct){nbAct=nitOn;nbEl.classList.toggle('act',nitOn)}
 }
 
