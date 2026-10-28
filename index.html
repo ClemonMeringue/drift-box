@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-29 (l)
+Last updated: 2026-10-29 (m)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - ONLINE MULTIPLAYER WAS REMOVED on 2026-10-29 (client and server: no Online tab, no WebSocket, no Room Durable Object). Any older text below that mentions online rooms, /ws, ROOMS or the Room class is out of date. Do not bring it back unless asked. The leaderboard refresh is 40 seconds.
 - This block exists so a fresh AI that is given only index.html knows the whole project.
 - KEEP IT UP TO DATE. Every time you change index.html (or learn something new about the server files), update the relevant section below and add a line to the CHANGELOG at the bottom, then bump the "Last updated" date. Do this in the same response as the change, without being asked.
-- UPDATE LOG: the in game Updates tab is driven by the UPDATES array in the script (search for "update log"). Whenever the owner asks for something new, add an entry at the TOP of UPDATES (id, date, title, art, text in plain player friendly words, no apostrophes) in the same response. art selects a small picture drawn by updArt(); add a new case there if none of the existing ones (log lb solo nitro surf comm wide keys jump gate hat admin shop test acct) fits. The tab shows a dot until the newest entry is read (localStorage dbx:updSeen).
+- UPDATE LOG: the in game Updates tab is driven by the UPDATES array in the script (search for "update log"). Whenever the owner asks for something new, add an entry at the TOP of UPDATES (id, date, title, art, text in plain player friendly words, no apostrophes) in the same response. art selects a small picture drawn by updArt(); add a new case there if none of the existing ones (log lb solo tune marks nitro surf comm wide keys jump gate hat admin shop test acct) fits. The tab shows a dot until the newest entry is read (localStorage dbx:updSeen).
 - Never put secrets in this file. index.html is public on GitHub Pages. (No passwords, hashes, tokens.)
 - It is a plain text script tag, so it does nothing at runtime. Do not use the closing script tag text anywhere inside it.
 - Always give the owner the COMPLETE updated index.html (they paste whole files into the GitHub web editor). Syntax-check the script before sending (extract the main script and run it through new Function in node).
@@ -84,7 +84,8 @@ If you need the exact source of worker.js or any other server file and it is not
 - Build toolbar: #tools holds #pieces (icon buttons in groups, generated from the PIECES array in JS; each has data-t), then rotate / Test drive / clear, then #toolName (selected piece). Icons are inline SVG strokes (ICO).
 - Test drive (testDrive, tdResult, tdExit, var TD): in build mode, validates the layout with routeFromBlocks, snapshots the placed blocks, loads the route as a one-lap race (race.test=true, so no PB, ghost or leaderboard writes) and shows #tdBar. The results card shows the best run and a suggested author time (best run x 0.98). "Use as author time" copies it into #bldA when leaving. Back to editor (Esc, B or the button) restores the exact layout and the old dirty flag.
 - Account settings (Settings tab, #setAcct): change username (needs current password) and change password (old password, new twice). acName/acPw. Renaming moves the local per-user keys (dbx:<name>:...) to the new name.
-- Skid marks: pooled meshes (900). They fade from 7 s and vanish by 11 s, and are cleared whenever a new map is loaded (clearAll).
+- Skid marks: ONE InstancedMesh (SKN 8000, ring buffer) with per instance colour and opacity attributes (aCol, aOp via onBeforeCompile). They last 2 minutes (SK_END 120000) and fade over the last 10 s. They are cleared whenever a new map is loaded (clearAll).
+- Tune panel (#tune): only usable on the menu (mOpen) or in Donut Arena (donutOn, set by loadDonut and cleared by clearAll); tuneGate() hides the top bar Tune button otherwise. Nitro has NO overheat lock (removed again 2026-10-29).
 - Nitro bar and flame, Tune panel (closes when you click elsewhere), settings rows, resize, main frame loop (the last lines).
 
 Controls: W/A/S/D or arrows drive, Shift nitro, S while turning flicks the rear out, R or C restart (in build mode R rotates the piece), B build mode, Esc menu, number keys pick pieces in build mode. Touch pad appears on touch devices.
@@ -189,6 +190,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-29  Nitro overheat lock removed again (no cooldown). Drift marks now last 2 minutes (instanced mesh, 8000 marks). Tune panel redesigned and only available on the menu and in Donut Arena. Update log entries added. index.html only.
 2026-10-29  Removed online multiplayer (Online tab, WebSocket code, remote cars) from index.html and worker.js (Room class and /ws route), and wrangler.toml now deletes the Room Durable Object. Leaderboard refresh slowed from 20 to 40 seconds. Update log entries added. worker.js redeploy.
 2026-10-29  In game Updates tab: scrollable update log with a small picture and description per update, and an unread dot. Old updates back filled from this changelog. index.html only.
 2026-10-29  Community tab shows a small status line (signed-in name, game version, map counts) so a missing map can be diagnosed. Server list query uses LEFT JOIN so a map is never hidden by an account mismatch. worker.js redeploy.
@@ -598,6 +600,33 @@ span.pbtn.eqd{display:inline-block;border:0;color:var(--mut);padding:9px 0}
 .updc .ubody p{margin:7px 0 0;color:#c5c8cc;font-size:14px;line-height:1.5}
 .updc .unew{display:inline-block;margin-left:10px;padding:1px 8px;border-radius:2px;background:var(--acc);color:#fff;font:700 11px var(--hd);letter-spacing:.14em;vertical-align:2px}
 @media (max-width:640px){.updc{grid-template-columns:1fr}.updc .uimg{border-right:0;border-bottom:1px solid #ffffff10}}
+/* ---- v7: tune panel ---- */
+#tune{width:min(340px,calc(100% - 24px));padding:0;background:#14161af7;border:1px solid #ffffff26;border-radius:3px;box-shadow:0 12px 40px #000a;color:#e9eaec;max-height:calc(100vh - 90px);overflow:auto}
+#tune .th{display:flex;align-items:baseline;gap:12px;padding:14px 16px 12px;border-bottom:1px solid #ffffff1a}
+#tune .th b{font:italic 700 22px/1 var(--hd);letter-spacing:.06em;text-transform:uppercase;color:#fff}
+#tune .th b::before{content:'';display:inline-block;width:6px;height:15px;background:var(--acc);margin-right:9px;transform:skewX(-14deg);vertical-align:-1px}
+#tune .th span{flex:1;color:var(--mut);font:500 11px var(--hd);letter-spacing:.2em;text-transform:uppercase;text-align:right}
+#tune .tx{background:none;border:0;color:var(--mut);font-size:22px;line-height:1;padding:0 2px;border-radius:2px}
+#tune .tx:hover{color:#fff}
+#tune .tb{padding:4px 16px 2px}
+#tune label{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;margin:0;padding:11px 0 8px;border-bottom:1px solid #ffffff10}
+#tune label .tl{font:600 14px var(--hd);letter-spacing:.14em;text-transform:uppercase;color:#e9eaec}
+#tune label .tl small{display:block;margin-top:1px;font:400 12px var(--ui);letter-spacing:0;text-transform:none;color:var(--mut)}
+#tune label b{font:600 18px var(--hd);letter-spacing:.04em;color:#fff;font-variant-numeric:tabular-nums;text-align:right}
+#tune input[type=range]{grid-column:1/-1;-webkit-appearance:none;appearance:none;width:100%;height:20px;margin:4px 0 0;background:transparent;cursor:pointer}
+#tune input[type=range]::-webkit-slider-runnable-track{height:3px;background:linear-gradient(90deg,var(--acc) var(--f,50%),#ffffff26 var(--f,50%))}
+#tune input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:18px;margin-top:-7.5px;background:#e9eaec;border:0;border-radius:1px}
+#tune input[type=range]::-moz-range-track{height:3px;background:#ffffff26}
+#tune input[type=range]::-moz-range-progress{height:3px;background:var(--acc)}
+#tune input[type=range]::-moz-range-thumb{width:10px;height:18px;background:#e9eaec;border:0;border-radius:1px}
+#tune .tpre{display:flex;margin:14px 16px 4px;border:1px solid #ffffff2e;border-radius:3px;overflow:hidden}
+#tune .tpre button{flex:1;border:0;border-radius:0;background:none;color:var(--mut);padding:8px 6px;font:600 12.5px var(--hd);letter-spacing:.14em;text-transform:uppercase}
+#tune .tpre button+button{border-left:1px solid #ffffff2e}
+#tune .tpre button:hover{color:#fff}
+#tune .tpre button.on{background:#e9eaec;color:#0d0e10}
+#tune .tft{display:flex;justify-content:flex-end;padding:8px 16px 14px}
+#tune .trs{background:none;border:0;color:var(--mut);padding:0;font:600 11.5px var(--hd);letter-spacing:.16em;text-transform:uppercase;text-decoration:underline;cursor:pointer}
+#tune .trs:hover{color:#fff}
 </style>
 </head>
 <body>
@@ -717,8 +746,8 @@ for(const sx of[-1,1]){const hl=new THREE.SpotLight(0xfff1c9,5,85,.6,.7,1.2);hl.
   const bm=new THREE.Mesh(new THREE.PlaneGeometry(11,22).rotateX(-Math.PI/2),(beamMat=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(q),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.55})));
   bm.position.set(0,.22,12.4);bm.userData.beam=1;car.add(bm);beamDef=beamMat.clone()}
 let race={route:null},bots=[],paused=true,started=false,cf={x:0,z:0},slipI=0,skT=0,sl=null,spd=0,assist=true,nitro=100,c,pan={x:0,z:0},cH=0,cur=0,best=0,idle=0,shk=0,em=0;
-var nitoL=false; // nitro overheated: locked until the bar recovers to 30%
-function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;nitoL=false;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots();cpReset()}hideRes();cur=0;idle=0}
+var donutOn=false; // true only while Donut Arena is loaded (Tune is allowed there)
+function resetCar(){c={x:0,z:0,h:0,vx:0,vz:0,s:0,g:6,w:0};nitro=100;cH=0;cf.x=cf.z=0;if(race.route){Object.assign(race,{state:'count',cd:3.5,lapT:0,next:1,splits:[],laps:0,delta:null,t:0,rec:[],rt:0,anyPB:false,medalMsg:''});resetBots();cpReset()}hideRes();cur=0;idle=0}
 resetCar();
 const RAD=1.25;
 
@@ -836,7 +865,7 @@ function placeTile(kd,x,z,r,mat){
 }
 function place(x,z){if(tool==='cp1'||tool==='cp2'){addCp({x,z,o:rot%2,w:tool==='cp2'?2:1});return}if(tool==='paint'){paintAt(x,z);return}placeTile(tool,x,z,rot,curMat)}
 function paintAt(x,z){const b=blocks.find(q=>inFoot(q,x,z));if(b&&(b.mat||'')!==curMat)placeTile(b.k,b.x,b.z,b.rot,curMat)}
-function clearAll(){clearSkids();if(BLD&&(blocks.length||CPB.length))BLD.dirty=true;blocks.forEach(b=>S.remove(b.m));blocks=[];CPB.forEach(g=>S.remove(g.m));CPB.length=0;clearRG();if(sl){S.remove(sl);sl=null}rebuildBoxes()}
+function clearAll(){donutOn=false;clearSkids();if(BLD&&(blocks.length||CPB.length))BLD.dirty=true;blocks.forEach(b=>S.remove(b.m));blocks=[];CPB.forEach(g=>S.remove(g.m));CPB.length=0;clearRG();if(sl){S.remove(sl);sl=null}rebuildBoxes()}
 function sides(r){let a=[0,1],b=[1,0];for(let i=0;i<r;i++){a=[a[1],-a[0]];b=[b[1],-b[0]]}return[a,b]}
 // ---------- Route strings ----------
 // One token per road piece, walking from the start tile (the middle of the map, heading south).
@@ -940,11 +969,35 @@ rebuildBoxes();
 const tex=(()=>{const q=document.createElement('canvas');q.width=q.height=64;const g=q.getContext('2d'),r=g.createRadialGradient(32,32,2,32,32,32);
   r.addColorStop(0,'rgba(255,255,255,.9)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(q)})();
 const sh=new THREE.Mesh(new THREE.PlaneGeometry(3.6,4.2).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({map:tex,color:0x000000,transparent:true,opacity:.55,depthWrite:false}));S.add(sh);sh.visible=false;
-const skidM=new THREE.MeshBasicMaterial({color:0x0b0b0d,transparent:true,opacity:.4,depthWrite:false}),skidG=new THREE.PlaneGeometry(.4,.9).rotateX(-Math.PI/2),skids=[];let si=0;
-function skid(x,z,h,me){let m=skids[si];if(!m){m=new THREE.Mesh(skidG,skidM.clone());m.position.y=.15;S.add(m);skids[si]=m}const tm=me?trailMark():null;m.material.color.setHex(tm?tm.c:0x0b0b0d);m.material.opacity=tm?tm.o:.4;m.position.x=x;m.position.z=z;m.rotation.y=h;m.visible=true;m.userData.t=performance.now();m.userData.o=m.material.opacity;si=(si+1)%900}
-const SK_FADE=7000,SK_END=11000;
-function skidTick(){const n=performance.now();for(const m of skids){if(!m||!m.visible)continue;const a=n-m.userData.t;if(a>=SK_END){m.visible=false;continue}if(a>SK_FADE)m.material.opacity=m.userData.o*(1-(a-SK_FADE)/(SK_END-SK_FADE))}}
-function clearSkids(){for(const m of skids)if(m)m.visible=false;si=0}
+// Drift marks: one instanced mesh, so thousands can stay on the ground. They last 2 minutes and fade out over the last 10 seconds.
+const SKN=8000,SK_FADE=110000,SK_END=120000;
+const skidG=new THREE.PlaneGeometry(.4,.9).rotateX(-Math.PI/2),skidM=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,depthWrite:false});
+skidM.onBeforeCompile=sh=>{
+  sh.vertexShader=sh.vertexShader.replace(/void\s+main\s*\(\s*\)\s*\{/,'attribute float aOp;attribute vec3 aCol;varying float vOp;varying vec3 vCol;\nvoid main() {').replace('#include <begin_vertex>','#include <begin_vertex>\nvOp=aOp;vCol=aCol;');
+  sh.fragmentShader=sh.fragmentShader.replace(/void\s+main\s*\(\s*\)\s*\{/,'varying float vOp;varying vec3 vCol;\nvoid main() {').replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.rgb=vCol;diffuseColor.a*=vOp;');
+};
+const skOp=new THREE.InstancedBufferAttribute(new Float32Array(SKN),1),skCol=new THREE.InstancedBufferAttribute(new Float32Array(SKN*3),3);
+skidG.setAttribute('aOp',skOp);skidG.setAttribute('aCol',skCol);
+const skm=new THREE.InstancedMesh(skidG,skidM,SKN),sko=new THREE.Object3D(),skAge=new Float64Array(SKN),skO=new Float32Array(SKN),skC=new THREE.Color();
+skm.frustumCulled=false;S.add(skm);let si=0,skDirty=false,skLast=0;
+function skid(x,z,h,me){
+  const tm=me?trailMark():null;
+  sko.position.set(x,.15,z);sko.rotation.set(0,h,0);sko.updateMatrix();skm.setMatrixAt(si,sko.matrix);
+  skC.setHex(tm?tm.c:0x0b0b0d);skCol.setXYZ(si,skC.r,skC.g,skC.b);
+  const o=tm?tm.o:.4;skOp.setX(si,o);skO[si]=o;skAge[si]=performance.now();skDirty=true;si=(si+1)%SKN;
+}
+function skidTick(){
+  const n=performance.now();
+  if(skDirty){skDirty=false;skm.instanceMatrix.needsUpdate=skCol.needsUpdate=skOp.needsUpdate=true}
+  if(n-skLast<250)return;skLast=n;
+  let ch=false;const a=skOp.array;
+  for(let i=0;i<SKN;i++){
+    if(!skAge[i])continue;const age=n-skAge[i];
+    if(age>=SK_END){a[i]=0;skAge[i]=0;ch=true}else if(age>SK_FADE){a[i]=skO[i]*(1-(age-SK_FADE)/(SK_END-SK_FADE));ch=true}
+  }
+  if(ch)skOp.needsUpdate=true;
+}
+function clearSkids(){skOp.array.fill(0);skAge.fill(0);skOp.needsUpdate=true;si=0}
 const puffs=[];
 for(let i=0;i<160;i++){
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,color:dark?0xb4c0da:0xb4c0da}));
@@ -1079,10 +1132,8 @@ function drive(dt){
   const WA=[1,.5,0][OPT.drive||0],ER=[.1,.25,.4][OPT.drive||0];let hitN=null;
   const fr=race.state==='count',up=!fr&&(k.ArrowUp||k.KeyW),dn=!fr&&(k.ArrowDown||k.KeyS);
   const st=fr?0:(k.ArrowLeft||k.KeyA?1:0)-(k.ArrowRight||k.KeyD?1:0);
-  if(nitoL&&nitro>=30)nitoL=false;
-  const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up&&!nitoL;nitOn=nit;
+  const nit=(k.ShiftLeft||k.ShiftRight||k.Nitro)&&nitro>1&&up;nitOn=nit;
   nitro=nit&&!AD?Math.max(0,nitro-35*dt):Math.min(100,nitro+(AD?100:10)*dt);
-  if(nit&&nitro<=1&&!AD){nitoL=true;toast('Nitro overheated: wait for it to recover')}
   if(up)vf+=(P.power*(AD?1+AD*1.2:1)+(nit?30:0)*(AD?2:1))*dt;
   if(dn)vf-=(vf>0?20*(1-.6*Math.min(1,Math.abs(vl)/Math.max(Math.abs(vf),6))):16)*dt;
   vf-=vf*(AD?.85/(1+AD*.9):.85)*dt;if(vf<-10)vf=-10;
@@ -1267,21 +1318,29 @@ const P0=DRV[1];
 const PRE={Drifty:{grip:8.5,slide:.26,regrip:2.2,steer:3.1,stab:1.2,power:36},Balanced:P0,Grippy:{grip:12,slide:.1,regrip:5.5,steer:2.6,stab:3,power:34}};
 let P={...DRV[0]};try{Object.assign(P,JSON.parse(localStorage.getItem('dbx:tune3')||'{}'))}catch(e){}
 function setDrive(i){Object.assign(P,DRV[i]);syncTune()}
+const TUNE_HINT={grip:'How firmly the tyres hold the road',slide:'How easily the rear steps out',regrip:'How fast grip returns after a slide',steer:'How sharply the car turns',stab:'Pulls the car straight after a slide',power:'Engine acceleration'};
 const tp=$('#tune');
-function syncTune(){tp.querySelectorAll('label').forEach(r=>{const v=P[r.dataset.k];r.querySelector('input').value=v;r.querySelector('b').textContent=String(+(+v).toFixed(2))});try{localStorage.setItem('dbx:tune3',JSON.stringify(P))}catch(e){}}
+tp.innerHTML='<div class="th"><b>Handling</b><span>Saved on this device</span><button class="tx" aria-label="Close">&times;</button></div><div class="tb"></div><div class="tpre"></div><div class="tft"><button class="trs">Reset to default</button></div>';
+const tb=tp.querySelector('.tb'),tpre=tp.querySelector('.tpre');
+function syncTune(){
+  tb.querySelectorAll('label').forEach(r=>{const v=P[r.dataset.k],i=r.querySelector('input');i.value=v;r.querySelector('b').textContent=String(+(+v).toFixed(2));i.style.setProperty('--f',((v-i.min)/(i.max-i.min)*100)+'%')});
+  tpre.querySelectorAll('button').forEach(b=>{const q=PRE[b.textContent];b.classList.toggle('on',TUNE.every(t=>Math.abs(q[t[0]]-P[t[0]])<1e-6))});
+  try{localStorage.setItem('dbx:tune3',JSON.stringify(P))}catch(e){}
+}
 TUNE.forEach(([key,label,mn,mx,st])=>{
   const r=document.createElement('label');r.dataset.k=key;
-  r.innerHTML=`<span>${label}</span><input type="range" min="${mn}" max="${mx}" step="${st}"><b></b>`;
-  const i=r.querySelector('input');i.oninput=()=>{P[key]=+i.value;syncTune()};i.onpointerup=()=>i.blur();tp.append(r);
+  r.innerHTML='<span class="tl">'+label+'<small>'+(TUNE_HINT[key]||'')+'</small></span><b></b><input type="range" min="'+mn+'" max="'+mx+'" step="'+st+'">';
+  const i=r.querySelector('input');i.oninput=()=>{P[key]=+i.value;syncTune()};i.onpointerup=()=>i.blur();tb.append(r);
 });
-const pre=document.createElement('div');pre.className='pre';
-for(const nm in PRE){const b=document.createElement('button');b.textContent=nm;b.onclick=()=>{Object.assign(P,PRE[nm]);syncTune();b.blur()};pre.append(b)}
-tp.append(pre);syncTune();
+for(const nm in PRE){const b=document.createElement('button');b.textContent=nm;b.onclick=()=>{Object.assign(P,PRE[nm]);syncTune();b.blur()};tpre.append(b)}
+tp.querySelector('.tx').onclick=()=>hideTune();
+tp.querySelector('.trs').onclick=e=>{Object.assign(P,DRV[0]);syncTune();e.target.blur()};
+syncTune();
 $('#bTune').onclick=()=>tp.classList.toggle('hide');
 function loadDonut(){
   clearAll();race={route:null};
   for(const [x,z,r] of [[-12,-12,0],[36,-12,3],[36,36,2],[-12,36,1]])placeTile('wide',x,z,r);
-  resetCar();
+  donutOn=true;resetCar();
 }
 // ---------- menu, options, bots, ghost, finish ----------
 const OPT={bots:2,diff:0,laps:2,drive:0,zoom:1,shadow:1,sound:1,assist:1,ghost:1,pix:.6};
@@ -1979,6 +2038,9 @@ $('#bTest').onclick=testDrive;$('#tdExit').onclick=tdExit;$('#tdRestart').onclic
 // {id:'unique-id', date:'YYYY-MM-DD', title:'Short title', art:'kind', text:'Plain description for players.'}
 // art picks the small picture drawn by updArt() below. Add a new case there if none fits. Do not use apostrophes in text.
 const UPDATES=[
+ {id:'marks-2min',date:'2026-10-29',title:'Drift marks last 2 minutes',art:'marks',text:'Your tyre marks now stay on the ground for two full minutes and only fade out over the last ten seconds, instead of disappearing after about ten seconds.'},
+ {id:'tune-ui',date:'2026-10-29',title:'New Tune panel',art:'tune',text:'The Tune panel has a cleaner look with a short explanation under each slider, a highlighted preset, a Reset button and a close button. Tuning is now only available on the menu and in Donut Arena, so races are the same for everyone.'},
+ {id:'nitro-free',date:'2026-10-29',title:'Nitro cooldown removed',art:'nitro',text:'The overheat lock on nitro is gone again. You can use the bar all the way down to empty and start using it again as soon as it refills a little.'},
  {id:'no-online',date:'2026-10-29',title:'Online races removed',art:'solo',text:'Online rooms are gone to keep the game fast and free to run. Solo races with bots, the Grand Prix, the builder, community maps and the leaderboards all work as before.'},
  {id:'lb-40',date:'2026-10-29',title:'Calmer leaderboard refresh',art:'lb',text:'The leaderboard now refreshes every 40 seconds instead of 20, which lets about twice as many people play at the same time.'},
  {id:'update-log',date:'2026-10-29',title:'Update log',art:'log',text:'This page. Every new change to Drift Box is added here with a small picture and a short description, newest at the top. A dot on the Updates tab shows when there is something you have not read yet.'},
@@ -2003,6 +2065,8 @@ function updArt(k){
   if(k==='log')b=[0,1,2].map(i=>'<rect x="46" y="'+(26+i*34)+'" width="148" height="26" fill="#101215" stroke="#fff" stroke-opacity=".14"/><rect x="54" y="'+(33+i*34)+'" width="12" height="12" fill="'+(i?M:A)+'"/>'+bar(74,34+i*34,'70',T,.85)+bar(74,44+i*34,'100',M,.5)).join('');
   else if(k==='lb')b=[0,1,2,3].map(i=>'<rect x="46" y="'+(26+i*26)+'" width="148" height="20" fill="#101215" stroke="#fff" stroke-opacity=".14"/><text x="56" y="'+(40+i*26)+'" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="13" fill="'+(i?M:A)+'">'+(i+1)+'</text>'+bar(76,33+i*26,60-i*8,T,.8)+bar(160,33+i*26,24,M,.6)).join('')+'<text x="218" y="134" text-anchor="end" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="15" letter-spacing="2" fill="'+A+'">40 S</text>';
   else if(k==='solo')b='<path d="M40 110V50H120V90H200V40" fill="none" stroke="#1f2227" stroke-width="18"/><path d="M40 110V50H120V90H200V40" fill="none" stroke="'+T+'" stroke-width="2" stroke-dasharray="4 4"/><rect x="32" y="98" width="16" height="22" rx="3" fill="#2b7be0"/>';
+  else if(k==='tune')b=[['Grip',60],['Drift',34],['Power',78]].map((q,i)=>'<text x="40" y="'+(40+i*34)+'" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="12" letter-spacing="2" fill="'+T+'">'+q[0].toUpperCase()+'</text><rect x="40" y="'+(48+i*34)+'" width="160" height="3" fill="#fff" opacity=".2"/><rect x="40" y="'+(48+i*34)+'" width="'+(1.6*q[1])+'" height="3" fill="'+A+'"/><rect x="'+(38+1.6*q[1])+'" y="'+(42+i*34)+'" width="6" height="15" fill="'+T+'"/>').join('');
+  else if(k==='marks')b='<path d="M30 120C60 120 80 80 110 70S170 70 210 30" fill="none" stroke="#0b0b0d" stroke-width="5" stroke-dasharray="10 3" opacity=".9"/><path d="M40 128C70 128 90 92 118 82S176 82 218 42" fill="none" stroke="#0b0b0d" stroke-width="5" stroke-dasharray="10 3" opacity=".9"/><text x="120" y="28" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="20" letter-spacing="3" fill="'+T+'">2:00</text>';
   else if(k==='nitro'){b='<rect x="34" y="62" width="172" height="26" fill="#05080e" stroke="'+T+'" stroke-width="2"/>';for(let i=0;i<8;i++)b+='<rect x="38" y="66" width="'+15+'" height="18" fill="'+(i<2?'#ff4a3a':'#4f9fc4')+'" opacity="'+(i<2?1:.25)+'" transform="translate('+(i*20)+' 0)"/>';b+='<text x="120" y="112" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="18" letter-spacing="3" fill="#ff4a3a">HOT</text>'}
   else if(k==='surf')b=[['Road',R],['Ice','#a8d8ec'],['Sand','#d8c27a'],['Mud','#5b4129']].map((q,i)=>'<rect x="'+(18+i*52)+'" y="44" width="46" height="62" fill="'+q[1]+'"/><text x="'+(41+i*52)+'" y="124" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="'+M+'">'+q[0]+'</text>').join('');
   else if(k==='comm'){b='<path d="M40 100 L40 50 L110 50 L110 80 L170 80 L170 40 L200 40" fill="none" stroke="#1f2227" stroke-width="16"/><path d="M40 100 L40 50 L110 50 L110 80 L170 80 L170 40 L200 40" fill="none" stroke="'+T+'" stroke-width="2" stroke-dasharray="4 4"/>';for(let i=0;i<5;i++)b+='<text x="'+(62+i*24)+'" y="130" text-anchor="middle" font-size="18" fill="'+(i<4?'#d6b85a':'#5b6068')+'">★</text>'}
@@ -2064,7 +2128,7 @@ function commUI(){
   let h='<div class="sech">Your maps</div>'+(mine.length?mine.map(commRow).join(''):'<div class="lbn">You have no maps yet. Save keeps a map as your project; press Publish here when it is ready.</div>');
   if(picks.length)h+='<div class="sech">Admin picks</div>'+picks.map(commRow).join('');
   h+='<div class="sech">'+(COMM.sort==='new'?'Newest':'Top rated')+'</div>'+(rest.length?rest.map(commRow).join(''):'<div class="lbn">No maps from other players yet.</div>');
-  h+='<div class="lbn" style="opacity:.6;font-size:12px">Signed in as '+esc(SESS?SESS.name:'?')+' \u00b7 game version 2026-10-29 (l) \u00b7 '+COMM.maps.length+' map'+(COMM.maps.length===1?'':'s')+' from the server, '+mine.length+' yours</div>';
+  h+='<div class="lbn" style="opacity:.6;font-size:12px">Signed in as '+esc(SESS?SESS.name:'?')+' \u00b7 game version 2026-10-29 (m) \u00b7 '+COMM.maps.length+' map'+(COMM.maps.length===1?'':'s')+' from the server, '+mine.length+' yours</div>';
   el.innerHTML=h;
 }
 $('#comm').onclick=async e=>{
@@ -2509,13 +2573,15 @@ function nbarTick(){
   const show=!paused&&mode==='drive';
   if(show!==nbShow){nbShow=show;nbEl.style.display=show?'':'none'}
   if(!show)return;
-  const v=Math.round(nitro),L=nitoL?1:0;
-  if(v!==nbN||L!==nbL){nbN=v;nbL=L;nfEl.style.width=v+'%';npEl.textContent=L?'HOT':v;nbEl.classList.toggle('low',v<20||!!L)}
+  const v=Math.round(nitro);
+  if(v!==nbN){nbN=v;nfEl.style.width=v+'%';npEl.textContent=v;nbEl.classList.toggle('low',v<20)}
   if(nitOn!==nbAct){nbAct=nitOn;nbEl.classList.toggle('act',nitOn)}
 }
 
 // ---------- the Tune panel closes when you click elsewhere or leave ----------
 function hideTune(){$('#tune').classList.add('hide')}
+// The Tune button only exists on the menu (home page) and in Donut Arena.
+function tuneGate(){const ok=mOpen||(donutOn&&mode==='drive'),b=$('#bTune');if(b.classList.contains('hide')===ok)b.classList.toggle('hide',!ok);if(!ok&&!tp.classList.contains('hide'))hideTune()}
 addEventListener('pointerdown',e=>{
   const t=$('#tune');if(t.classList.contains('hide'))return;
   if(e.target.closest&&e.target.closest('#tune,#bTune,#mTune,#sTune'))return;
@@ -2563,7 +2629,7 @@ let last=performance.now();
   requestAnimationFrame(frame);
   const dt=Math.min(.033,(t-last)/1000);last=t;
   if(paused)idleCam();else if(mode==='drive'){drive(dt);raceTick(dt);botsTick(dt)}else buildCam(dt);
-  drawGauge();nbarTick();flameTick(dt);audioTick();skidTick();
+  drawGauge();nbarTick();flameTick(dt);audioTick();skidTick();tuneGate();
   {const fx=Math.round((mode==='drive'?cf.x:pan.x)/4)*4,fz=Math.round((mode==='drive'?cf.z:pan.z)/4)*4;sun.position.set(fx-70,45,fz-45);sun.target.position.set(fx,0,fz)}
   updPuffs(dt);if(hatSpin)hatG.rotation.y+=hatSpin*dt;
   car.position.set(c.x,c.y||0,c.z);car.scale.setScalar(1+(c.y||0)*.05);car.rotation.y=c.h;car.rotation.z=c.rl||0;car.rotation.x=c.pt||0;sh.position.set(c.x,.16,c.z);sh.rotation.y=c.h;fw.forEach(p=>p.rotation.y=c.s*.5);
