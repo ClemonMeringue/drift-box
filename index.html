@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-28 (g)
+Last updated: 2026-10-28 (h)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - This block exists so a fresh AI that is given only index.html knows the whole project.
@@ -68,6 +68,7 @@ If you need the exact source of worker.js or any other server file and it is not
 - Scene: Three.js scene, night look, island (grass, sand beach, sea) that grows as pieces are placed, instanced trees (hidden under track pieces), toy cube car with headlights and a headlight beam plane.
 - Track pieces (object K): each has collision "parts" (boxes and arc posts). TILE = 24 units. Pieces: straight, corner, wide corner (48), boost, chicane, oil (slick), jump, gravel, slalom, gate, open road, half border (edge), wide straight, narrow left/right (join 1-wide and 2-wide road), ice, nitro pad (refill), rumble, squeeze, drift zone.
 - Course strings: one letter per tile, starting at the origin heading south (+z). S straight, L/R corner left/right, B boost, C chicane, O oil, J jump, G gravel, M slalom, T gate, N open road, I ice, P nitro pad, U rumble, Q squeeze, D drift zone, E/F half border (left/right side). Route validity is checked by loadCourse and, for the owner builder, routeFromBlocks.
+- Surface materials: every piece can be Road, Ice, Sand or Mud (block.mat '' / 'i' / 's' / 'm'). In route strings a lowercase letter directly after a piece token sets it (e.g. SLiSs). parseRoute reads it into element.mat, loadCourse passes it to placeTile, routeFromBlocks writes it (both halves of a 2-lane row must match). The raw builder layout (blocks JSON) stores mat per block. Physics: the zone loop in drive() checks b.mat with inFoot(); ice = zi, sand = zg (same as gravel), mud = zm (more drag and less grip). Visual: build(kind,ghost,mat) recolours the road. Builder: material buttons (curMat) plus a Paint tool. The server only needed its track-string regex widened (letters i s m, length 400); no database change.
 - Driving: drive(dt) is the physics (grip, slide, steering with momentum, drift detection, nitro, zones such as boost/oil/gravel/ice/rumble/drift, jump, wall collisions, chase camera). Tuning object P, presets Drifty/Balanced/Grippy, saved in localStorage.
 - Race logic: countdown, tile index checkpoints (race.map), laps, splits, delta, PB saving, ghost recording and playback, results card, confetti.
 - Bots: up to 3 (Rex, Vega, Nyx), follow tile targets, drift visually, collide with the player.
@@ -188,6 +189,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-28  Surface materials (ice, sand, mud) on any piece, with a Paint tool in the builder. worker.js redeploy only (regex).
 2026-10-28  Community maps: Save now only keeps a project; Publish/Unpublish is a separate button. New 'Your maps' list always shows a player's own maps. Server: migrate-5.sql, worker.js redeploy.
 2026-10-28  Fixed laps not finishing on tracks with jumps or 2-wide roads (see section 4, race progress). Players can rebind keys in Settings. Community maps: Community tab, player builder and save, 1-5 star ratings, Admin picks, per-map leaderboards. Server: migrate-4.sql, worker.js redeploy.
 2026-10-28  Race tracks can now widen and narrow: narrow left/right pieces work in both directions, plus a new Wide straight piece, wide corners and rows of two pieces side by side. New route letters W X Y Z V H K A (worker.js regex updated, redeploy it). Clearer builder error messages. No database change.
@@ -483,6 +485,7 @@ body.bldg .bar{top:calc(52px + env(safe-area-inset-top,0px))}
 #tools button{width:30px;height:30px;padding:0;border:1px solid transparent;background:none;border-radius:2px;color:#9da3ab;display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 12px var(--hd);letter-spacing:.12em;text-transform:uppercase}
 #tools button svg{width:19px;height:19px;flex:none}
 #tools button:hover{background:#ffffff12;color:#fff}
+#tools #matGrp button{width:auto;padding:0 8px;font:600 12px var(--ui,inherit)}
 #tools button.on{background:#e9eaec;color:#0d0e10}
 #tools button.tdb{width:auto;padding:0 11px 0 8px;background:var(--acc);color:#fff}
 #tools button.tdb:hover{filter:brightness(1.1);background:var(--acc)}
@@ -589,7 +592,7 @@ span.pbtn.eqd{display:inline-block;border:0;color:var(--mut);padding:9px 0}
   <button id="bMenu">Menu</button>
   <button id="mDrive" class="on">Drive</button>
   <button id="mBuild">Build</button>
-  <div id="tools" class="hide"><div id="pieces"></div><div class="grp"><button id="bRot" title="Rotate (R)"></button><button id="bTest" class="tdb" title="Drive this track from start to finish"></button><button id="bClr" title="Clear all pieces"></button></div><span id="toolName"></span></div>
+  <div id="tools" class="hide"><div id="pieces"></div><div class="grp" id="matGrp"></div><div class="grp"><button id="bRot" title="Rotate (R)"></button><button id="bTest" class="tdb" title="Drive this track from start to finish"></button><button id="bClr" title="Clear all pieces"></button></div><span id="toolName"></span></div>
   <div id="courses" class="hide"><button data-c="SSLSBSLSOSLSCSLS">Speedway</button><button data-c="SBSLLSCSRRSOSLLSBS">Switchbacks</button><button data-c="SLCRBLOR">Staircase</button><button data-c="SSOLSBSLSSCSSLSCSLBS">Grand Prix</button><button data-c="donut">Donut</button><button data-c="random">Random</button></div>
   <button id="bAssist" class="on hide">Assist: on</button>
   <button id="bSnd" class="on hide">Sound: on</button>
@@ -739,11 +742,14 @@ function inFoot(b,x,z,m=0){let lx=x-b.x,lz=z-b.z;for(let i=0;i<b.rot;i++){const 
 function edgeRot(h,ch){for(let r=0;r<4;r++){if(r%2!==(h[0]?1:0))continue;let w=[1,0];for(let i=0;i<r;i++)w=[w[1],-w[0]];const c=h[0]*w[1]-h[1]*w[0];if((c>0)===(ch==='E'))return r}return h[0]?1:0}
 const TILE=24,ringGeoW=new THREE.RingGeometry(.5,47.5,72,1,Math.PI/2,Math.PI/2),ringGeo=new THREE.RingGeometry(.5,23.5,48,1,Math.PI/2,Math.PI/2),roadGeo=new THREE.BoxGeometry(TILE,.1,TILE),lineGeo=new THREE.BoxGeometry(.3,.02,TILE);
 const mRoad=new THREE.MeshLambertMaterial({color:0x4b5565}),mBar=new THREE.MeshLambertMaterial({color:0xe8590c}),mLine=new THREE.MeshLambertMaterial({color:0xe9edf2}),mPad=new THREE.MeshBasicMaterial({color:0x19c9f5}),mOil=new THREE.MeshPhongMaterial({color:0x07090c,specular:0x88aaff,shininess:140}),mPost=new THREE.MeshLambertMaterial({color:0xffd43b}),mGrav=new THREE.MeshLambertMaterial({color:0x8a6b3f}),mRamp=new THREE.MeshLambertMaterial({color:0xffd43b}),mIce=new THREE.MeshPhongMaterial({color:0xbfe9ff,specular:0xffffff,shininess:120}),mPadG=new THREE.MeshBasicMaterial({color:0x3be07a}),mDrift=new THREE.MeshLambertMaterial({color:0x5b3fc4}),mDriftL=new THREE.MeshLambertMaterial({color:0xb9a6ff});
-function build(kind,ghost){
+// Surface materials: any piece can be Road (default), Ice, Sand or Mud. In a route string a lowercase letter after a piece sets it (i ice, s sand, m mud).
+const MATK={i:'Ice',s:'Sand',m:'Mud'},MATM={i:new THREE.MeshPhongMaterial({color:0xa8d8ec,specular:0xffffff,shininess:90}),s:new THREE.MeshLambertMaterial({color:0xd8c27a}),m:new THREE.MeshLambertMaterial({color:0x5b4129})};
+var curMat='';
+function build(kind,ghost,mat){
   const g=new THREE.Group(),o=ghost?{transparent:true,opacity:.5}:{};
   const mk=m=>ghost?new THREE.MeshLambertMaterial({color:m.color,...o}):m;
-  const kd=K[kind],sz=kd.size||TILE;if(kd.shape){const m0=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(kd.shape.map(q=>new THREE.Vector2(q[0],-q[1])))).rotateX(-Math.PI/2),mk(mRoad));m0.position.y=.06;g.add(m0)}else{const r=new THREE.Mesh(kd.ring?(kd.size?ringGeoW:ringGeo):roadGeo,mk(mRoad));if(kd.ring){r.rotation.x=-Math.PI/2;r.position.set(sz/2,.06,sz/2)}else r.position.y=.05;g.add(r)}
-  if(K[kind].line){const l=new THREE.Mesh(lineGeo,mk(mLine));l.position.y=.11;g.add(l)}
+  const kd=K[kind],sz=kd.size||TILE;if(kd.shape){const m0=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(kd.shape.map(q=>new THREE.Vector2(q[0],-q[1])))).rotateX(-Math.PI/2),mk(MATM[mat]||mRoad));m0.position.y=.06;g.add(m0)}else{const r=new THREE.Mesh(kd.ring?(kd.size?ringGeoW:ringGeo):roadGeo,mk(MATM[mat]||mRoad));if(kd.ring){r.rotation.x=-Math.PI/2;r.position.set(sz/2,.06,sz/2)}else r.position.y=.05;g.add(r)}
+  if(K[kind].line&&!mat){const l=new THREE.Mesh(lineGeo,mk(mLine));l.position.y=.11;g.add(l)}
   if(kind==='boost'){const p=new THREE.Mesh(new THREE.BoxGeometry(10,.04,8),mk(mPad));p.position.y=.1;g.add(p);for(const z of[-2.4,0,2.4]){const q=new THREE.Mesh(new THREE.BoxGeometry(7,.05,.7),mk(mLine));q.position.set(0,.13,z);g.add(q)}}
   if(kind==='slick'){const o=new THREE.Mesh(new THREE.CylinderGeometry(7,7,.04,32),mk(mOil));o.position.y=.1;g.add(o)}
   if(kind==='gravel'){const q=new THREE.Mesh(new THREE.BoxGeometry(22,.05,24),mk(mGrav));q.position.y=.11;g.add(q)}
@@ -786,9 +792,9 @@ function cpCross(g,x0,z0,x1,z1){
 }
 function syncGhost(){
   if(ghost){S.remove(ghost);ghost=null}
-  if(mode!=='build'||tool==='erase')return;
+  if(mode!=='build'||tool==='erase'||tool==='paint')return;
   if(tool==='cp1'||tool==='cp2'){ghost=gateMesh({x:gx,z:gz,o:rot%2,w:tool==='cp2'?2:1},true);S.add(ghost);return}
-  ghost=build(tool,true);ghost.rotation.y=rot*Math.PI/2;ghost.position.set(gx,0,gz);S.add(ghost);
+  ghost=build(tool,true,curMat);ghost.rotation.y=rot*Math.PI/2;ghost.position.set(gx,0,gz);S.add(ghost);
 }
 function rebuildBoxes(){
   boxes=[];
@@ -809,12 +815,13 @@ function erase(x,z){
   const i=blocks.findIndex(b=>inFoot(b,x,z));
   if(i>=0){S.remove(blocks[i].m);blocks.splice(i,1);rebuildBoxes();if(BLD)BLD.dirty=true}
 }
-function placeTile(kd,x,z,r){
-  erase(x,z);
-  const m=build(kd);m.position.set(x,0,z);m.rotation.y=r*Math.PI/2;S.add(m);m.traverse(o=>{if(o.isMesh)o.castShadow=o.receiveShadow=true});
-  blocks.push({k:kd,x,z,rot:r,m,half:K[kd].half||12});rebuildBoxes();if(BLD)BLD.dirty=true;
+function placeTile(kd,x,z,r,mat){
+  mat=MATM[mat]?mat:'';erase(x,z);
+  const m=build(kd,false,mat);m.position.set(x,0,z);m.rotation.y=r*Math.PI/2;S.add(m);m.traverse(o=>{if(o.isMesh)o.castShadow=o.receiveShadow=true});
+  blocks.push({k:kd,x,z,rot:r,mat,m,half:K[kd].half||12});rebuildBoxes();if(BLD)BLD.dirty=true;
 }
-function place(x,z){if(tool==='cp1'||tool==='cp2'){addCp({x,z,o:rot%2,w:tool==='cp2'?2:1});return}placeTile(tool,x,z,rot)}
+function place(x,z){if(tool==='cp1'||tool==='cp2'){addCp({x,z,o:rot%2,w:tool==='cp2'?2:1});return}if(tool==='paint'){paintAt(x,z);return}placeTile(tool,x,z,rot,curMat)}
+function paintAt(x,z){const b=blocks.find(q=>inFoot(q,x,z));if(b&&(b.mat||'')!==curMat)placeTile(b.k,b.x,b.z,b.rot,curMat)}
 function clearAll(){clearSkids();if(BLD&&(blocks.length||CPB.length))BLD.dirty=true;blocks.forEach(b=>S.remove(b.m));blocks=[];CPB.forEach(g=>S.remove(g.m));CPB.length=0;clearRG();if(sl){S.remove(sl);sl=null}rebuildBoxes()}
 function sides(r){let a=[0,1],b=[1,0];for(let i=0;i<r;i++){a=[a[1],-a[0]];b=[b[1],-b[0]]}return[a,b]}
 // ---------- Route strings ----------
@@ -825,7 +832,7 @@ function sides(r){let a=[0,1],b=[1,0];for(let i=0;i<r;i++){a=[a[1],-a[0]];b=[b[1
 // routeStep() is the single source of truth: it says which pieces a token places and where the road goes next.
 // Both loadCourse (string to pieces) and routeFromBlocks (pieces to string) use it, so they always agree.
 const KIND1={S:'straight',B:'boost',C:'chicane',O:'slick',J:'jump',G:'gravel',M:'slalom',T:'gate',N:'open',I:'ice',P:'refill',U:'rumble',Q:'squeeze',D:'drift',E:'edge',F:'edge'};
-const LANES='SBCOJGMTNIPUQDEF',ROUTE_RX=/^[SLRBCOJGMTNIPUQDEFWXYZHKVA]+$/;
+const LANES='SBCOJGMTNIPUQDEF',ROUTE_RX=/^[SLRBCOJGMTNIPUQDEFWXYZHKVAism]+$/;
 const vL=h=>[h[1],-h[0]],vR=h=>[-h[1],h[0]],rotZ=v=>v[0]===0?(v[1]>0?0:2):(v[0]>0?1:3),axX=r=>[[1,0],[0,-1],[-1,0],[0,1]][r];
 const dot2=(a,b)=>a[0]*b[0]+a[1]*b[1];
 const cornerRot=(h,h2)=>{const a=[-h[0],-h[1]];for(let r=0;r<4;r++){const q=sides(r);if(q.some(v=>v[0]===a[0]&&v[1]===a[1])&&q.some(v=>v[0]===h2[0]&&v[1]===h2[1]))return r}return 0};
@@ -866,6 +873,7 @@ function parseRoute(str){
     const t=str[i];let lanes=null;
     if(t==='A'){lanes=str.slice(i+1,i+3);if(lanes.length<2){ok=false;break}i+=2}
     const el=routeStep(st,t,lanes);if(!el){ok=false;break}
+    if(MATK[str[i+1]]){el.mat=str[i+1];i++}
     els.push(el);st=el.st2;
   }
   let res=null;
@@ -881,7 +889,7 @@ function loadCourse(str,cps){
   clearAll();const P=parseRoute(str);
   if(!P){race={route:null};toast('That track layout is not valid');return}
   const route=P.els.map(e=>({...e}));
-  P.els.forEach(e=>e.pieces.forEach(p=>placeTile(p.kind,p.x,p.z,p.rot)));
+  P.els.forEach(e=>e.pieces.forEach(p=>placeTile(p.kind,p.x,p.z,p.rot,e.mat)));
   let sv=null;try{sv=JSON.parse(localStorage.getItem(pk(str)))}catch(e){}
   race={route,map:P.map,end:P.end,closed:P.closed,key:str,best:sv?sv.t:Infinity,bestS:sv?sv.s:null,gh:ghLoad(str),last:null,delta:null,laps:0,lapT:0,next:1,splits:[],state:'count',cd:3.5,bigT:0,t:0,rec:[],rt:0,anyPB:false};
   sl=new THREE.Group();const g0=makeFinish();g0.position.set(0,0,-11.5);sl.add(g0);sl.userData.lamps=g0.userData.lamps;
@@ -1013,9 +1021,11 @@ const PIECES=[
  [['chicane','Chicane','<path d="M9 3c0 6 6 6 6 9s-6 3-6 9"/>'],['slalom','Slalom','<circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>'],['gate','Gate','<path d="M4 6v14M20 6v14M4 9h16"/>'],['jump','Jump','<path d="M3 19h18M3 19l12-9v9"/>'],['rumble','Rumble strips','Bumpy strips that slow you a little','<path d="M5 6h14M5 10h14M5 14h14M5 18h14"/>']],
  [['boost','Boost','<path d="M6 10l6-5 6 5M6 18l6-5 6 5"/>'],['refill','Nitro pad','Refills nitro','<circle cx="12" cy="12" r="7"/><path d="M12 8.5v7M8.5 12h7"/>'],['drift','Drift zone','Low grip. Sliding here charges nitro.','<path d="M5 20c0-8 6-8 9-11s3-5 5-5M9 21c0-6 4-6 7-8"/>'],['slick','Oil','<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>'],['gravel','Gravel','<circle cx="7" cy="8" r="1.3"/><circle cx="14" cy="6" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="10" cy="13" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>'],['ice','Ice','Very slippery','<path d="M12 3v18M4.5 7.5l15 9M4.5 16.5l15-9"/>']],
  [['cp1','Checkpoint','One tile wide. Click on the join between two track tiles. R turns it.','<path d="M6 21V4M6 5h12l-3 4 3 4H6"/>'],['cp2','Wide checkpoint','Two tiles wide, for wide parts of a track.','<path d="M4 21V4M20 21V4M4 5h16"/><path d="M8 12h8" stroke-dasharray="2 2"/>']],
- [['erase','Erase','<path d="M6 6l12 12M18 6L6 18"/>']]
+ [['paint','Paint surface','Click a piece to change it to the surface picked (Road, Ice, Sand or Mud)','<path d="M5 19c3 0 4-1 4-3a2.2 2.2 0 0 1 4.4 0c0 2-2 3-4.4 3zM11.5 13.5L19 5l1 1-6.5 8.5"/>'],['erase','Erase','<path d="M6 6l12 12M18 6L6 18"/>']]
 ];
 $('#pieces').innerHTML=PIECES.map(g=>'<div class="grp">'+g.map(a=>{const t=a[0],n=a[1],p=a[a.length-1],h=a.length>3?a[2]:'';return '<button data-t="'+t+'" title="'+n+(h?' - '+h:'')+'" aria-label="'+n+'">'+ICO(p)+'</button>'}).join('')+'</div>').join('');
+$('#matGrp').innerHTML=[['','Road'],['i','Ice'],['s','Sand'],['m','Mud']].map(a=>'<button data-mat="'+a[0]+'" title="Surface: '+a[1]+'. New pieces use this surface; use the Paint tool to change pieces already placed."'+(a[0]===''?' class="on"':'')+'>'+a[1]+'</button>').join('');
+document.querySelectorAll('[data-mat]').forEach(b=>b.onclick=()=>{curMat=b.dataset.mat;document.querySelectorAll('[data-mat]').forEach(x=>x.classList.toggle('on',x===b));syncGhost()});
 $('#bRot').innerHTML=ICO('<path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5"/>');
 $('#bClr').innerHTML=ICO('<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/>');
 $('#bTest').innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg><span>Test drive</span>';
@@ -1043,7 +1053,7 @@ cv.addEventListener('pointermove',e=>{if(mode==='build'&&aim(e)){[gx,gz]=snapP(p
 cv.addEventListener('pointerdown',e=>{
   if(mode!=='build'||e.button!==0||!aim(e))return;
   [gx,gz]=snapP(pt.x,pt.z);
-  race={route:null};clearRG();closeBots();tool==='erase'?erase(pt.x,pt.z):place(gx,gz);
+  race={route:null};clearRG();closeBots();tool==='erase'?erase(pt.x,pt.z):tool==='paint'?paintAt(pt.x,pt.z):place(gx,gz);
 });
 cv.addEventListener('contextmenu',e=>{e.preventDefault();if(mode==='build'&&aim(e)){race={route:null};clearRG();closeBots();erase(pt.x,pt.z)}});
 
@@ -1068,8 +1078,9 @@ function drive(dt){
     c.off=off?(c.off||0)+dt:0;
     if(c.off>.6){toast('You left the track: restarting');resetCar();return}
   }
-  let zb=0,zs=0,zg=0,zi=0,zr=0,zu=0,zd=0;
+  let zb=0,zs=0,zg=0,zi=0,zr=0,zu=0,zd=0,zm=0;
   for(const b of blocks){
+    if(b.mat&&inFoot(b,c.x,c.z)){if(b.mat==='i')zi=1;else if(b.mat==='s')zg=1;else if(b.mat==='m')zm=1}
     if(!ZK[b.k])continue;
     let lx=c.x-b.x,lz=c.z-b.z;
     for(let i=0;i<b.rot;i++){const t=lx;lx=-lz;lz=t}
@@ -1084,13 +1095,13 @@ function drive(dt){
   }
   if(zb){vf+=45*dt;shk=Math.max(shk,.1)}
   if(zs){if(!c.oil){c.oil=1;c.w+=(Math.random()<.5?-1:1)*(4+Math.random()*2);vl+=(Math.random()-.5)*8}vf-=vf*.25*dt}else c.oil=0;
-  if(zg)vf-=vf*1.1*dt;
+  if(zg)vf-=vf*1.1*dt;if(zm)vf-=vf*1.9*dt;
   if(zr)nitro=Math.min(100,nitro+60*dt);
   if(zu&&Math.hypot(vf,vl)>8){vf-=vf*.3*dt;shk=Math.max(shk,.12)}
   if(zd&&slipI>.25)nitro=Math.min(100,nitro+16*dt);
   // eased steering, grip is lost fast but returns gradually
   c.s+=(st-c.s)*Math.min(1,dt*(st?8:4));
-  const gT=Math.max(.7,P.grip+AD*3-Math.min(P.grip*.58,Math.abs(c.s*vf)*P.slide)-(dn&&vf>10&&st?3.2:0)-(up&&st&&vf>16?1.4:0)-(zs?7:0)-(zg?2.5:0)-(zi?7.5:0)-(zd?3.2:0));
+  const gT=Math.max(.7,P.grip+AD*3-Math.min(P.grip*.58,Math.abs(c.s*vf)*P.slide)-(dn&&vf>10&&st?3.2:0)-(up&&st&&vf>16?1.4:0)-(zs?7:0)-(zg?2.5:0)-(zm?4.5:0)-(zi?7.5:0)-(zd?3.2:0));
   c.g+=((c.air>0?.05:gT)-c.g)*Math.min(1,dt*(gT>c.g?P.regrip:8));
   const slip=Math.abs(vl);
   vl*=Math.exp(-c.g*dt);
@@ -1839,8 +1850,10 @@ function routeFromBlocks(){
       return{err:'The '+nm+' piece '+at+' '+why+'.'};
     }
     if(hit.cells.some(q=>seen.has(q[0]+','+q[1])))return{err:'The track crosses itself.'};
+    const ms=hit.pieces.map(p=>{const b=blocks.find(b=>b.k===p.kind&&Math.abs(b.x-p.x)<.01&&Math.abs(b.z-p.z)<.01&&(p.sym?b.rot%2===p.rot%2:b.rot===p.rot));return(b&&b.mat)||''});
+    if(ms.some(x=>x!==ms[0]))return{err:'Piece '+(n+1)+' has two halves with different surfaces. Give both halves the same surface.'};
     hit.cells.forEach(q=>seen.add(q[0]+','+q[1]));hit.pieces.forEach(p=>used.add(p.kind+'|'+p.x+'|'+p.z));
-    str+=tk;n++;
+    str+=tk+ms[0];n++;
     joints.push({o:hit.h2[0]?1:0,along:hit.h2[0]?hit.ex*TILE:hit.ez*TILE,across:hit.h2[0]?hit.ez*TILE:hit.ex*TILE,w:hit.w2});
     st=hit.st2;
     if(st.w===1&&st.ex+st.h[0]/2===0&&st.ez+st.h[1]/2===0)closed=true;
@@ -1955,7 +1968,7 @@ function enterBuilder(t,seasonName,sid,comm){
   if(MP)mpClose();
   BLD=null;closeBots();clearAll();race={route:null};started=false;
   let saved=[];try{saved=JSON.parse(t.blocks||'[]')}catch(e){}
-  saved.forEach(b=>{if(b.k==='cp')addCp({x:b.x,z:b.z,o:b.o|0,w:b.w===2?2:1});else if(K[b.k])placeTile(b.k,b.x,b.z,b.rot|0)});
+  saved.forEach(b=>{if(b.k==='cp')addCp({x:b.x,z:b.z,o:b.o|0,w:b.w===2?2:1});else if(K[b.k])placeTile(b.k,b.x,b.z,b.rot|0,b.mat)});
   BLD={id:t.id,name:t.name,season:seasonName,sid,dirty:false,comm:!!comm};$('#bldA').value=comm?'':(authorOf(sid+'/t'+t.id)||'');$('#bldA').classList.toggle('hide',!!comm);$('#bldBack').textContent=comm?'Back to community':'Back to seasons';
   resetCar();closeMenu();setMode('build');
   document.body.classList.add('bldg');$('#bld').classList.remove('hide');bldInfo();
@@ -1972,7 +1985,7 @@ async function bldSave(){
   if(!BLD)return;
   const raw=($('#bldA').value||'').trim(),av=(raw===''||BLD.comm)?null:parseFloat(raw);
   if(av!==null&&!(av>=1&&av<=900)){toast('Author time must be between 1 and 900 seconds');return}
-  const r=routeFromBlocks(),bl=[...blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot})),...CPB.map(g=>({k:'cp',x:g.x,z:g.z,o:g.o,w:g.w}))],body={id:BLD.id,blocks:bl.length?JSON.stringify(bl):''};
+  const r=routeFromBlocks(),bl=[...blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot,mat:b.mat||''})),...CPB.map(g=>({k:'cp',x:g.x,z:g.z,o:g.o,w:g.w}))],body={id:BLD.id,blocks:bl.length?JSON.stringify(bl):''};
   if(!r.err){body.str=r.str;body.cps=JSON.stringify(r.cps||[])}
   try{
     await api(BLD.comm?'/api/community/save':'/api/track/save',body);if(av!==null)await api('/api/author',{key:BLD.sid+'/t'+BLD.id,author:av});BLD.dirty=false;
@@ -1993,7 +2006,7 @@ function testDrive(){
   if(TD||mode!=='build')return;
   const r=routeFromBlocks();
   if(r.err){toast(r.err);return}
-  TD={layout:blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot})),cpl:CPB.map(g=>({x:g.x,z:g.z,o:g.o,w:g.w})),dirty:!!(BLD&&BLD.dirty),laps:OPT.laps,best:Infinity,sug:null,use:false};
+  TD={layout:blocks.map(b=>({k:b.k,x:b.x,z:b.z,rot:b.rot,mat:b.mat||''})),cpl:CPB.map(g=>({x:g.x,z:g.z,o:g.o,w:g.w})),dirty:!!(BLD&&BLD.dirty),laps:OPT.laps,best:Infinity,sug:null,use:false};
   OPT.laps=1;closeBots();
   loadCourse(r.str,r.cps);
   Object.assign(race,{test:true,best:Infinity,bestS:null,gh:null,course:null});
@@ -2018,7 +2031,7 @@ function tdExit(){
   if(!TD)return;
   const T=TD;TD=null;
   OPT.laps=T.laps;closeBots();clearAll();race={route:null};
-  T.layout.forEach(b=>placeTile(b.k,b.x,b.z,b.rot));(T.cpl||[]).forEach(g=>addCp(g));
+  T.layout.forEach(b=>placeTile(b.k,b.x,b.z,b.rot,b.mat));(T.cpl||[]).forEach(g=>addCp(g));
   if(BLD)BLD.dirty=T.dirty;
   if(T.use&&T.sug&&BLD){$('#bldA').value=T.sug.toFixed(2);BLD.dirty=true}
   hideRes();$('#tdBar').classList.add('hide');$('#rUse').classList.add('hide');
