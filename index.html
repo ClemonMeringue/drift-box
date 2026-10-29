@@ -4,14 +4,16 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-30 (n)
+Last updated: 2026-10-30 (o)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - ONLINE MULTIPLAYER WAS REMOVED on 2026-10-29 (client and server: no Online tab, no WebSocket, no Room Durable Object). Any older text below that mentions online rooms, /ws, ROOMS or the Room class is out of date. Do not bring it back unless asked. The leaderboard refresh is 40 seconds.
 - This block exists so a fresh AI that is given only index.html knows the whole project.
 - KEEP IT UP TO DATE. Every time you change index.html (or learn something new about the server files), update the relevant section below and add a line to the CHANGELOG at the bottom, then bump the "Last updated" date. Do this in the same response as the change, without being asked.
+- ROUTE SURFACES: after an A token (two 1-wide lanes) two lowercase letters set the left and right lane surface separately (i ice, s sand, m mud, r plain road), e.g. ASBri = straight left on road, boost right on ice. One letter sets both lanes. The worker's track string regex accepts r (worker.js redeploy needed to SAVE such tracks to a season or community map).
+- EDITOR CAMERA: height variable BZ (30 to 320, default 110) changes with the mouse wheel, + / - keys and the toolbar buttons bZin / bZout. Shift pans 3.5x faster. cam.near is 4 in build mode, 30 while driving, 1 for the replay chase camera (the default 30 hides anything closer than 30 units, which is why low cameras need a smaller near).
 - REPLAYS: the PB ghost data (R.gh, [x,z,h] every 0.05 s, saved in localStorage pk('g:'+course)) is also the replay. Viewer: startReplay/exitReplay/replayTick/rpSeek (search "replays"), state var RP, UI #rp, body.rpOn hides the HUD, the frame loop calls replayTick when RP is set. Server: table replays + pbs.rp flag (migrate-6.sql), GET /api/replay, POST /api/replay, replay field on POST /api/pb. Encoding: rpEnc/rpDec, base64 of Int16 deltas (x*10, z*10, h*100), 6 bytes a frame, worker.js cleanReplay validates it. The leaderboard shows a play button on rows with rp. rpBackfill uploads an old local best once.
-- UPDATE LOG: the in game Updates tab is driven by the UPDATES array in the script (search for "update log"). Whenever the owner asks for something new, add an entry at the TOP of UPDATES (id, date, title, art, text in plain player friendly words, no apostrophes) in the same response. art selects a small picture drawn by updArt(); add a new case there if none of the existing ones (log replay lb solo tune marks nitro surf comm wide keys jump gate hat admin shop test acct) fits. The tab shows a dot until the newest entry is read (localStorage dbx:updSeen).
+- UPDATE LOG: the in game Updates tab is driven by the UPDATES array in the script (search for "update log"). Whenever the owner asks for something new, add an entry at the TOP of UPDATES (id, date, title, art, text in plain player friendly words, no apostrophes) in the same response. art selects a small picture drawn by updArt(); add a new case there if none of the existing ones (log zoom lanes replay lb solo tune marks nitro surf comm wide keys jump gate hat admin shop test acct) fits. The tab shows a dot until the newest entry is read (localStorage dbx:updSeen).
 - Never put secrets in this file. index.html is public on GitHub Pages. (No passwords, hashes, tokens.)
 - It is a plain text script tag, so it does nothing at runtime. Do not use the closing script tag text anywhere inside it.
 - Always give the owner the COMPLETE updated index.html (they paste whole files into the GitHub web editor). Syntax-check the script before sending (extract the main script and run it through new Function in node).
@@ -192,6 +194,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-30  Replay chase camera fixed (camera near plane). Editor: mouse wheel / + / - / buttons zoom, Shift pans faster. Two lanes of a 2-wide road can have different surfaces (route string: two letters after an A token, r = plain). Worker track regex now allows r.
 2026-10-30  Replays: Replay best lap button on the menu, play buttons on leaderboard rows, replay viewer (pause, scrub, speed, top/chase/free camera). Server stores each player's best lap (migrate-6.sql adds replays table and pbs.rp; worker.js adds /api/replay). Run migrate-6.sql BEFORE deploying worker.js.
 2026-10-29  Nitro overheat lock removed again (no cooldown). Drift marks now last 2 minutes (instanced mesh, 8000 marks). Tune panel redesigned and only available on the menu and in Donut Arena. Update log entries added. index.html only.
 2026-10-29  Removed online multiplayer (Online tab, WebSocket code, remote cars) from index.html and worker.js (Room class and /ws route), and wrangler.toml now deletes the Room Durable Object. Leaderboard refresh slowed from 20 to 40 seconds. Update log entries added. worker.js redeploy.
@@ -664,7 +667,7 @@ body.rpOn .bar,body.rpOn #timer,body.rpOn #mini,body.rpOn #gauge,body.rpOn #nbar
   <button id="bMenu">Menu</button>
   <button id="mDrive" class="on">Drive</button>
   <button id="mBuild">Build</button>
-  <div id="tools" class="hide"><div id="pieces"></div><div class="grp" id="matGrp"></div><div class="grp"><button id="bRot" title="Rotate (R)"></button><button id="bTest" class="tdb" title="Drive this track from start to finish"></button><button id="bClr" title="Clear all pieces"></button></div><span id="toolName"></span></div>
+  <div id="tools" class="hide"><div id="pieces"></div><div class="grp" id="matGrp"></div><div class="grp"><button id="bZin" title="Zoom in (+ or mouse wheel)">+</button><button id="bZout" title="Zoom out (- or mouse wheel)">&minus;</button></div><div class="grp"><button id="bRot" title="Rotate (R)"></button><button id="bTest" class="tdb" title="Drive this track from start to finish"></button><button id="bClr" title="Clear all pieces"></button></div><span id="toolName"></span></div>
   <div id="courses" class="hide"><button data-c="SSLSBSLSOSLSCSLS">Speedway</button><button data-c="SBSLLSCSRRSOSLLSBS">Switchbacks</button><button data-c="SLCRBLOR">Staircase</button><button data-c="SSOLSBSLSSCSSLSCSLBS">Grand Prix</button><button data-c="donut">Donut</button><button data-c="random">Random</button></div>
   <button id="bAssist" class="on hide">Assist: on</button>
   <button id="bSnd" class="on hide">Sound: on</button>
@@ -905,7 +908,7 @@ function sides(r){let a=[0,1],b=[1,0];for(let i=0;i<r;i++){a=[a[1],-a[0]];b=[b[1
 // routeStep() is the single source of truth: it says which pieces a token places and where the road goes next.
 // Both loadCourse (string to pieces) and routeFromBlocks (pieces to string) use it, so they always agree.
 const KIND1={S:'straight',B:'boost',C:'chicane',O:'slick',J:'jump',G:'gravel',M:'slalom',T:'gate',N:'open',I:'ice',P:'refill',U:'rumble',Q:'squeeze',D:'drift',E:'edge',F:'edge'};
-const LANES='SBCOJGMTNIPUQDEF',ROUTE_RX=/^[SLRBCOJGMTNIPUQDEFWXYZHKVAism]+$/;
+const LANES='SBCOJGMTNIPUQDEF',ROUTE_RX=/^[SLRBCOJGMTNIPUQDEFWXYZHKVAismr]+$/,MATC=c=>c==='r'||!!MATK[c];
 const vL=h=>[h[1],-h[0]],vR=h=>[-h[1],h[0]],rotZ=v=>v[0]===0?(v[1]>0?0:2):(v[0]>0?1:3),axX=r=>[[1,0],[0,-1],[-1,0],[0,1]][r];
 const dot2=(a,b)=>a[0]*b[0]+a[1]*b[1];
 const cornerRot=(h,h2)=>{const a=[-h[0],-h[1]];for(let r=0;r<4;r++){const q=sides(r);if(q.some(v=>v[0]===a[0]&&v[1]===a[1])&&q.some(v=>v[0]===h2[0]&&v[1]===h2[1]))return r}return 0};
@@ -946,7 +949,9 @@ function parseRoute(str){
     const t=str[i];let lanes=null;
     if(t==='A'){lanes=str.slice(i+1,i+3);if(lanes.length<2){ok=false;break}i+=2}
     const el=routeStep(st,t,lanes);if(!el){ok=false;break}
-    if(MATK[str[i+1]]){el.mat=str[i+1];i++}
+    // After an A (two lanes) token, two surface letters give the left and right lane their own surface (r = plain road).
+    if(t==='A'&&MATC(str[i+1])&&MATC(str[i+2])){el.mats=[str[i+1],str[i+2]].map(q=>q==='r'?'':q);i+=2}
+    else if(MATK[str[i+1]]){el.mat=str[i+1];i++}
     els.push(el);st=el.st2;
   }
   let res=null;
@@ -962,7 +967,7 @@ function loadCourse(str,cps){
   clearAll();const P=parseRoute(str);
   if(!P){race={route:null};toast('That track layout is not valid');return}
   const route=P.els.map(e=>({...e}));
-  P.els.forEach(e=>e.pieces.forEach(p=>placeTile(p.kind,p.x,p.z,p.rot,e.mat)));
+  P.els.forEach(e=>e.pieces.forEach((p,pi)=>placeTile(p.kind,p.x,p.z,p.rot,e.mats?e.mats[pi]:e.mat)));
   let sv=null;try{sv=JSON.parse(localStorage.getItem(pk(str)))}catch(e){}
   race={route,map:P.map,end:P.end,closed:P.closed,key:str,best:sv?sv.t:Infinity,bestS:sv?sv.s:null,gh:ghLoad(str),last:null,delta:null,laps:0,lapT:0,next:1,splits:[],state:'count',cd:3.5,bigT:0,t:0,rec:[],rt:0,anyPB:false};
   sl=new THREE.Group();const g0=makeFinish();g0.position.set(0,0,-11.5);sl.add(g0);sl.userData.lamps=g0.userData.lamps;
@@ -1104,6 +1109,7 @@ $('#ctlRows').onclick=e=>{const b=e.target.closest&&e.target.closest('button[dat
 addEventListener('blur',()=>{for(const i in k)k[i]=false});
 document.querySelector('.bar').addEventListener('click',()=>document.activeElement.blur());
 $('#mDrive').onclick=()=>setMode('drive');$('#mBuild').onclick=()=>setMode('build');
+$('#bZin').onclick=e=>{zoomB(.8);e.target.blur()};$('#bZout').onclick=e=>{zoomB(1.25);e.target.blur()};
 $('#bRot').onclick=()=>{rot=(rot+1)%4;syncGhost()};
 $('#bCar').onclick=()=>resetCar();
 $('#bSnd').onclick=e=>{snd=!snd;e.target.classList.toggle('on',snd);e.target.textContent='Sound: '+(snd?'on':'off');if(snd)initAudio()};
@@ -1135,9 +1141,10 @@ function setMode(m){
   hideTune();mode=m;$('#mDrive').classList.toggle('on',m==='drive');$('#mBuild').classList.toggle('on',m==='build');
   $('#tools').classList.toggle('hide',m!=='build');
   $('#pad').classList.toggle('hide',m!=='drive'||!matchMedia('(pointer:coarse)').matches);
+  cam.near=m==='build'?4:30;
   if(m==='build'){cam.fov=45;cam.updateProjectionMatrix();pan.x=c.x;pan.z=c.z;cam.up.set(0,0,-1)}else cam.up.set(0,0,-1);
   $('#hint').textContent=m==='build'
-    ?'Click to place a piece · right-click to erase · '+kn('up')+' '+kn('left')+' '+kn('down')+' '+kn('right')+' to pan · '+kn('restart')+' to rotate · 1-9 pick piece, 0 erase · '+kn('build')+' to drive'
+    ?'Click to place a piece · right-click to erase · '+kn('up')+' '+kn('left')+' '+kn('down')+' '+kn('right')+' to pan (hold Shift to go faster) · mouse wheel or + / - to zoom · '+kn('restart')+' to rotate · 1-9 pick piece, 0 erase · '+kn('build')+' to drive'
     :kn('up')+' gas · '+kn('down')+' brake · '+kn('left')+' '+kn('right')+' steer · brake while turning to flick into a drift · '+kn('nitro')+' nitro · '+kn('build')+' build · '+kn('restart')+' restart · Esc menu';
   syncGhost();
 }
@@ -1155,6 +1162,9 @@ cv.addEventListener('pointerdown',e=>{
 });
 cv.addEventListener('contextmenu',e=>{e.preventDefault();if(mode==='build'&&aim(e)){race={route:null};clearRG();closeBots();erase(pt.x,pt.z)}});
 
+function zoomB(f){BZ=Math.max(30,Math.min(320,BZ*f))}
+cv.addEventListener('wheel',e=>{if(mode!=='build'||RP)return;e.preventDefault();zoomB(e.deltaY>0?1.12:.89)},{passive:false});
+addEventListener('keydown',e=>{if(mode!=='build'||RP||(e.target&&e.target.tagName==='INPUT'))return;if(e.code==='Equal'||e.code==='NumpadAdd')zoomB(.85);else if(e.code==='Minus'||e.code==='NumpadSubtract')zoomB(1.18)});
 // Driving
 function drive(dt){
   const sn=Math.sin(c.h),cs=Math.cos(c.h);
@@ -1242,11 +1252,12 @@ function drive(dt){
   cam.position.set(cf.x+jx,hgt,cf.z+jz+.01);cam.lookAt(cf.x+jx,0,cf.z+jz);
   spd=sp*3.6;const fv=45+(nit||zb?5:0);if(Math.abs(cam.fov-fv)>.05){cam.fov+=(fv-cam.fov)*Math.min(1,dt*4);cam.updateProjectionMatrix()}
 }
+var BZ=110; // editor camera height (zoom)
 function buildCam(dt){
-  const s=40*dt;
+  const s=40*dt*((k.ShiftLeft||k.ShiftRight)?3.5:1)*(BZ/110);
   if(k.KeyW||k.ArrowUp)pan.z-=s;if(k.KeyS||k.ArrowDown)pan.z+=s;
   if(k.KeyA||k.ArrowLeft)pan.x-=s;if(k.KeyD||k.ArrowRight)pan.x+=s;
-  cam.position.set(pan.x,110,pan.z);cam.lookAt(pan.x,0,pan.z);
+  cam.position.set(pan.x,BZ,pan.z);cam.lookAt(pan.x,0,pan.z);
   if(ghost)ghost.position.set(gx,0,gz);
   $('#hud').textContent=`${blocks.length} piece${blocks.length===1?'':'s'} placed`;
 }
@@ -1631,7 +1642,7 @@ function exitReplay(){
   car.visible=true;sh.visible=true;
   for(const q in k)k[q]=false;
   clearAll();race={route:null};started=false;closeBots();
-  cam.up.set(0,0,-1);cam.fov=45;cam.updateProjectionMatrix();
+  cam.up.set(0,0,-1);cam.fov=45;cam.near=30;cam.updateProjectionMatrix();
   resetCar();openMenu();
 }
 function rpSeek(t){if(!RP)return;RP.t=Math.max(0,Math.min(RP.dur,t));RP.snap=true;RP.em=RP.sk=0;clearSkids();rpClock()}
@@ -1670,6 +1681,7 @@ function replayTick(dt){
     cam.position.set(Q.fx,Q.fh,Q.fz+.01);cam.lookAt(Q.fx,0,Q.fz);
   }
   if(Math.abs(cam.fov-fv)>.05){cam.fov=fv;cam.updateProjectionMatrix()}
+  const nr=Q.cam==='chase'?1:30;if(cam.near!==nr){cam.near=nr;cam.updateProjectionMatrix()}
   rpClock();
 }
 // controls
@@ -1794,6 +1806,7 @@ function buildMenu(){
   });
   const cc=COURSES[selC],pb=pbOf(cc.str),rt=isRoute(cc.str),cs=rt?cellsOf(cc.str):null;
   drawRoute($('#pv'),cc.str,lab(cc),selC!==lastSel);lastSel=selC;
+  updReplayBtn();
   if(lbSel!==selC){lbSel=selC;LB=null;fetchLB()}else renderLB();
   $('#pn').textContent=cc.name;$('#pd').textContent=cc.desc;
   const spec=(a,b)=>'<div><small>'+a+'</small><b>'+b+'</b></div>';
@@ -2028,9 +2041,13 @@ function routeFromBlocks(){
     }
     if(hit.cells.some(q=>seen.has(q[0]+','+q[1])))return{err:'The track crosses itself.'};
     const ms=hit.pieces.map(p=>{const b=blocks.find(b=>b.k===p.kind&&Math.abs(b.x-p.x)<.01&&Math.abs(b.z-p.z)<.01&&(p.sym?b.rot%2===p.rot%2:b.rot===p.rot));return(b&&b.mat)||''});
-    if(ms.some(x=>x!==ms[0]))return{err:'Piece '+(n+1)+' has two halves with different surfaces. Give both halves the same surface.'};
+    let mt=ms[0];
+    if(ms.some(x=>x!==ms[0])){
+      if(tk[0]==='A'&&ms.length===2)mt=ms.map(x=>x||'r').join('');
+      else return{err:'Piece '+(n+1)+' has two halves with different surfaces. Give both halves the same surface.'};
+    }
     hit.cells.forEach(q=>seen.add(q[0]+','+q[1]));hit.pieces.forEach(p=>used.add(p.kind+'|'+p.x+'|'+p.z));
-    str+=tk+ms[0];n++;
+    str+=tk+mt;n++;
     joints.push({o:hit.h2[0]?1:0,along:hit.h2[0]?hit.ex*TILE:hit.ez*TILE,across:hit.h2[0]?hit.ez*TILE:hit.ex*TILE,w:hit.w2});
     st=hit.st2;
     if(st.w===1&&st.ex+st.h[0]/2===0&&st.ez+st.h[1]/2===0)closed=true;
@@ -2222,6 +2239,9 @@ $('#bTest').onclick=testDrive;$('#tdExit').onclick=tdExit;$('#tdRestart').onclic
 // {id:'unique-id', date:'YYYY-MM-DD', title:'Short title', art:'kind', text:'Plain description for players.'}
 // art picks the small picture drawn by updArt() below. Add a new case there if none fits. Do not use apostrophes in text.
 const UPDATES=[
+ {id:'build-zoom',date:'2026-10-30',title:'Zoom and fast panning in the editor',art:'zoom',text:'Use the mouse wheel, the + and - keys or the new + and - buttons in the toolbar to zoom the editor in and out. Hold Shift while panning to move the camera much faster.'},
+ {id:'lane-surf',date:'2026-10-30',title:'Different surface on each lane',art:'lanes',text:'On a 2-wide road you can now put two different 1-wide pieces side by side and give each its own surface, for example ice on the left and mud on the right, then carry on into the next wide corner.'},
+ {id:'chase-fix',date:'2026-10-30',title:'Chase camera fixed in replays',art:'replay',text:'The Chase camera in replays no longer cuts away the road and car close to the camera. It now follows your car from behind.'},
  {id:'replays',date:'2026-10-30',title:'Replays',art:'replay',text:'Watch your best lap again with Replay best lap on the menu. On the leaderboard, press the little play button next to a name to watch that player\u2019s best lap. You can pause, scrub, slow it down or speed it up, and switch between top, chase and free cameras. Tyre marks and smoke are redrawn from the slide angle. Times set before this update get a replay the next time that player opens the track.'},
  {id:'marks-2min',date:'2026-10-29',title:'Drift marks last 2 minutes',art:'marks',text:'Your tyre marks now stay on the ground for two full minutes and only fade out over the last ten seconds, instead of disappearing after about ten seconds.'},
  {id:'tune-ui',date:'2026-10-29',title:'New Tune panel',art:'tune',text:'The Tune panel has a cleaner look with a short explanation under each slider, a highlighted preset, a Reset button and a close button. Tuning is now only available on the menu and in Donut Arena, so races are the same for everyone.'},
@@ -2251,6 +2271,8 @@ function updArt(k){
   else if(k==='lb')b=[0,1,2,3].map(i=>'<rect x="46" y="'+(26+i*26)+'" width="148" height="20" fill="#101215" stroke="#fff" stroke-opacity=".14"/><text x="56" y="'+(40+i*26)+'" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="13" fill="'+(i?M:A)+'">'+(i+1)+'</text>'+bar(76,33+i*26,60-i*8,T,.8)+bar(160,33+i*26,24,M,.6)).join('')+'<text x="218" y="134" text-anchor="end" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="15" letter-spacing="2" fill="'+A+'">40 S</text>';
   else if(k==='solo')b='<path d="M40 110V50H120V90H200V40" fill="none" stroke="#1f2227" stroke-width="18"/><path d="M40 110V50H120V90H200V40" fill="none" stroke="'+T+'" stroke-width="2" stroke-dasharray="4 4"/><rect x="32" y="98" width="16" height="22" rx="3" fill="#2b7be0"/>';
   else if(k==='replay')b='<path d="M30 112C56 112 70 70 104 62S160 66 206 36" fill="none" stroke="#0b0b0d" stroke-width="6" stroke-dasharray="10 3"/><rect x="96" y="52" width="16" height="22" rx="3" fill="#2b7be0" transform="rotate(70 104 62)"/><rect x="30" y="128" width="180" height="4" fill="#fff" opacity=".2"/><rect x="30" y="128" width="92" height="4" fill="'+A+'"/><rect x="120" y="122" width="6" height="16" fill="'+T+'"/>';
+  else if(k==='zoom')b='<circle cx="108" cy="68" r="30" fill="none" stroke="'+T+'" stroke-width="5"/><path d="M130 90L160 120" stroke="'+T+'" stroke-width="8" stroke-linecap="round"/><path d="M96 68h24M108 56v24" stroke="'+A+'" stroke-width="4"/>';
+  else if(k==='lanes')b='<path d="M20 50H220V100H20Z" fill="'+R+'"/><rect x="20" y="50" width="200" height="25" fill="#a8d8ec"/><rect x="20" y="75" width="200" height="25" fill="#5b4129"/><rect x="20" y="73" width="200" height="4" fill="#0b0b0d"/><path d="M20 50H220M20 100H220" stroke="'+A+'" stroke-width="3"/>';
   else if(k==='tune')b=[['Grip',60],['Drift',34],['Power',78]].map((q,i)=>'<text x="40" y="'+(40+i*34)+'" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="12" letter-spacing="2" fill="'+T+'">'+q[0].toUpperCase()+'</text><rect x="40" y="'+(48+i*34)+'" width="160" height="3" fill="#fff" opacity=".2"/><rect x="40" y="'+(48+i*34)+'" width="'+(1.6*q[1])+'" height="3" fill="'+A+'"/><rect x="'+(38+1.6*q[1])+'" y="'+(42+i*34)+'" width="6" height="15" fill="'+T+'"/>').join('');
   else if(k==='marks')b='<path d="M30 120C60 120 80 80 110 70S170 70 210 30" fill="none" stroke="#0b0b0d" stroke-width="5" stroke-dasharray="10 3" opacity=".9"/><path d="M40 128C70 128 90 92 118 82S176 82 218 42" fill="none" stroke="#0b0b0d" stroke-width="5" stroke-dasharray="10 3" opacity=".9"/><text x="120" y="28" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="20" letter-spacing="3" fill="'+T+'">2:00</text>';
   else if(k==='nitro'){b='<rect x="34" y="62" width="172" height="26" fill="#05080e" stroke="'+T+'" stroke-width="2"/>';for(let i=0;i<8;i++)b+='<rect x="38" y="66" width="'+15+'" height="18" fill="'+(i<2?'#ff4a3a':'#4f9fc4')+'" opacity="'+(i<2?1:.25)+'" transform="translate('+(i*20)+' 0)"/>';b+='<text x="120" y="112" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="18" letter-spacing="3" fill="#ff4a3a">HOT</text>'}
@@ -2314,7 +2336,7 @@ function commUI(){
   let h='<div class="sech">Your maps</div>'+(mine.length?mine.map(commRow).join(''):'<div class="lbn">You have no maps yet. Save keeps a map as your project; press Publish here when it is ready.</div>');
   if(picks.length)h+='<div class="sech">Admin picks</div>'+picks.map(commRow).join('');
   h+='<div class="sech">'+(COMM.sort==='new'?'Newest':'Top rated')+'</div>'+(rest.length?rest.map(commRow).join(''):'<div class="lbn">No maps from other players yet.</div>');
-  h+='<div class="lbn" style="opacity:.6;font-size:12px">Signed in as '+esc(SESS?SESS.name:'?')+' \u00b7 game version 2026-10-30 (n) \u00b7 '+COMM.maps.length+' map'+(COMM.maps.length===1?'':'s')+' from the server, '+mine.length+' yours</div>';
+  h+='<div class="lbn" style="opacity:.6;font-size:12px">Signed in as '+esc(SESS?SESS.name:'?')+' \u00b7 game version 2026-10-30 (o) \u00b7 '+COMM.maps.length+' map'+(COMM.maps.length===1?'':'s')+' from the server, '+mine.length+' yours</div>';
   el.innerHTML=h;
 }
 $('#comm').onclick=async e=>{
