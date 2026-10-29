@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-30 (o)
+Last updated: 2026-10-30 (replay compare)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - ONLINE MULTIPLAYER WAS REMOVED on 2026-10-29 (client and server: no Online tab, no WebSocket, no Room Durable Object). Any older text below that mentions online rooms, /ws, ROOMS or the Room class is out of date. Do not bring it back unless asked. The leaderboard refresh is 40 seconds.
@@ -12,7 +12,7 @@ NOTE TO ANY AI WORKING ON THIS FILE
 - KEEP IT UP TO DATE. Every time you change index.html (or learn something new about the server files), update the relevant section below and add a line to the CHANGELOG at the bottom, then bump the "Last updated" date. Do this in the same response as the change, without being asked.
 - ROUTE SURFACES: after an A token (two 1-wide lanes) two lowercase letters set the left and right lane surface separately (i ice, s sand, m mud, r plain road), e.g. ASBri = straight left on road, boost right on ice. One letter sets both lanes. The worker's track string regex accepts r (worker.js redeploy needed to SAVE such tracks to a season or community map).
 - EDITOR CAMERA: height variable BZ (30 to 320, default 110) changes with the mouse wheel, + / - keys and the toolbar buttons bZin / bZout. Shift pans 3.5x faster. cam.near is 4 in build mode, 30 while driving, 1 for the replay chase camera (the default 30 hides anything closer than 30 units, which is why low cameras need a smaller near).
-- REPLAYS: the PB ghost data (R.gh, [x,z,h] every 0.05 s, saved in localStorage pk('g:'+course)) is also the replay. Viewer: startReplay/exitReplay/replayTick/rpSeek (search "replays"), state var RP, UI #rp, body.rpOn hides the HUD, the frame loop calls replayTick when RP is set. Server: table replays + pbs.rp flag (migrate-6.sql), GET /api/replay, POST /api/replay, replay field on POST /api/pb. Encoding: rpEnc/rpDec, base64 of Int16 deltas (x*10, z*10, h*100), 6 bytes a frame, worker.js cleanReplay validates it. The leaderboard shows a play button on rows with rp. rpBackfill uploads an old local best once.
+- REPLAYS: the PB ghost data (R.gh, [x,z,h] every 0.05 s, saved in localStorage pk('g:'+course)) is also the replay. Viewer: startReplay/startReplaySet/exitReplay/replayTick/rpSeek, state var RP, UI #rp, body.rpOn hides the HUD, and the frame loop calls replayTick when RP is set. The viewer compares up to four recorded laps on the same track, supports top/chase/free cameras, smooth top-camera follow and zoom. Server: table replays + pbs.rp flag (migrate-6.sql), GET /api/replay, POST /api/replay, replay field on POST /api/pb. Encoding: rpEnc/rpDec, base64 of Int16 deltas (x*10, z*10, h*100), 6 bytes a frame, worker.js cleanReplay validates it. The leaderboard shows a play button on rows with rp. rpBackfill uploads an old local best once.
 - UPDATE LOG: the in game Updates tab is driven by the UPDATES array in the script (search for "update log"). Whenever the owner asks for something new, add an entry at the TOP of UPDATES (id, date, title, art, text in plain player friendly words, no apostrophes) in the same response. art selects a small picture drawn by updArt(); add a new case there if none of the existing ones (log zoom lanes replay lb solo tune marks nitro surf comm wide keys jump gate hat admin shop test acct) fits. The tab shows a dot until the newest entry is read (localStorage dbx:updSeen).
 - Never put secrets in this file. index.html is public on GitHub Pages. (No passwords, hashes, tokens.)
 - It is a plain text script tag, so it does nothing at runtime. Do not use the closing script tag text anywhere inside it.
@@ -194,6 +194,7 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-30  Replay comparison: compare up to four laps at once, with smoother top-camera follow and replay zoom. Client-only change; the existing replay API is reused. Replay cameras now use a shorter near plane to prevent close geometry popping.
 2026-10-30  Replay chase camera fixed (camera near plane). Editor: mouse wheel / + / - / buttons zoom, Shift pans faster. Two lanes of a 2-wide road can have different surfaces (route string: two letters after an A token, r = plain). Worker track regex now allows r.
 2026-10-30  Replays: Replay best lap button on the menu, play buttons on leaderboard rows, replay viewer (pause, scrub, speed, top/chase/free camera). Server stores each player's best lap (migrate-6.sql adds replays table and pbs.rp; worker.js adds /api/replay). Run migrate-6.sql BEFORE deploying worker.js.
 2026-10-29  Nitro overheat lock removed again (no cooldown). Drift marks now last 2 minutes (instanced mesh, 8000 marks). Tune panel redesigned and only available on the menu and in Donut Arena. Update log entries added. index.html only.
@@ -659,7 +660,32 @@ body.rpOn .bar,body.rpOn #timer,body.rpOn #mini,body.rpOn #gauge,body.rpOn #nbar
 #rp #rpSeek::-moz-range-thumb{width:10px;height:18px;background:#e9eaec;border:0;border-radius:1px}
 .lbt td.lbpc{width:34px;padding:2px 0 2px 4px;text-align:right}
 .lbp{background:none;border:1px solid #ffffff33;color:#cfd1d4;border-radius:2px;width:26px;height:24px;padding:0;font-size:10px;cursor:pointer;line-height:1}
-.lbp:hover{color:#fff;border-color:var(--acc);background:var(--acc)}
+ .lbp:hover{color:#fff;border-color:var(--acc);background:var(--acc)}
+#rpRoster{display:flex;flex-wrap:wrap;gap:5px 12px;margin:0 0 8px;padding:6px 0 2px}
+#rpRoster .rpr{display:inline-flex;align-items:center;gap:6px;min-width:0;font-size:11px;color:#d7d9dc}
+#rpRoster .rpr i{display:inline-block;width:8px;height:8px;flex:none;border-radius:1px}
+#rpRoster .rpr b{font:600 12px var(--hd);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+#rpRoster .rpr em{font:500 12px var(--hd);font-style:normal;color:var(--mut);white-space:nowrap}
+#rp .rpZoom{display:flex;gap:4px}
+#rp .rpZoom button{width:31px;height:31px;padding:0;font:700 18px var(--hd);letter-spacing:0}
+#rp #rpCompare{border-color:var(--acc);color:#fff}
+#rpComparePanel{margin-top:11px;padding-top:10px;border-top:1px solid #ffffff20}
+#rpComparePanel .rpch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+#rpComparePanel .rpch b{font:600 12px var(--hd);letter-spacing:.18em;color:#fff}
+#rpComparePanel .rpch span{font:500 11px var(--hd);letter-spacing:.1em;color:var(--mut)}
+#rpComparePanel .rpcNote{font-size:12px;color:var(--mut);margin-bottom:7px}
+#rpCompareList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 8px;max-height:150px;overflow:auto;padding:1px}
+#rpCompareList .rpo{display:flex;align-items:center;gap:8px;min-width:0;padding:7px 8px;border:1px solid #ffffff20;background:#ffffff06;color:#d7d9dc;font-size:12px;cursor:pointer}
+#rpCompareList .rpo:has(input:checked){border-color:var(--acc);background:#ff5a2a16;color:#fff}
+#rpCompareList input{accent-color:var(--acc);flex:none;margin:0}
+#rpCompareList .rpon{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+#rpCompareList .rpot{font:600 12px var(--hd);color:#fff;white-space:nowrap}
+#rpComparePanel .rpca{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px}
+#rpComparePanel .rpca span{flex:1;min-width:100px;font-size:11px;color:var(--mut)}
+#rpComparePanel button{padding:7px 10px}
+#rpComparePanel #rpCompareGo{background:var(--acc);border-color:var(--acc);color:#fff}
+#rpComparePanel #rpCompareGo:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:520px){#rp{padding:10px}#rp .rpc2{gap:6px}#rp .rps button{padding:7px 7px}#rp .rpc2>button{padding:7px 8px}#rpCompareList{grid-template-columns:1fr;max-height:125px}#rp #rpCam{max-width:115px;overflow:hidden;text-overflow:ellipsis}}
 </style>
 </head>
 <body>
@@ -685,7 +711,7 @@ body.rpOn .bar,body.rpOn #timer,body.rpOn #mini,body.rpOn #gauge,body.rpOn #nbar
 <div class="mfoot" id="solofoot"><button class="go" id="mPlay">Start race</button><button id="mResume" class="hide">Resume</button><button id="mReplay" class="hide">Replay best lap</button><button id="mTune">Handling…</button></div></div></div></div></div>
 <div id="res" class="hide"><div class="rc"><div class="rk" id="rk"></div><div class="rt" id="rtt"></div><div class="rtime" id="rtime"></div><div class="rsub" id="rsub"></div><div class="rsub" id="rmed" style="font-weight:700"></div><div class="pbb hide" id="rpb">NEW PERSONAL BEST</div><table id="rtab"></table><div class="rbtn"><button class="go" id="rRetry">Retry</button><button id="rUse" class="hide">Use as author time</button><button id="rMenu">Menu</button></div></div></div>
 <div id="auth" class="hide"><div class="ap"><h1>Drift Box</h1><div class="sub">Sign in to save your times</div><div class="atabs"><button id="auIn" class="on">Sign in</button><button id="auUp">Create account</button></div><label>Name<input id="auName" maxlength="16" autocomplete="username"></label><label>Password<input id="auPw" type="password" autocomplete="current-password"></label><div class="aerr" id="auErr"></div><button class="go" id="auGo">Sign in</button><div class="amode" id="auMode"></div><details class="hide"><summary>Server address</summary><div class="orow2"><input id="auApi" placeholder="https://driftbox-api.yourname.workers.dev"><button id="auApiSave">Save</button></div></details></div></div>
-<div id="tdBar" class="hide"><b>Test drive</b><span id="tdInfo"></span><button id="tdRestart">Restart</button><button id="tdExit">Back to editor</button></div><div id="toast" class="hide"></div><canvas id="conf" class="hide"></canvas><div id="tune" class="info hide"></div><div id="rp" class="hide"><div class="rpt"><b id="rpTitle"></b><span id="rpSub"></span></div><div class="rpc"><button id="rpPlay" aria-label="Play or pause"></button><input id="rpSeek" type="range" min="0" max="1000" value="0" aria-label="Position"><span id="rpTime"></span></div><div class="rpc2"><div class="rps" id="rpSpd"><button data-s=".25">.25x</button><button data-s=".5">.5x</button><button data-s="1" class="on">1x</button><button data-s="2">2x</button></div><button id="rpCam"></button><button id="rpExit">Exit replay</button></div></div><div id="timer" class="info hide"><div id="tm"></div></div><canvas id="mini" width="240" height="240" class="hide"></canvas><canvas id="gauge" width="260" height="260"></canvas><div id="nbar"><b>NITRO</b><div class="nt"><i id="nf"></i></div><span id="np">100</span></div><div id="bld" class="hide"><b id="bldN"></b><span id="bldS"></span><span id="bldD"></span><input id="bldA" type="number" step="0.01" min="1" max="900" placeholder="Author time (s)"><button id="bldSave">Save</button><button id="bldBack">Back to seasons</button></div>
+<div id="tdBar" class="hide"><b>Test drive</b><span id="tdInfo"></span><button id="tdRestart">Restart</button><button id="tdExit">Back to editor</button></div><div id="toast" class="hide"></div><canvas id="conf" class="hide"></canvas><div id="tune" class="info hide"></div><div id="rp" class="hide"><div class="rpt"><b id="rpTitle"></b><span id="rpSub"></span></div><div id="rpRoster" class="hide"></div><div class="rpc"><button id="rpPlay" aria-label="Play or pause"></button><input id="rpSeek" type="range" min="0" max="1000" value="0" aria-label="Position"><span id="rpTime"></span></div><div class="rpc2"><div class="rps" id="rpSpd"><button data-s=".25">.25x</button><button data-s=".5">.5x</button><button data-s="1" class="on">1x</button><button data-s="2">2x</button></div><div class="rpZoom"><button id="rpZoomOut" title="Zoom out">−</button><button id="rpZoomIn" title="Zoom in">+</button></div><button id="rpCam"></button><button id="rpCompare">Compare</button><button id="rpExit">Exit replay</button></div><div id="rpComparePanel" class="hide"><div class="rpch"><b>COMPARE REPLAYS</b><span id="rpCompareCount">0 / 4 selected</span></div><div class="rpcNote">Choose up to four drivers on this track. Their laps run at the recorded times.</div><div id="rpCompareList"></div><div class="rpca"><span id="rpCompareMsg"></span><button id="rpCompareGo" disabled>Compare selected</button><button id="rpCompareCancel">Cancel</button></div></div></div><div id="timer" class="info hide"><div id="tm"></div></div><canvas id="mini" width="240" height="240" class="hide"></canvas><canvas id="gauge" width="260" height="260"></canvas><div id="nbar"><b>NITRO</b><div class="nt"><i id="nf"></i></div><span id="np">100</span></div><div id="bld" class="hide"><b id="bldN"></b><span id="bldS"></span><span id="bldD"></span><input id="bldA" type="number" step="0.01" min="1" max="900" placeholder="Author time (s)"><button id="bldSave">Save</button><button id="bldBack">Back to seasons</button></div>
 <div id="pad" class="hide"><button data-k="KeyA">◀</button><button data-k="KeyW">▲</button><button data-k="KeyD">▶</button><button data-k="Nitro">N</button><button data-k="KeyS">▼</button></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1604,15 +1630,19 @@ function rpDec(str){
   for(let i=0;i<n;i++){px+=dv.getInt16(i*6,true);pz+=dv.getInt16(i*6+2,true);ph+=dv.getInt16(i*6+4,true);G[i*3]=px/10;G[i*3+1]=pz/10;G[i*3+2]=ph/100}
   return G;
 }
-var RP=null,rpm=null;
+var RP=null,rpm=null,rpCmpChoices=[],rpCmpSelected=new Set();
 const RP_CAMS=[['top','Camera: Top'],['chase','Camera: Chase'],['free','Camera: Free']];
+const RP_COLS=[0x2b7be0,0xe03e3e,0xf2c230,0x9d6ad6],RP_CSS_COLS=['#2b7be0','#e03e3e','#f2c230','#9d6ad6'];
 const ICO_PLAY='<svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg>',ICO_PAUSE='<svg viewBox="0 0 16 16"><path d="M3 1.5h3.4v13H3zM9.6 1.5H13v13H9.6z"/></svg>';
 const rpFmt=t=>fmt(Math.max(0,t));
+const rpNameKey=(name,mine)=>'name:'+String(mine&&SESS?SESS.name:(name||'Replay')).toLowerCase();
+const ghLoadFor=(name,s)=>{try{return JSON.parse(localStorage.getItem('dbx:'+String(name).toLowerCase()+':g:'+s))}catch(e){return null}};
 function rpUI(){
   if(!RP)return;
   $('#rpPlay').innerHTML=RP.play?ICO_PAUSE:ICO_PLAY;
   $('#rpCam').textContent=(RP_CAMS.find(q=>q[0]===RP.cam)||RP_CAMS[0])[1];
   $('#rpSpd').querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.s===RP.sp));
+  $('#rpCompare').textContent=RP.cars.length>1?'Compare ('+RP.cars.length+')':'Compare';
 }
 function rpClock(){
   if(!RP)return;
@@ -1621,24 +1651,36 @@ function rpClock(){
   if(!RP.drag)$('#rpSeek').value=Math.round(f*10);
 }
 function startReplay(cc,G,name,ms,mine){
-  if(!cc||!isRoute(cc.str)||!G||G.length<60){toast('No replay for this track');return}
+  startReplaySet(cc,[{G,name,ms,mine,key:rpNameKey(name,mine)}]);
+}
+function startReplaySet(cc,entries){
+  entries=(entries||[]).filter(e=>e&&e.G&&e.G.length>=60).slice(0,4);
+  if(!cc||!isRoute(cc.str)||!entries.length){toast('No replay for this track');return}
   if(BLD){if(BLD.dirty&&!confirm('You have unsaved changes to this track. Leave without saving?'))return;leaveBuilderUI()}
+  if(RP){(RP.cars||[]).forEach(q=>S.remove(q.mesh));RP=null}
+  if(rpm){S.remove(rpm);rpm=null}
   started=true;closeBots();GP=null;hideTune();
   loadCourse(cc.str,courseCps(cc));race.course=cc;setLamps(0,true);
-  if(rpm){S.remove(rpm)}
-  rpm=botMesh(mine?0x2b7be0:0xe03e3e);S.add(rpm);rpm.visible=true;
-  car.visible=false;sh.visible=false;
-  RP={G,n:G.length/3,dur:(G.length/3-1)*.05,t:0,sp:1,play:true,cam:'top',name:name||'You',ms,mine:!!mine,em:0,sk:0,snap:true,drag:false,fx:0,fz:0,fh:110,ch:0,keys:{}};
-  document.body.classList.add('rpOn');$('#rp').classList.remove('hide');
-  $('#rpTitle').textContent=(mine?'Your best lap':(name||'Replay'));
-  $('#rpSub').textContent=cc.name+(ms?' · '+fmt(ms/1000):'');
-  closeMenu();setMode('drive');cam.up.set(0,0,-1);cam.fov=45;cam.updateProjectionMatrix();
+  const cars=entries.map((e,i)=>{
+    const mesh=botMesh(RP_COLS[i]);S.add(mesh);mesh.visible=true;
+    return {...e,key:e.key||rpNameKey(e.name,e.mine),n:e.G.length/3,dur:(e.G.length/3-1)*.05,mesh,x:e.G[0],z:e.G[1],h:e.G[2],vx:0,vz:0,sp:0,slip:0,em:0,sk:0};
+  });
+  rpm=cars[0].mesh;car.visible=false;sh.visible=false;
+  RP={cc,cars,dur:Math.max(...cars.map(q=>q.dur)),t:0,sp:1,play:true,cam:'top',zoom:1,em:0,sk:0,snap:true,drag:false,camX:cars[0].x,camZ:cars[0].z,camH:105*(OPT.zoom||1),ch:cars[0].h,chX:cars[0].x,chZ:cars[0].z,chY:11,fx:cars[0].x,fz:cars[0].z,fh:110,keys:{}};
+  document.body.classList.add('rpOn');$('#rp').classList.remove('hide');$('#rpComparePanel').classList.add('hide');
+  $('#rpTitle').textContent=cars.length>1?'Replay comparison · '+cars.length+' drivers':(cars[0].mine?'Your best lap':(cars[0].name||'Replay'));
+  const times=cars.filter(q=>q.ms>0).map(q=>(q.name||'Driver')+' '+fmt(q.ms/1000));
+  $('#rpSub').textContent=cc.name+(times.length?' · '+times.join(' / '):'');
+  $('#rpRoster').classList.toggle('hide',cars.length<2);
+  $('#rpRoster').innerHTML=cars.length>1?cars.map((q,i)=>'<span class="rpr"><i style="background:'+RP_CSS_COLS[i]+'"></i><b>'+esc(q.name||'Driver '+(i+1))+'</b><em>'+fmt((q.ms>0?q.ms/1000:q.dur))+'</em></span>').join(''):'';
+  rpCmpChoices=[];rpCmpSelected=new Set();
+  closeMenu();setMode('drive');cam.up.set(0,0,-1);cam.fov=45;cam.near=1;cam.updateProjectionMatrix();
   rpUI();rpClock();
 }
 function exitReplay(){
   if(!RP)return;
-  RP=null;document.body.classList.remove('rpOn');$('#rp').classList.add('hide');
-  if(rpm){rpm.visible=false}
+  const old=RP;RP=null;(old.cars||[]).forEach(q=>S.remove(q.mesh));rpm=null;
+  document.body.classList.remove('rpOn');$('#rp').classList.add('hide');$('#rpComparePanel').classList.add('hide');
   car.visible=true;sh.visible=true;
   for(const q in k)k[q]=false;
   clearAll();race={route:null};started=false;closeBots();
@@ -1649,81 +1691,161 @@ function rpSeek(t){if(!RP)return;RP.t=Math.max(0,Math.min(RP.dur,t));RP.snap=tru
 function rpToggle(){if(!RP)return;if(!RP.play&&RP.t>=RP.dur-.01)rpSeek(0);RP.play=!RP.play;rpUI()}
 function rpCamNext(){
   if(!RP)return;const i=RP_CAMS.findIndex(q=>q[0]===RP.cam);RP.cam=RP_CAMS[(i+1)%RP_CAMS.length][0];
-  if(RP.cam==='free'){RP.fx=cf.x;RP.fz=cf.z;RP.fh=110}
-  if(RP.cam==='chase')RP.ch=rpm.rotation.y;
+  const q=RP.cars[0];if(RP.cam==='free'){RP.fx=q.x;RP.fz=q.z;RP.fh=110}
+  if(RP.cam==='chase'){RP.ch=q.h;RP.chX=q.x-Math.sin(q.h)*24*RP.zoom;RP.chZ=q.z-Math.cos(q.h)*24*RP.zoom}
   RP.snap=true;rpUI();
+}
+function rpZoom(dir){
+  if(!RP)return;
+  if(RP.cam==='free')RP.fh=Math.max(25,Math.min(400,RP.fh*(dir>0?.89:1.12)));
+  else RP.zoom=Math.max(.55,Math.min(2.6,RP.zoom*(dir>0?.89:1.12)));
 }
 function replayTick(dt){
   const Q=RP;if(!Q)return;
   if(Q.play){const t0=Q.t;Q.t=Math.min(Q.dur,Q.t+dt*Q.sp);Q.adv=Q.t-t0;if(Q.t>=Q.dur){Q.play=false;rpUI()}}else Q.adv=0;
-  const G=Q.G,f=Q.t/.05,i=Math.max(0,Math.min(Q.n-2,Math.floor(f))),u=Math.min(1,f-i),a=i*3,b=a+3;
-  const x=G[a]+(G[b]-G[a])*u,z=G[a+1]+(G[b+1]-G[a+1])*u,h=G[a+2]+angD(G[b+2],G[a+2])*u;
-  const vx=(G[b]-G[a])/.05,vz=(G[b+1]-G[a+1])/.05,sp=Math.hypot(vx,vz),slip=sp>6?angD(h,Math.atan2(vx,vz)):0;
-  rpm.position.set(x,0,z);rpm.rotation.y=h;rpm.rotation.z=-slip*.12;
-  // tyre marks and smoke are redrawn from the slide angle
-  if(Q.adv>0&&sp>8&&Math.abs(slip)>.3){
-    const sn=Math.sin(h),cs=Math.cos(h);Q.em+=Q.adv*30;Q.sk+=Q.adv;
-    while(Q.em>=1){Q.em--;for(const sd of[-1,1])puff(x-sn*.9+sd*cs*.8,z-cs*.9-sd*sn*.8,vx,vz,Q.mine)}
-    if(Q.sk>.04){Q.sk=0;for(const sd of[-1,1])skid(x-sn*.95+sd*cs*1.02,z-cs*.95-sd*sn*1.02,h,Q.mine)}
+  for(const q of Q.cars){
+    const t=Math.min(Q.t,q.dur),G=q.G,f=t/.05,i=Math.max(0,Math.min(q.n-2,Math.floor(f))),u=Math.max(0,Math.min(1,f-i)),a=i*3,b=a+3;
+    const x=G[a]+(G[b]-G[a])*u,z=G[a+1]+(G[b+1]-G[a+1])*u,h=G[a+2]+angD(G[b+2],G[a+2])*u;
+    const vx=(G[b]-G[a])/.05,vz=(G[b+1]-G[a+1])/.05,sp=Math.hypot(vx,vz),slip=sp>6?angD(h,Math.atan2(vx,vz)):0;
+    q.x=x;q.z=z;q.h=h;q.vx=vx;q.vz=vz;q.sp=sp;q.slip=slip;
+    q.mesh.position.set(x,0,z);q.mesh.rotation.y=h;q.mesh.rotation.z=-slip*.12;
+    // Tyre marks and smoke are drawn only while this replay is actually moving.
+    if(Q.adv>0&&Q.t<=q.dur+.001&&sp>8&&Math.abs(slip)>.3){
+      const sn=Math.sin(h),cs=Math.cos(h);q.em+=Q.adv*30;q.sk+=Q.adv;
+      while(q.em>=1){q.em--;for(const sd of[-1,1])puff(x-sn*.9+sd*cs*.8,z-cs*.9-sd*sn*.8,vx,vz,!!q.mine)}
+      if(q.sk>.04){q.sk=0;for(const sd of[-1,1])skid(x-sn*.95+sd*cs*1.02,z-cs*.95-sd*sn*1.02,h,!!q.mine)}
+    }
   }
-  // camera
-  const k6=Math.min(1,dt*6);
-  if(Q.snap){cf.x=x;cf.z=z;Q.ch=h;Q.snap=false}else{cf.x+=(x+vx*.3-cf.x)*k6;cf.z+=(z+vz*.3-cf.z)*k6}
+  // Follow the first selected driver with an exponential dampener; avoid frame-rate dependent camera jumps.
+  const focus=Q.cars[0],ease=1-Math.exp(-dt*5.5);
+  if(Q.snap){Q.camX=focus.x;Q.camZ=focus.z;Q.camH=105*(OPT.zoom||1)*Q.zoom;Q.ch=focus.h;Q.chX=focus.x-Math.sin(focus.h)*24*Q.zoom;Q.chZ=focus.z-Math.cos(focus.h)*24*Q.zoom;Q.chY=11*Q.zoom;Q.snap=false}
   let fv=45;
   if(Q.cam==='top'){
-    cam.up.set(0,0,-1);const hgt=(105+sp*1.2)*OPT.zoom;cam.position.set(cf.x,hgt,cf.z+.01);cam.lookAt(cf.x,0,cf.z);
+    const tx=focus.x+focus.vx*.24,tz=focus.z+focus.vz*.24,th=105*(OPT.zoom||1)*Q.zoom;
+    Q.camX+=(tx-Q.camX)*ease;Q.camZ+=(tz-Q.camZ)*ease;Q.camH+=(th-Q.camH)*(1-Math.exp(-dt*3.5));
+    cam.up.set(0,0,-1);cam.position.set(Q.camX,Math.max(35,Q.camH),Q.camZ+.01);cam.lookAt(Q.camX,0,Q.camZ);
   }else if(Q.cam==='chase'){
-    cam.up.set(0,1,0);Q.ch+=angD(h,Q.ch)*Math.min(1,dt*3);const sn=Math.sin(Q.ch),cs=Math.cos(Q.ch);
-    cam.position.set(x-sn*24,11,z-cs*24);cam.lookAt(x+sn*14,1.5,z+cs*14);fv=62;
+    Q.ch+=angD(focus.h,Q.ch)*Math.min(1,dt*3.5);const sn=Math.sin(Q.ch),cs=Math.cos(Q.ch);
+    const tx=focus.x-sn*24*Q.zoom,tz=focus.z-cs*24*Q.zoom,ty=11*Q.zoom;
+    Q.chX+=(tx-Q.chX)*ease;Q.chZ+=(tz-Q.chZ)*ease;Q.chY+=(ty-Q.chY)*ease;
+    cam.up.set(0,1,0);cam.position.set(Q.chX,Q.chY,Q.chZ);cam.lookAt(focus.x+sn*14*Q.zoom,1.5*Q.zoom,focus.z+cs*14*Q.zoom);fv=62;
   }else{
     cam.up.set(0,0,-1);const kk=Q.keys,s2=Q.fh*.9*dt;
-    if(kk.KeyW||kk.ArrowUp)Q.fz-=s2;if(kk.KeyS||kk.ArrowDown)Q.fz+=s2;if(kk.KeyA)Q.fx-=s2;if(kk.KeyD)Q.fx+=s2;
+    if(kk.KeyW||kk.ArrowUp)Q.fz-=s2;if(kk.KeyS||kk.ArrowDown)Q.fz+=s2;if(kk.KeyA||kk.ArrowLeft)Q.fx-=s2;if(kk.KeyD||kk.ArrowRight)Q.fx+=s2;
     cam.position.set(Q.fx,Q.fh,Q.fz+.01);cam.lookAt(Q.fx,0,Q.fz);
   }
   if(Math.abs(cam.fov-fv)>.05){cam.fov=fv;cam.updateProjectionMatrix()}
-  const nr=Q.cam==='chase'?1:30;if(cam.near!==nr){cam.near=nr;cam.updateProjectionMatrix()}
+  if(cam.near!==1){cam.near=1;cam.updateProjectionMatrix()}
   rpClock();
 }
-// controls
+// Controls
 addEventListener('keydown',e=>{
-  if(!RP)return;e.stopImmediatePropagation();
+  if(!RP)return;if(e.target&&e.target.closest&&e.target.closest('#rpComparePanel')&&e.code!=='Escape')return;e.stopImmediatePropagation();
   const c0=e.code;let used=true;
-  if(c0==='Escape')exitReplay();
+  if(c0==='Escape'){if(!$('#rpComparePanel').classList.contains('hide'))$('#rpComparePanel').classList.add('hide');else exitReplay()}
   else if(c0==='Space')rpToggle();
   else if(c0==='ArrowLeft'&&RP.cam!=='free')rpSeek(RP.t-2);
   else if(c0==='ArrowRight'&&RP.cam!=='free')rpSeek(RP.t+2);
   else if(c0==='KeyC')rpCamNext();
+  else if(c0==='Equal'||c0==='NumpadAdd')rpZoom(1);
+  else if(c0==='Minus'||c0==='NumpadSubtract')rpZoom(-1);
   else if(/^Digit[1-4]$/.test(c0)){RP.sp=[.25,.5,1,2][+c0.slice(5)-1];rpUI()}
-  else if(RP.cam==='free'&&/^(KeyW|KeyA|KeyS|KeyD|ArrowUp|ArrowDown)$/.test(c0))RP.keys[c0]=true;
+  else if(RP.cam==='free'&&/^(KeyW|KeyA|KeyS|KeyD|ArrowUp|ArrowDown|ArrowLeft|ArrowRight)$/.test(c0))RP.keys[c0]=true;
   else used=false;
   if(used)e.preventDefault();
 },true);
 addEventListener('keyup',e=>{if(!RP)return;e.stopImmediatePropagation();RP.keys[e.code]=false},true);
 $('#rpPlay').onclick=e=>{rpToggle();e.target.blur()};
 $('#rpCam').onclick=e=>{rpCamNext();e.target.blur()};
+$('#rpZoomIn').onclick=e=>{rpZoom(1);e.target.blur()};
+$('#rpZoomOut').onclick=e=>{rpZoom(-1);e.target.blur()};
 $('#rpExit').onclick=exitReplay;
 $('#rpSpd').onclick=e=>{const b=e.target.closest('button');if(!b||!RP)return;RP.sp=+b.dataset.s;rpUI();b.blur()};
 $('#rpSeek').oninput=e=>{if(!RP)return;RP.drag=true;rpSeek(+e.target.value/1000*RP.dur)};
 $('#rpSeek').onchange=e=>{if(RP)RP.drag=false;e.target.blur()};
-R.domElement.addEventListener('wheel',e=>{if(!RP||RP.cam!=='free')return;e.preventDefault();RP.fh=Math.max(25,Math.min(400,RP.fh*(e.deltaY>0?1.12:.89)))},{passive:false});
+R.domElement.addEventListener('wheel',e=>{
+  if(!RP)return;e.preventDefault();
+  if(RP.cam==='free')RP.fh=Math.max(25,Math.min(400,RP.fh*(e.deltaY>0?1.12:.89)));
+  else rpZoom(e.deltaY<0?1:-1);
+},{passive:false});
 {let dr=null;
-R.domElement.addEventListener('pointerdown',e=>{if(RP&&RP.cam==='free'){dr={x:e.clientX,y:e.clientY};R.domElement.setPointerCapture(e.pointerId)}});
-R.domElement.addEventListener('pointermove',e=>{if(!dr||!RP)return;const m=RP.fh*2*Math.tan(22.5*Math.PI/180)/innerHeight;RP.fx-=(e.clientX-dr.x)*m;RP.fz-=(e.clientY-dr.y)*m;dr={x:e.clientX,y:e.clientY}});
-R.domElement.addEventListener('pointerup',()=>{dr=null});}
-// menu button: your own best lap, kept on this device
+  R.domElement.addEventListener('pointerdown',e=>{if(RP&&RP.cam==='free'){dr={x:e.clientX,y:e.clientY};R.domElement.setPointerCapture(e.pointerId)}});
+  R.domElement.addEventListener('pointermove',e=>{if(!dr||!RP)return;const m=RP.fh*2*Math.tan(22.5*Math.PI/180)/innerHeight;RP.fx-=(e.clientX-dr.x)*m;RP.fz-=(e.clientY-dr.y)*m;dr={x:e.clientX,y:e.clientY}});
+  R.domElement.addEventListener('pointerup',()=>{dr=null});
+}
+function rpSetCompareCount(){
+  const n=rpCmpSelected.size;$('#rpCompareCount').textContent=n+' / 4 selected';$('#rpCompareGo').disabled=n<2||n>4;
+}
+function rpDrawCompareOptions(){
+  const el=$('#rpCompareList');
+  if(!rpCmpChoices.length){el.innerHTML='<div class="rpcNote">No other saved replays are available for this track yet.</div>';$('#rpCompareMsg').textContent='';rpSetCompareCount();return}
+  el.innerHTML=rpCmpChoices.map(o=>'<label class="rpo"><input type="checkbox" data-rpkey="'+esc(o.key)+'" '+(rpCmpSelected.has(o.key)?'checked':'')+'><span class="rpon">'+esc(o.label||o.name)+'</span><span class="rpot">'+(o.ms>0?esc(fmt(o.ms/1000)):'LOCAL')+'</span></label>').join('');
+  $('#rpCompareMsg').textContent='';rpSetCompareCount();
+}
+async function rpOpenCompare(){
+  if(!RP)return;const panel=$('#rpComparePanel');
+  if(!panel.classList.contains('hide')){panel.classList.add('hide');return}
+  panel.classList.remove('hide');$('#rpCompareList').innerHTML='<div class="rpcNote">Finding saved laps…</div>';$('#rpCompareMsg').textContent='';
+  const cc=RP.cc;
+  if(!LB||LB.key!==cc.str)await fetchLB();
+  if(!RP)return;
+  rpCmpChoices=[];const seen=new Set();
+  const add=o=>{const n=String(o.name||'Replay').toLowerCase();if(seen.has(n))return;seen.add(n);rpCmpChoices.push({...o,key:o.key||('name:'+n)});};
+  const local=ghLoad(cc.str);
+  if(local&&local.length>=60){let ms=0;try{ms=Math.round(JSON.parse(localStorage.getItem(pk(cc.str))).t*1000)}catch(e){};const nm=SESS?SESS.name:'You';add({name:nm,label:nm+' · your saved lap',ms,mine:true,G:local,key:rpNameKey(nm,true)})}
+  if(LB&&LB.key===cc.str&&Array.isArray(LB.rows)){
+    for(const r of LB.rows){
+      if(seen.has(String(r.name).toLowerCase()))continue;
+      if(API_URL){if(r.rp)add({name:r.name,label:r.name,ms:r.ms,mine:!!(SESS&&r.name.toLowerCase()===SESS.name.toLowerCase()),key:'name:'+String(r.name).toLowerCase(),cc})}
+      else {const g=ghLoadFor(r.name,cc.str);if(g&&g.length>=60)add({name:r.name,label:r.name,ms:r.ms,mine:!!(SESS&&r.name.toLowerCase()===SESS.name.toLowerCase()),G:g,key:'name:'+String(r.name).toLowerCase()})}
+    }
+  }
+  // Keep the replay currently being watched available even if it is outside the visible leaderboard.
+  for(const q of RP.cars){if(!seen.has(String(q.name||'Replay').toLowerCase()))add({name:q.name,label:q.name,ms:q.ms,mine:q.mine,G:q.G,key:q.key,cc})}
+  rpCmpSelected=new Set(RP.cars.map(q=>q.key));
+  // If four are already active, trim any stale keys that no longer exist in the available list.
+  rpCmpSelected=new Set([...rpCmpSelected].filter(k=>rpCmpChoices.some(o=>o.key===k)).slice(0,4));
+  rpDrawCompareOptions();
+}
+$('#rpCompare').onclick=rpOpenCompare;
+$('#rpCompareCancel').onclick=()=>$('#rpComparePanel').classList.add('hide');
+$('#rpCompareList').addEventListener('change',e=>{
+  const t=e.target;if(!t.matches('input[type="checkbox"][data-rpkey]'))return;const key=t.dataset.rpkey;
+  if(t.checked){if(rpCmpSelected.size>=4){t.checked=false;$('#rpCompareMsg').textContent='Choose no more than four drivers.';return}rpCmpSelected.add(key)}else rpCmpSelected.delete(key);
+  rpSetCompareCount();$('#rpCompareMsg').textContent='';
+});
+$('#rpCompareGo').onclick=async()=>{
+  if(!RP)return;const cc=RP.cc,picks=rpCmpChoices.filter(o=>rpCmpSelected.has(o.key));
+  if(picks.length<2){$('#rpCompareMsg').textContent='Select at least two drivers.';return}
+  if(picks.length>4){$('#rpCompareMsg').textContent='Choose no more than four drivers.';return}
+  const rpBeforeLoad=RP;$('#rpCompareGo').disabled=true;$('#rpCompareMsg').textContent='Loading selected laps…';
+  try{
+    const ready=[];
+    for(const o of picks){
+      if(o.G&&o.G.length>=60){ready.push({...o,G:o.G});continue}
+      if(!API_URL)throw new Error('That replay is not saved on this device.');
+      const k2=lbKey(cc);if(!k2)throw new Error('This track has no replay leaderboard.');
+      const j=await api('/api/replay?season='+k2.season+'&track='+k2.track+'&name='+encodeURIComponent(o.name));
+      ready.push({...o,name:j.name,ms:j.ms,G:rpDec(j.data),key:'name:'+String(j.name).toLowerCase()});
+    }
+    if(RP!==rpBeforeLoad)return;
+    startReplaySet(cc,ready);
+  }catch(e){if(!RP)return;$('#rpCompareMsg').textContent=e.message||'Could not load these replays.';$('#rpCompareGo').disabled=false}
+};
+// Menu button: your own best lap, kept on this device.
 function updReplayBtn(){
   const b=$('#mReplay');if(!b)return;const cc=COURSES[selC];
   b.classList.toggle('hide',!(cc&&isRoute(cc.str)&&ghLoad(cc.str)&&!(cc.comm&&cc.draft)));
 }
-$('#mReplay').onclick=()=>{const cc=COURSES[selC],g=cc&&ghLoad(cc.str);if(!g)return;let ms=0;try{ms=Math.round(JSON.parse(localStorage.getItem(pk(cc.str))).t*1000)}catch(e){}startReplay(cc,g,'You',ms,true)};
-// leaderboard: watch someone's replay
+$('#mReplay').onclick=()=>{const cc=COURSES[selC],g=cc&&ghLoad(cc.str);if(!g)return;let ms=0;try{ms=Math.round(JSON.parse(localStorage.getItem(pk(cc.str))).t*1000)}catch(e){}startReplay(cc,g,SESS?SESS.name:'You',ms,true)};
+// Leaderboard: watch someone's replay.
 async function watchReplay(name){
   const cc=COURSES[selC],k2=cc&&lbKey(cc);if(!k2)return;
-  if(!API_URL||(SESS&&name===SESS.name&&!API_URL)){const g=ghLoad(cc.str);if(g)startReplay(cc,g,name,0,true);else toast('No replay saved on this device');return}
+  if(!API_URL){const g=ghLoadFor(name,cc.str);if(g)startReplay(cc,g,name,0,!!(SESS&&name.toLowerCase()===SESS.name.toLowerCase()));else toast('No replay saved on this device');return}
   try{
     toast('Loading replay…');
     const j=await api('/api/replay?season='+k2.season+'&track='+k2.track+'&name='+encodeURIComponent(name));
-    startReplay(cc,rpDec(j.data),j.name,j.ms,!!(SESS&&j.name===SESS.name));
+    startReplay(cc,rpDec(j.data),j.name,j.ms,!!(SESS&&j.name.toLowerCase()===SESS.name.toLowerCase()));
   }catch(e){toast(e.message||'Could not load the replay')}
 }
 $('#lb').addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.lbp');if(b)watchReplay(b.dataset.n)});
@@ -2239,6 +2361,7 @@ $('#bTest').onclick=testDrive;$('#tdExit').onclick=tdExit;$('#tdRestart').onclic
 // {id:'unique-id', date:'YYYY-MM-DD', title:'Short title', art:'kind', text:'Plain description for players.'}
 // art picks the small picture drawn by updArt() below. Add a new case there if none fits. Do not use apostrophes in text.
 const UPDATES=[
+ {id:'replay-compare',date:'2026-10-30',title:'Compare replay laps and zoom the camera',art:'replay',text:'Open a replay and press Compare to line up to four recorded laps on the same track. The laps run at their real recorded times, so you can see who reaches the finish first. The top follow camera is smoother, and the plus and minus buttons or mouse wheel zoom the replay camera.'},
  {id:'build-zoom',date:'2026-10-30',title:'Zoom and fast panning in the editor',art:'zoom',text:'Use the mouse wheel, the + and - keys or the new + and - buttons in the toolbar to zoom the editor in and out. Hold Shift while panning to move the camera much faster.'},
  {id:'lane-surf',date:'2026-10-30',title:'Different surface on each lane',art:'lanes',text:'On a 2-wide road you can now put two different 1-wide pieces side by side and give each its own surface, for example ice on the left and mud on the right, then carry on into the next wide corner.'},
  {id:'chase-fix',date:'2026-10-30',title:'Chase camera fixed in replays',art:'replay',text:'The Chase camera in replays no longer cuts away the road and car close to the camera. It now follows your car from behind.'},
