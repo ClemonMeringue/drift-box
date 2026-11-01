@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <script type="text/plain" id="project-handover">
 DRIFT BOX - PROJECT HANDOVER (READ THIS FIRST)
-Last updated: 2026-10-30 (replay compare)
+Last updated: 2026-10-30 (gap jump, iPhone, declutter)
 
 NOTE TO ANY AI WORKING ON THIS FILE
 - ONLINE MULTIPLAYER WAS REMOVED on 2026-10-29 (client and server: no Online tab, no WebSocket, no Room Durable Object). Any older text below that mentions online rooms, /ws, ROOMS or the Room class is out of date. Do not bring it back unless asked. The leaderboard refresh is 40 seconds.
 - This block exists so a fresh AI that is given only index.html knows the whole project.
 - KEEP IT UP TO DATE. Every time you change index.html (or learn something new about the server files), update the relevant section below and add a line to the CHANGELOG at the bottom, then bump the "Last updated" date. Do this in the same response as the change, without being asked.
+- PHONE / HOME SCREEN: head has apple-mobile-web-app meta tags, theme-color and a canvas-drawn apple-touch-icon; the 'v4' CSS block at the end of the stylesheet holds the phone layout (touch pad grid, HUD corners, menu overflow) and body[data-mode] hides race HUD in build mode. #hint fades after 9 s. Only stub-rendered screenshots were checked, never a real iPhone.
+- GAP JUMP (track crossing): route token j (lowercase, 1-wide only). One piece, kind gapjump (launch ramp, symmetrical like jump), and the NEXT tile is skipped by the route (not owned, so another road may cross it); the road continues two tiles on. Physics: drive() launches when the car passes lz 5..8 outward from the ramp at 14+ speed; the flight is scripted (c.gap, speed held 26..58, about 40 units, car height c.y, walls ignored while c.y>1.3). Lap tile progress ignores flying (hits cleared while c.y>1.3). Bots fly (b.fly, b.y), replays derive height with rpFlyY. The worker's track regex must allow j.
 - ROUTE SURFACES: after an A token (two 1-wide lanes) two lowercase letters set the left and right lane surface separately (i ice, s sand, m mud, r plain road), e.g. ASBri = straight left on road, boost right on ice. One letter sets both lanes. The worker's track string regex accepts r (worker.js redeploy needed to SAVE such tracks to a season or community map).
 - EDITOR CAMERA: height variable BZ (30 to 320, default 110) changes with the mouse wheel, + / - keys and the toolbar buttons bZin / bZout. Shift pans 3.5x faster. cam.near is 4 in build mode, 30 while driving, 1 for the replay chase camera (the default 30 hides anything closer than 30 units, which is why low cameras need a smaller near).
 - REPLAYS: the PB ghost data (R.gh, [x,z,h] every 0.05 s, saved in localStorage pk('g:'+course)) is also the replay. Viewer: startReplay/startReplaySet/exitReplay/replayTick/rpSeek, state var RP, UI #rp, body.rpOn hides the HUD, and the frame loop calls replayTick when RP is set. The viewer compares up to four recorded laps on the same track, supports top/chase/free cameras, smooth top-camera follow and zoom. Server: table replays + pbs.rp flag (migrate-6.sql), GET /api/replay, POST /api/replay, replay field on POST /api/pb. Encoding: rpEnc/rpDec, base64 of Int16 deltas (x*10, z*10, h*100), 6 bytes a frame, worker.js cleanReplay validates it. The leaderboard shows a play button on rows with rp. rpBackfill uploads an old local best once.
@@ -194,6 +196,8 @@ There is no password reset: a forgotten password means a new account or editing 
 ======================================================================
 10. CHANGELOG (newest first; add a line for every change)
 ======================================================================
+2026-10-30  iPhone home-screen support (meta tags, icon, safe areas, thumb pad), declutter (build mode hides race HUD, hint fades, tinted piece groups, menu width fix).
+2026-10-30  Gap jump piece (route token j): a launch ramp that flies over the next tile so a track can cross itself. Bots and replays show the flight. Worker track regex allows j.
 2026-10-30  Replay comparison: compare up to four laps at once, with smoother top-camera follow and replay zoom. Client-only change; the existing replay API is reused. Replay cameras now use a shorter near plane to prevent close geometry popping.
 2026-10-30  Replay chase camera fixed (camera near plane). Editor: mouse wheel / + / - / buttons zoom, Shift pans faster. Two lanes of a 2-wide road can have different surfaces (route string: two letters after an A token, r = plain). Worker track regex now allows r.
 2026-10-30  Replays: Replay best lap button on the menu, play buttons on leaderboard rows, replay viewer (pause, scrub, speed, top/chase/free camera). Server stores each player's best lap (migrate-6.sql adds replays table and pbs.rp; worker.js adds /api/replay). Run migrate-6.sql BEFORE deploying worker.js.
@@ -215,7 +219,11 @@ There is no password reset: a forgotten password means a new account or editing 
 2026-10-26  Shop opened to all signed-in players. Removed all performance boosts (big tank, quick refill, drift charge, launch kick, nitro punch) and their code. Test coins button owner only.
 Earlier   Added bigger segmented nitro bar and pixel nitro flame, medals and coins, owner shop, season builder with Draft/Publish/Delete and built-status marks, Tune panel auto-close, author times for Season 1.
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Drift Box">
+<meta name="theme-color" content="#0b0d10"><meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" id="appIcon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E">
 <title>Drift Box</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;1,700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -236,7 +244,7 @@ canvas{display:block;touch-action:none}
 #gauge{position:fixed;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));width:130px;height:130px;pointer-events:none}
 #pad{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 @media (max-width:700px){#timer{top:auto;right:auto;left:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px))}}
-#mini{position:fixed;right:12px;top:calc(170px + env(safe-area-inset-top,0px));width:120px;height:120px;background:var(--panel);border:1px solid var(--line);border-radius:8px;pointer-events:none}
+#mini{position:fixed;right:12px;top:calc(252px + env(safe-area-inset-top,0px));width:120px;height:120px;background:var(--panel);border:1px solid var(--line);border-radius:8px;pointer-events:none}
 @media (max-width:700px){#mini{display:none}}
 #tune{top:calc(64px + env(safe-area-inset-top,0px));bottom:auto;left:12px;width:min(330px,calc(100% - 24px))}
 #tune label{display:grid;grid-template-columns:112px 1fr 38px;gap:8px;align-items:center;margin:4px 0}
@@ -686,6 +694,74 @@ body.rpOn .bar,body.rpOn #timer,body.rpOn #mini,body.rpOn #gauge,body.rpOn #nbar
 #rpComparePanel #rpCompareGo{background:var(--acc);border-color:var(--acc);color:#fff}
 #rpComparePanel #rpCompareGo:disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:520px){#rp{padding:10px}#rp .rpc2{gap:6px}#rp .rps button{padding:7px 7px}#rp .rpc2>button{padding:7px 8px}#rpCompareList{grid-template-columns:1fr;max-height:125px}#rp #rpCam{max-width:115px;overflow:hidden;text-overflow:ellipsis}}
+
+/* ===== v4: phone / home-screen layout and a calmer HUD ===== */
+html,body{position:fixed;inset:0;width:100%;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+body{-webkit-user-select:none;user-select:none}
+input,textarea,select{-webkit-user-select:text;user-select:text;font-size:16px}
+button{touch-action:manipulation}
+#menu{overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#menu .mw{box-sizing:border-box}
+#menu .mw,#menu .mcols>*,#menu .mhead{min-width:0;max-width:100%}
+/* the build screen shows only what building needs */
+body[data-mode="build"] #gauge,body[data-mode="build"] #nbar,body[data-mode="build"] #timer,body[data-mode="build"] #mini,body[data-mode="build"] #bCar,body[data-mode="build"] #pad{display:none!important}
+#hint{transition:opacity .6s}
+#hint.fade{opacity:0;height:0;overflow:hidden}
+.info.hintOff{padding-top:6px;padding-bottom:6px}
+/* each group of builder pieces gets its own tint so they are easy to tell apart */
+#pieces .grp:nth-child(2) button{color:#cdb36a}
+#pieces .grp:nth-child(3) button{color:#7fb8d6}
+#pieces .grp:nth-child(4) button{color:#8fc98f}
+#pieces .grp:nth-child(5) button{color:#d99a9a}
+#pieces .grp button:hover,#pieces .grp button.on{color:#fff}
+#pieces .grp button.on{color:#0d0e10}
+#tools{gap:4px 10px}
+@media (max-width:900px),(pointer:coarse){
+  .bar{gap:4px;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
+  .bar>button{padding:6px 10px;font-size:11px;letter-spacing:.1em}
+  #tools{flex-wrap:wrap;max-width:100%;gap:4px 8px}
+  #pieces{display:flex;flex:1 1 100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #pieces::-webkit-scrollbar{display:none}
+  #toolName{display:none}
+  #tools button{width:36px;height:36px}
+  #tools .grp{flex:none}
+  #hint{display:none}
+  #mini{display:none}
+  body[data-mode="drive"] .info{left:max(10px,env(safe-area-inset-left,0px));top:calc(48px + env(safe-area-inset-top,0px));bottom:auto;max-width:46%;padding:5px 9px;font-size:12px}
+  #timer{top:calc(48px + env(safe-area-inset-top,0px))!important;bottom:auto!important;left:auto!important;right:max(10px,env(safe-area-inset-right,0px))!important;font-size:12px;padding:5px 9px;line-height:1.35;background:var(--panel);border:1px solid var(--line);border-radius:8px;max-width:46%}
+  #gauge{width:84px;height:84px;left:50%;right:auto;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  #nbar{width:auto;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(142px + env(safe-area-inset-bottom,0px))}
+  #pad{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;grid-template-columns:62px 62px 1fr 62px 74px;grid-template-rows:62px 62px;gap:6px}
+  #pad button{height:auto;width:100%;border-radius:12px;background:#14161acc;border:1px solid #ffffff2a;color:#e6e7ea;font-size:22px}
+  #pad button:active{background:var(--acc)}
+  #pad [data-k="KeyA"]{grid-column:1;grid-row:1/3}
+  #pad [data-k="KeyD"]{grid-column:2;grid-row:1/3}
+  #pad [data-k="Nitro"]{grid-column:4;grid-row:1;font-size:14px;letter-spacing:.1em;border-color:#ff8a3d88}
+  #pad [data-k="KeyS"]{grid-column:4;grid-row:2}
+  #pad [data-k="KeyW"]{grid-column:5;grid-row:1/3;background:#2a1a12cc;border-color:#ff8a3d88}
+}
+@media (max-width:900px) and (orientation:landscape){
+  #nbar{left:170px;right:170px;bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+  #pad{grid-template-rows:56px 56px}
+}
+@media (max-width:700px){
+  #menu .mw{padding:calc(14px + env(safe-area-inset-top,0px)) 16px 28px}
+  #menu .mhead{gap:4px 12px}
+  #menu .mhead h1{font-size:30px}
+  #menu .mhead .sub{font-size:10px;letter-spacing:.16em;flex-basis:100%;order:3}
+  #acct{margin-left:0;width:100%;justify-content:space-between;flex-wrap:wrap;gap:6px 12px}
+  #menu .tabs{gap:18px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #menu .tabs::-webkit-scrollbar{display:none}
+  #menu .tabs button{flex:none;white-space:nowrap;padding-left:2px;padding-right:2px}
+  #menu .mfoot{position:sticky;bottom:0;background:linear-gradient(transparent,#0b0d10 28%);padding:18px 0 calc(10px + env(safe-area-inset-bottom,0px));z-index:3}
+  #res .rc{max-height:calc(100% - 20px);overflow:auto}
+}
+@media (max-width:900px) and (orientation:landscape) and (max-height:520px){
+  #menu .mw{padding:calc(8px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px))}
+  #menu .mhead{padding-bottom:6px}
+  #menu .mhead h1{font-size:26px}
+  #menu .mhead .sub{display:none}
+}
 </style>
 </head>
 <body>
@@ -821,6 +897,7 @@ const K={
   chicane:{line:true,parts:[...SP,[-7.5,-7,3.5,.6],[7.5,7,3.5,.6]]},
   slick:{line:true,parts:SP},
   jump:{line:true,parts:SP},
+  gapjump:{line:true,parts:SP},
   gravel:{parts:SP},
   slalom:{line:true,parts:[...SP,[-3.5,-7,.9,.9],[3.5,0,.9,.9],[-3.5,7,.9,.9]]},
   gate:{line:true,parts:[...SP,[-8,0,3,.8],[8,0,3,.8]]},
@@ -855,6 +932,7 @@ function build(kind,ghost,mat){
   if(kind==='boost'){const p=new THREE.Mesh(new THREE.BoxGeometry(10,.04,8),mk(mPad));p.position.y=.1;g.add(p);for(const z of[-2.4,0,2.4]){const q=new THREE.Mesh(new THREE.BoxGeometry(7,.05,.7),mk(mLine));q.position.set(0,.13,z);g.add(q)}}
   if(kind==='slick'){const o=new THREE.Mesh(new THREE.CylinderGeometry(7,7,.04,32),mk(mOil));o.position.y=.1;g.add(o)}
   if(kind==='gravel'){const q=new THREE.Mesh(new THREE.BoxGeometry(22,.05,24),mk(mGrav));q.position.y=.11;g.add(q)}
+  if(kind==='gapjump'){for(const s of[-1,1]){const q=new THREE.Mesh(new THREE.BoxGeometry(20,.5,6.4),mk(mRamp));q.position.set(0,.8,s*9);q.rotation.x=-s*.26;g.add(q);const st2=new THREE.Mesh(new THREE.BoxGeometry(20,.06,.9),mk(mBar));st2.position.set(0,.05,s*5.5);g.add(st2)}}
   if(kind==='jump'){for(const s of[-1,1]){const q=new THREE.Mesh(new THREE.BoxGeometry(18,.35,4.6),mk(mRamp));q.position.set(0,.75,s*2.1);q.rotation.x=s*.32;g.add(q)}}
   if(kind==='ice'){const q=new THREE.Mesh(new THREE.BoxGeometry(22,.05,24),mk(mIce));q.position.y=.11;g.add(q)}
   if(kind==='refill'){const d=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.2,.05,24),mk(mPadG));d.position.y=.12;g.add(d);const rg=new THREE.Mesh(new THREE.RingGeometry(4.6,6.2,32).rotateX(-Math.PI/2),mk(mPadG));rg.position.y=.12;g.add(rg)}
@@ -934,7 +1012,7 @@ function sides(r){let a=[0,1],b=[1,0];for(let i=0;i<r;i++){a=[a[1],-a[0]];b=[b[1
 // routeStep() is the single source of truth: it says which pieces a token places and where the road goes next.
 // Both loadCourse (string to pieces) and routeFromBlocks (pieces to string) use it, so they always agree.
 const KIND1={S:'straight',B:'boost',C:'chicane',O:'slick',J:'jump',G:'gravel',M:'slalom',T:'gate',N:'open',I:'ice',P:'refill',U:'rumble',Q:'squeeze',D:'drift',E:'edge',F:'edge'};
-const LANES='SBCOJGMTNIPUQDEF',ROUTE_RX=/^[SLRBCOJGMTNIPUQDEFWXYZHKVAismr]+$/,MATC=c=>c==='r'||!!MATK[c];
+const LANES='SBCOJGMTNIPUQDEF',ROUTE_RX=/^[SLRBCOJGMTNIPUQDEFWXYZHKVAismrj]+$/,MATC=c=>c==='r'||!!MATK[c];
 const vL=h=>[h[1],-h[0]],vR=h=>[-h[1],h[0]],rotZ=v=>v[0]===0?(v[1]>0?0:2):(v[0]>0?1:3),axX=r=>[[1,0],[0,-1],[-1,0],[0,1]][r];
 const dot2=(a,b)=>a[0]*b[0]+a[1]*b[1];
 const cornerRot=(h,h2)=>{const a=[-h[0],-h[1]];for(let r=0;r<4;r++){const q=sides(r);if(q.some(v=>v[0]===a[0]&&v[1]===a[1])&&q.some(v=>v[0]===h2[0]&&v[1]===h2[1]))return r}return 0};
@@ -951,6 +1029,9 @@ function routeStep(st,tok,lanes){
       const s=tok==='W'?Lh:Rh,px=cx+s[0]/2,pz=cz+s[1]/2,r=rotZ([-h[0],-h[1]]),n=[-s[0],-s[1]];
       put(dot2(n,axX(r))>0?'narrowR':'narrowL',px,pz,r,false);
       el={x:px,z:pz,tx:px+n[0]*.25,tz:pz+n[1]*.25,bo:0,cells:[[cx,cz],[cx+s[0],cz+s[1]]],h2:h,ex:st.ex+h[0]+s[0]/2,ez:st.ez+h[1]+s[1]/2,w2:2};
+    }else if(tok==='j'){
+      // Gap jump: a launch ramp, then one tile that is left empty or used by another road, then the road carries on.
+      put('gapjump',cx,cz,h[0]?1:0,true);el={x:cx,z:cz,cells:[[cx,cz]],h2:h,ex:st.ex+h[0]*2,ez:st.ez+h[1]*2,w2:1};
     }else{if(!lane(tok,cx,cz))return null;el={x:cx,z:cz,cells:[[cx,cz]],h2:h,ex:st.ex+h[0],ez:st.ez+h[1],w2:1}}
   }else{
     if(tok==='V'){put('widestraight',cx,cz,h[0]?1:0,true);el={x:cx,z:cz,cells:two(cx,cz),h2:h,ex:st.ex+h[0],ez:st.ez+h[1],w2:2}}
@@ -1147,7 +1228,7 @@ $('#bClr').onclick=()=>{clearAll();race={route:null};closeBots()};
 const ICO=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
 const PIECES=[
  [['straight','Straight','<path d="M7 3v18M17 3v18"/>'],['corner','Corner','<path d="M4 21V11a7 7 0 0 1 7-7h10M13 21v-5a3 3 0 0 1 3-3h5"/>'],['wide','Wide corner','<path d="M3 21C3 11 11 3 21 3M3 13C3 8 8 3 13 3"/>'],['open','Open road','No walls','<path d="M7 3v18M17 3v18" stroke-dasharray="2 3"/>'],['edge','Half border','Wall on one side. Rotate to pick the side.','<path d="M7 3v18" stroke-dasharray="2 3"/><path d="M17 3v18"/>'],['squeeze','Squeeze','Road narrows to about half width','<path d="M5 3v6l3 3-3 3v6M19 3v6l-3 3 3 3v6"/>'],['widestraight','Wide straight','Two tiles wide. Join it to a normal road with the narrow pieces.','<path d="M3 3v18M21 3v18M12 3v18" stroke-dasharray="2 3"/>'],['narrowL','Narrow left','Joins a 2-wide road to a 1-wide road (or the other way round). R turns it.','<path d="M3 3l7 18M21 3v18"/>'],['narrowR','Narrow right','Joins a 2-wide road to a 1-wide road (or the other way round). R turns it.','<path d="M3 3v18M21 3l-7 18"/>']],
- [['chicane','Chicane','<path d="M9 3c0 6 6 6 6 9s-6 3-6 9"/>'],['slalom','Slalom','<circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>'],['gate','Gate','<path d="M4 6v14M20 6v14M4 9h16"/>'],['jump','Jump','<path d="M3 19h18M3 19l12-9v9"/>'],['rumble','Rumble strips','Bumpy strips that slow you a little','<path d="M5 6h14M5 10h14M5 14h14M5 18h14"/>']],
+ [['chicane','Chicane','<path d="M9 3c0 6 6 6 6 9s-6 3-6 9"/>'],['slalom','Slalom','<circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>'],['gate','Gate','<path d="M4 6v14M20 6v14M4 9h16"/>'],['jump','Jump','<path d="M3 19h18M3 19l12-9v9"/>'],['gapjump','Gap jump','Launch ramp that flies you over the next tile, so another road can cross under it. Leave that tile empty or build the crossing road there. You land two tiles on.','<path d="M2 19h6l5-6M15 19h7M12 6l3 3-3 3"/>'],['rumble','Rumble strips','Bumpy strips that slow you a little','<path d="M5 6h14M5 10h14M5 14h14M5 18h14"/>']],
  [['boost','Boost','<path d="M6 10l6-5 6 5M6 18l6-5 6 5"/>'],['refill','Nitro pad','Refills nitro','<circle cx="12" cy="12" r="7"/><path d="M12 8.5v7M8.5 12h7"/>'],['drift','Drift zone','Low grip. Sliding here charges nitro.','<path d="M5 20c0-8 6-8 9-11s3-5 5-5M9 21c0-6 4-6 7-8"/>'],['slick','Oil','<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>'],['gravel','Gravel','<circle cx="7" cy="8" r="1.3"/><circle cx="14" cy="6" r="1.3"/><circle cx="18" cy="12" r="1.3"/><circle cx="10" cy="13" r="1.3"/><circle cx="6" cy="18" r="1.3"/><circle cx="15" cy="18" r="1.3"/>'],['ice','Ice','Very slippery','<path d="M12 3v18M4.5 7.5l15 9M4.5 16.5l15-9"/>']],
  [['cp1','Checkpoint','One tile wide. Click on the join between two track tiles. R turns it.','<path d="M6 21V4M6 5h12l-3 4 3 4H6"/>'],['cp2','Wide checkpoint','Two tiles wide, for wide parts of a track.','<path d="M4 21V4M20 21V4M4 5h16"/><path d="M8 12h8" stroke-dasharray="2 2"/>']],
  [['paint','Paint surface','Click a piece to change it to the surface picked (Road, Ice, Sand or Mud)','<path d="M5 19c3 0 4-1 4-3a2.2 2.2 0 0 1 4.4 0c0 2-2 3-4.4 3zM11.5 13.5L19 5l1 1-6.5 8.5"/>'],['erase','Erase','<path d="M6 6l12 12M18 6L6 18"/>']]
@@ -1164,16 +1245,22 @@ function setTool(t){tool=t;document.querySelectorAll('[data-t]').forEach(b=>b.cl
 function setMode(m){
   if(RP&&m==='build')return;
   if(TD&&m==='build'){tdExit();return}
-  hideTune();mode=m;$('#mDrive').classList.toggle('on',m==='drive');$('#mBuild').classList.toggle('on',m==='build');
+  hideTune();mode=m;document.body.dataset.mode=m;$('#mDrive').classList.toggle('on',m==='drive');$('#mBuild').classList.toggle('on',m==='build');
   $('#tools').classList.toggle('hide',m!=='build');
   $('#pad').classList.toggle('hide',m!=='drive'||!matchMedia('(pointer:coarse)').matches);
   cam.near=m==='build'?4:30;
   if(m==='build'){cam.fov=45;cam.updateProjectionMatrix();pan.x=c.x;pan.z=c.z;cam.up.set(0,0,-1)}else cam.up.set(0,0,-1);
+  if(matchMedia('(pointer:coarse)').matches)$('#hint').textContent=m==='build'?'Tap to place a piece. Pick pieces in the toolbar.':'';else
   $('#hint').textContent=m==='build'
     ?'Click to place a piece · right-click to erase · '+kn('up')+' '+kn('left')+' '+kn('down')+' '+kn('right')+' to pan (hold Shift to go faster) · mouse wheel or + / - to zoom · '+kn('restart')+' to rotate · 1-9 pick piece, 0 erase · '+kn('build')+' to drive'
     :kn('up')+' gas · '+kn('down')+' brake · '+kn('left')+' '+kn('right')+' steer · brake while turning to flick into a drift · '+kn('nitro')+' nitro · '+kn('build')+' build · '+kn('restart')+' restart · Esc menu';
+  {const h=$('#hint');h.classList.remove('fade');clearTimeout(window._hf);window._hf=setTimeout(()=>h.classList.add('fade'),9000)}
   syncGhost();
 }
+// iPhone home screen: icon drawn at start, no pinch/double-tap zoom
+try{const cv=document.createElement('canvas');cv.width=cv.height=180;const g=cv.getContext('2d');g.fillStyle='#0b0d10';g.fillRect(0,0,180,180);g.fillStyle='#ff5a1f';g.transform(1,0,-.28,1,24,0);g.fillRect(52,38,26,104);g.setTransform(1,0,0,1,0,0);g.fillStyle='#fff';g.font='italic 800 62px Arial Narrow,Arial,sans-serif';g.textBaseline='middle';g.fillText('DB',84,92);$('#appIcon').href=cv.toDataURL('image/png')}catch(e){}
+['gesturestart','gesturechange'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault()));
+document.addEventListener('dblclick',e=>{if(!/INPUT|TEXTAREA/.test(e.target.tagName))e.preventDefault()});
 const ray=new THREE.Raycaster(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),pt=new THREE.Vector3(),ndc=new THREE.Vector2();
 function aim(e){
   ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);cam.updateMatrixWorld();
@@ -1219,6 +1306,16 @@ function drive(dt){
     if(b.k==='refill'&&Math.abs(lx)<8&&Math.abs(lz)<8)zr=1;
     if(b.k==='rumble'&&Math.abs(lx)<11&&Math.abs(lz)<8)zu=1;
     if(b.k==='drift'&&Math.abs(lx)<11&&Math.abs(lz)<12)zd=1;
+    if(b.k==='gapjump'&&!(c.air>0)&&!(c.jc>0)&&Math.abs(lx)<9&&Math.abs(lz)>5&&Math.abs(lz)<8){
+      let wx=c.vx,wz=c.vz;for(let i=0;i<b.rot;i++){const t=wx;wx=-wz;wz=t}
+      const spd0=Math.hypot(wx,wz);
+      if(spd0>14&&lz*wz>0&&Math.abs(wz)>Math.abs(wx)*1.5){
+        // The flight is scripted so it always clears the next tile: speed is held, distance is about 40 units.
+        let ux=0,uz=lz>0?1:-1;for(let i=0;i<b.rot;i++){const t=ux;ux=uz;uz=-t}
+        const hv=Math.max(26,Math.min(58,spd0));
+        c.air=c.at=40/hv;c.jc=1.2;c.gap={ux,uz,sp:hv};shk=Math.max(shk,.25);
+      }
+    }
     if(b.k==='jump'&&Math.abs(lx)<9&&Math.abs(lz)<2.5&&!(c.air>0)&&!(c.jc>0)&&Math.hypot(vf,vl)>10){c.air=c.at=.3+Math.hypot(vf,vl)*.012;c.jc=1;shk=Math.max(shk,.2)}
   }
   if(zb){vf+=45*dt;shk=Math.max(shk,.1)}
@@ -1238,9 +1335,10 @@ function drive(dt){
   // yaw has momentum, plus a gentle pull toward the travel direction
   const wT=c.s*P.steer/(1+Math.abs(vf)*(P.sd||.03))*Math.min(1,.3+Math.abs(vf)/6)*dir*(dn&&st&&vf>10?1.3:1)-(vf>0?(assist?P.stab:P.stab*.4)*vl/Math.max(vf,6):0);
   c.w+=(wT-c.w)*Math.min(1,dt*(zs?1.6:zi?3:6));c.h+=c.w*dt;
+  if(c.gap&&c.air>0){c.vx=c.gap.ux*c.gap.sp;c.vz=c.gap.uz*c.gap.sp;c.w=0;c.h+=angD(Math.atan2(c.gap.ux,c.gap.uz),c.h)*Math.min(1,dt*10)}
   c.x+=c.vx*dt;c.z+=c.vz*dt;
   c.jc=Math.max(0,(c.jc||0)-dt);
-  if(c.air>0){c.air-=dt;const u=1-Math.max(0,c.air)/c.at;c.y=c.at*20*u*(1-u);if(c.air<=0){c.y=0;shk=Math.max(shk,.3);for(let i=0;i<8;i++)puff(c.x,c.z,c.vx,c.vz)}}
+  if(c.air>0){c.air-=dt;const u=1-Math.max(0,c.air)/c.at;c.y=c.at*20*u*(1-u);if(c.air<=0){c.y=0;c.gap=null;shk=Math.max(shk,.3);for(let i=0;i<8;i++)puff(c.x,c.z,c.vx,c.vz)}}
   const rT=Math.max(-.14,Math.min(.14,-vl*.014)),pT=(dn&&vf>3?.06:0)-(up?.04:0);
   c.rl=(c.rl||0)+(rT-(c.rl||0))*Math.min(1,dt*8);c.pt=(c.pt||0)+(pT-(c.pt||0))*Math.min(1,dt*6);
   for(const b of c.y>1.3?[]:boxes){
@@ -1262,7 +1360,7 @@ function drive(dt){
   // smoke from the rear wheels
   const int=sp>6?Math.min(1,Math.max(0,(slip-2.5)/8)):0;
   slipI=int;skT+=dt;
-  if(int>.25&&skT>.035){skT=0;for(const sd of[-1,1])skid(c.x-sn*.95+sd*cs*1.02,c.z-cs*.95-sd*sn*1.02,c.h,1)}
+  if(int>.25&&skT>.035&&!(c.y>.5)){skT=0;for(const sd of[-1,1])skid(c.x-sn*.95+sd*cs*1.02,c.z-cs*.95-sd*sn*1.02,c.h,1)}
   em+=dt*int*35;
   while(em>=1){em--;for(const sd of[-1,1])puff(c.x-sn*.9+sd*cs*.8,c.z-cs*.9-sd*sn*.8,c.vx,c.vz,1)}
   if(sp>8&&ang>.3){cur+=dt*sp*ang*3;idle=0}
@@ -1326,6 +1424,7 @@ function raceTick(dt){
     const tx=c.x/TILE,tz=c.z/TILE,hits=[];
     for(const a of[Math.round(tx),Math.floor(tx)+.5])for(const b of[Math.round(tz),Math.floor(tz)+.5]){const v=R.map[a+','+b];if(v!==undefined&&!hits.includes(v))hits.push(v)}
     const hasCp=!!(R.cps&&R.cps.length),allCp=!hasCp||R.cpSet.size>=R.cps.length,fin=R.closed?0:n;
+    if(c.y>1.3)hits.length=0;
     let adv=-1;
     if(R.next<n){if(hits.includes(R.next))adv=R.next;else if(hasCp){const f=hits.filter(h=>h>R.next&&h<n);if(f.length)adv=Math.max(...f)}}
     if(adv>=0||(hits.includes(fin)&&(R.next>=n||(hasCp&&allCp)))){
@@ -1414,7 +1513,7 @@ function loadDonut(){
 const OPT={bots:2,diff:0,laps:2,drive:0,zoom:1,shadow:1,sound:1,assist:1,ghost:1,pix:.6};
 try{Object.assign(OPT,JSON.parse(localStorage.getItem('dbx:opt')||'{}'))}catch(e){}
 OPT.drive=0;
-const ZK={boost:1,slick:1,jump:1,gravel:1,ice:1,refill:1,rumble:1,drift:1},TOOLS=['straight','corner','wide','boost','chicane','slick','jump','gravel','slalom','gate','erase'];
+const ZK={boost:1,slick:1,jump:1,gapjump:1,gravel:1,ice:1,refill:1,rumble:1,drift:1},TOOLS=['straight','corner','wide','boost','chicane','slick','jump','gravel','slalom','gate','erase'];
 const COURSES=[
   {name:'Grand Prix',str:'gp',gp:1,desc:'4-race championship · points · bot rankings'},
   {name:'Midnight Circuit',str:'SBSLOLGLRRJSLMSBLCSTLSLRRL',desc:'26 tiles · jump, oil, gravel, slalom, gate, chicane'},
@@ -1441,7 +1540,7 @@ const saveOpt=()=>{try{localStorage.setItem('dbx:opt',JSON.stringify(OPT))}catch
 function applyOpt(){snd=!!OPT.sound;assist=!!OPT.assist;sun.castShadow=!!OPT.shadow;resize();if(snd)initAudio()}
 let selC=Math.max(0,COURSES.findIndex(c=>c.name==='Speedway'));
 function pbOf(s){try{const v=JSON.parse(localStorage.getItem(pk(s)));return v&&v.t?fmt(v.t):null}catch(e){return null}}
-const HAZ={B:['Boost','#7fb8d6'],O:['Oil','#9a8fc2'],J:['Jump','#d6b85a'],G:['Gravel','#a88b64'],C:['Chicane','#c98a63'],M:['Slalom','#c98a63'],T:['Gate','#c98a63'],I:['Ice','#9fdcff'],P:['Nitro pad','#3be07a'],U:['Rumble','#c98a63'],Q:['Squeeze','#c98a63'],D:['Drift zone','#b9a6ff']};
+const HAZ={j:['Gap jump','#d6b85a'],B:['Boost','#7fb8d6'],O:['Oil','#9a8fc2'],J:['Jump','#d6b85a'],G:['Gravel','#a88b64'],C:['Chicane','#c98a63'],M:['Slalom','#c98a63'],T:['Gate','#c98a63'],I:['Ice','#9fdcff'],P:['Nitro pad','#3be07a'],U:['Rumble','#c98a63'],Q:['Squeeze','#c98a63'],D:['Drift zone','#b9a6ff']};
 const isRoute=s=>!!parseRoute(s);
 function cellsOf(str){const p=parseRoute(str),o=p?p.els.map(e=>({x:e.x,z:e.z,k:e.k})):[];o.closed=!!(p&&p.closed);return o}
 function drawRouteOld(cv,str,lab){
@@ -1558,6 +1657,7 @@ function botsTick(dt){
     const sk=[1,.96,.92][b.i]*[.72,.88,1.02][OPT.diff];
     if(go&&!b.fin){
       const ti=botTi(b),tp=tgtOf(R,ti),dx=tp.x-b.x,dz=tp.z-b.z,d=Math.hypot(dx,dz);
+      {const pe=R.route[(ti-1+n)%n];b.fly=!!pe&&pe.k==='j'&&b.reached>0;if(b.fly){const l=Math.hypot(tp.x-pe.x*TILE,tp.z-pe.z*TILE)||1;b.y=Math.sin(Math.PI*Math.max(0,Math.min(1,1-d/l)))*4.5}else b.y=0}
       if(d<(ti===n?10:9)){b.reached++;if(b.reached>=tot){b.fin=true;b.ft=R.t}}
       const diff=angD(Math.atan2(dx,dz),b.d);
       b.d+=Math.max(-3.6*dt,Math.min(3.6*dt,diff*8*dt));b.df=diff;
@@ -1569,7 +1669,7 @@ function botsTick(dt){
       if(b.v<3){b.stuck+=dt;if(b.stuck>1.8){const pr=R.route[(ti-1+n)%n];b.x=pr.x*TILE;b.z=pr.z*TILE;b.d=b.h=Math.atan2(dx,dz);b.v=6;b.stuck=0}}else b.stuck=0;
     }else if(b.fin)b.v*=Math.exp(-1.5*dt);else b.v=0;
     b.x+=Math.sin(b.d)*b.v*dt;b.z+=Math.cos(b.d)*b.v*dt;
-    for(const o of boxes){
+    for(const o of(b.fly?[]:boxes)){
       const px=Math.max(o.x-o.hx,Math.min(b.x,o.x+o.hx)),pz=Math.max(o.z-o.hz,Math.min(b.z,o.z+o.hz));
       let dx=b.x-px,dz=b.z-pz,d=Math.hypot(dx,dz);
       if(d<RAD){if(d<1e-4){dx=1;dz=0;d=1}b.x+=dx/d*(RAD-d);b.z+=dz/d*(RAD-d);b.v*=.97}
@@ -1594,7 +1694,7 @@ function botsTick(dt){
       while(b.em>=1){b.em--;for(const sd of[-1,1])puff(b.x-sn*.9+sd*cs*.8,b.z-cs*.9-sd*sn*.8,Math.sin(b.d)*b.v,Math.cos(b.d)*b.v)}
       if(b.sk>.04){b.sk=0;for(const sd of[-1,1])skid(b.x-sn*.95+sd*cs*1.02,b.z-cs*.95-sd*sn*1.02,b.h)}
     }
-    b.g.position.set(b.x,0,b.z);b.g.rotation.y=b.h;b.g.rotation.z=-b.slip*.12;
+    b.g.position.set(b.x,b.y||0,b.z);b.g.rotation.y=b.h;b.g.rotation.z=-b.slip*.12;
   });
 }
 // PB ghost
@@ -1695,6 +1795,17 @@ function rpCamNext(){
   if(RP.cam==='chase'){RP.ch=q.h;RP.chX=q.x-Math.sin(q.h)*24*RP.zoom;RP.chZ=q.z-Math.cos(q.h)*24*RP.zoom}
   RP.snap=true;rpUI();
 }
+// Replays only record x, z and heading, so the height over a Gap jump is worked out from the ramp piece.
+function rpFlyY(x,z,vx,vz){
+  for(const b of blocks){
+    if(b.k!=='gapjump')continue;
+    let lx=x-b.x,lz=z-b.z,wx=vx,wz=vz;
+    for(let i=0;i<b.rot;i++){let t=lx;lx=-lz;lz=t;t=wx;wx=-wz;wz=t}
+    const d=Math.abs(lz);
+    if(Math.abs(lx)<14&&d>6&&d<46&&lz*wz>0&&Math.abs(wz)>Math.abs(wx)){const u=(d-6)/40;return 5*Math.sin(Math.PI*u)}
+  }
+  return 0;
+}
 function rpZoom(dir){
   if(!RP)return;
   if(RP.cam==='free')RP.fh=Math.max(25,Math.min(400,RP.fh*(dir>0?.89:1.12)));
@@ -1708,9 +1819,9 @@ function replayTick(dt){
     const x=G[a]+(G[b]-G[a])*u,z=G[a+1]+(G[b+1]-G[a+1])*u,h=G[a+2]+angD(G[b+2],G[a+2])*u;
     const vx=(G[b]-G[a])/.05,vz=(G[b+1]-G[a+1])/.05,sp=Math.hypot(vx,vz),slip=sp>6?angD(h,Math.atan2(vx,vz)):0;
     q.x=x;q.z=z;q.h=h;q.vx=vx;q.vz=vz;q.sp=sp;q.slip=slip;
-    q.mesh.position.set(x,0,z);q.mesh.rotation.y=h;q.mesh.rotation.z=-slip*.12;
+    const fy=rpFlyY(x,z,vx,vz);q.y=fy;q.mesh.position.set(x,fy,z);q.mesh.rotation.y=h;q.mesh.rotation.z=-slip*.12;
     // Tyre marks and smoke are drawn only while this replay is actually moving.
-    if(Q.adv>0&&Q.t<=q.dur+.001&&sp>8&&Math.abs(slip)>.3){
+    if(Q.adv>0&&Q.t<=q.dur+.001&&sp>8&&Math.abs(slip)>.3&&!(q.y>.5)){
       const sn=Math.sin(h),cs=Math.cos(h);q.em+=Q.adv*30;q.sk+=Q.adv;
       while(q.em>=1){q.em--;for(const sd of[-1,1])puff(x-sn*.9+sd*cs*.8,z-cs*.9-sd*sn*.8,vx,vz,!!q.mine)}
       if(q.sk>.04){q.sk=0;for(const sd of[-1,1])skid(x-sn*.95+sd*cs*1.02,z-cs*.95-sd*sn*1.02,h,!!q.mine)}
@@ -2131,11 +2242,11 @@ setInterval(()=>{if(mOpen&&menuTab==='solo'&&!document.hidden&&SESS)fetchLB()},4
 function routeFromBlocks(){
   if(!blocks.length)return{err:'Place some track in the builder first.'};
   const has=p=>blocks.some(b=>b.k===p.kind&&Math.abs(b.x-p.x)<.01&&Math.abs(b.z-p.z)<.01&&(p.sym?b.rot%2===p.rot%2:b.rot===p.rot));
-  const NM={straight:'Straight',corner:'Corner',wide:'Wide corner',edge:'Half border',narrowL:'Narrow left',narrowR:'Narrow right',widestraight:'Wide straight',boost:'Boost',chicane:'Chicane',slick:'Oil',jump:'Jump',gravel:'Gravel',slalom:'Slalom',gate:'Gate',open:'Open road',ice:'Ice',refill:'Nitro pad',rumble:'Rumble strips',squeeze:'Squeeze',drift:'Drift zone'};
+  const NM={straight:'Straight',corner:'Corner',wide:'Wide corner',edge:'Half border',narrowL:'Narrow left',narrowR:'Narrow right',widestraight:'Wide straight',gapjump:'Gap jump',boost:'Boost',chicane:'Chicane',slick:'Oil',jump:'Jump',gravel:'Gravel',slalom:'Slalom',gate:'Gate',open:'Open road',ice:'Ice',refill:'Nitro pad',rumble:'Rumble strips',squeeze:'Squeeze',drift:'Drift zone'};
   let st={ex:0,ez:-.5,h:[0,1],w:1},str='',n=0,closed=false,end=false;const seen=new Set(),used=new Set(),joints=[];
   while(n<60&&!closed&&!end){
     let hit=null,tk='';
-    for(const t of st.w===1?'SBCOJGMTNIPUQDEFLRWX':'VHKYZ'){const el=routeStep(st,t);if(el&&el.pieces.every(has)){hit=el;tk=t;break}}
+    for(const t of st.w===1?'SBCOJGMTNIPUQDEFLRWXj':'VHKYZ'){const el=routeStep(st,t);if(el&&el.pieces.every(has)){hit=el;tk=t;break}}
     if(!hit&&st.w===2){for(const a of LANES){for(const b2 of LANES){const el=routeStep(st,'A',a+b2);if(el&&el.pieces.every(has)){hit=el;tk='A'+a+b2;break}}if(hit)break}}
     if(!hit){
       const h=st.h,Lh=vL(h),cx=st.ex+h[0]/2,cz=st.ez+h[1]/2,spots=st.w===1?[[cx,cz]]:[[cx+Lh[0]/2,cz+Lh[1]/2],[cx-Lh[0]/2,cz-Lh[1]/2]];
@@ -2361,6 +2472,9 @@ $('#bTest').onclick=testDrive;$('#tdExit').onclick=tdExit;$('#tdRestart').onclic
 // {id:'unique-id', date:'YYYY-MM-DD', title:'Short title', art:'kind', text:'Plain description for players.'}
 // art picks the small picture drawn by updArt() below. Add a new case there if none fits. Do not use apostrophes in text.
 const UPDATES=[
+ {id:'calm-hud',date:'2026-10-30',title:'Cleaner screens',art:'solo',text:'Build mode no longer shows the speedometer, nitro bar, lap timer or Reset car, and the help text fades away after a few seconds. Builder pieces are tinted by type (roads, obstacles, zones, checkpoints, tools) so they are easier to tell apart. On phones the HUD is split into clear corners.'},
+ {id:'iphone',date:'2026-10-30',title:'Add to Home Screen on iPhone',art:'solo',text:'Open the game in Safari, tap Share, then Add to Home Screen. It opens full screen with its own icon, respects the notch and home bar, and has a thumb layout: steer on the left, gas, brake and nitro on the right. The menu no longer runs off the side of a phone screen.'},
+ {id:'gap-jump',date:'2026-10-30',title:'Tracks can cross themselves',art:'gap',text:'New Gap jump piece in the builder. Drive onto the ramp and you fly over the next tile, so another part of your track can run underneath. Leave the tile empty or build the crossing road there. Bots fly it too, and replays show the leap.'},
  {id:'replay-compare',date:'2026-10-30',title:'Compare replay laps and zoom the camera',art:'replay',text:'Open a replay and press Compare to line up to four recorded laps on the same track. The laps run at their real recorded times, so you can see who reaches the finish first. The top follow camera is smoother, and the plus and minus buttons or mouse wheel zoom the replay camera.'},
  {id:'build-zoom',date:'2026-10-30',title:'Zoom and fast panning in the editor',art:'zoom',text:'Use the mouse wheel, the + and - keys or the new + and - buttons in the toolbar to zoom the editor in and out. Hold Shift while panning to move the camera much faster.'},
  {id:'lane-surf',date:'2026-10-30',title:'Different surface on each lane',art:'lanes',text:'On a 2-wide road you can now put two different 1-wide pieces side by side and give each its own surface, for example ice on the left and mud on the right, then carry on into the next wide corner.'},
@@ -2392,6 +2506,7 @@ function updArt(k){
   let b='';
   if(k==='log')b=[0,1,2].map(i=>'<rect x="46" y="'+(26+i*34)+'" width="148" height="26" fill="#101215" stroke="#fff" stroke-opacity=".14"/><rect x="54" y="'+(33+i*34)+'" width="12" height="12" fill="'+(i?M:A)+'"/>'+bar(74,34+i*34,'70',T,.85)+bar(74,44+i*34,'100',M,.5)).join('');
   else if(k==='lb')b=[0,1,2,3].map(i=>'<rect x="46" y="'+(26+i*26)+'" width="148" height="20" fill="#101215" stroke="#fff" stroke-opacity=".14"/><text x="56" y="'+(40+i*26)+'" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="13" fill="'+(i?M:A)+'">'+(i+1)+'</text>'+bar(76,33+i*26,60-i*8,T,.8)+bar(160,33+i*26,24,M,.6)).join('')+'<text x="218" y="134" text-anchor="end" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="700" font-size="15" letter-spacing="2" fill="'+A+'">40 S</text>';
+  else if(k==='gap')b='<path d="M20 100H220" stroke="#1f2227" stroke-width="18" fill="none"/><path d="M120 20V120" stroke="#1f2227" stroke-width="18" fill="none"/><path d="M30 100Q120 20 210 100" fill="none" stroke="'+T+'" stroke-width="2.5" stroke-dasharray="5 4"/><rect x="30" y="92" width="16" height="16" rx="3" fill="#2b7be0"/>';
   else if(k==='solo')b='<path d="M40 110V50H120V90H200V40" fill="none" stroke="#1f2227" stroke-width="18"/><path d="M40 110V50H120V90H200V40" fill="none" stroke="'+T+'" stroke-width="2" stroke-dasharray="4 4"/><rect x="32" y="98" width="16" height="22" rx="3" fill="#2b7be0"/>';
   else if(k==='replay')b='<path d="M30 112C56 112 70 70 104 62S160 66 206 36" fill="none" stroke="#0b0b0d" stroke-width="6" stroke-dasharray="10 3"/><rect x="96" y="52" width="16" height="22" rx="3" fill="#2b7be0" transform="rotate(70 104 62)"/><rect x="30" y="128" width="180" height="4" fill="#fff" opacity=".2"/><rect x="30" y="128" width="92" height="4" fill="'+A+'"/><rect x="120" y="122" width="6" height="16" fill="'+T+'"/>';
   else if(k==='zoom')b='<circle cx="108" cy="68" r="30" fill="none" stroke="'+T+'" stroke-width="5"/><path d="M130 90L160 120" stroke="'+T+'" stroke-width="8" stroke-linecap="round"/><path d="M96 68h24M108 56v24" stroke="'+A+'" stroke-width="4"/>';
